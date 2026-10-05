@@ -17,12 +17,12 @@ jobs:
           REPO: ${{ github.repository }}
         run: |
 
-          # get all open issues that have the Feature type
+          # get all open issues that have the Feature issueType
           gh issue list \
             --repo "$REPO" \
             --state open \
             --limit 1000 \
-            --json number,title,body,type,url \
+            --json number,title,body,issueType,url \
             > /tmp/features.json
 
           python <<'PY'
@@ -175,7 +175,7 @@ jobs:
                       "--search",
                       f'"AT {epic_number}.{story_number}:"',
                       "--json",
-                      "number,title,body,type"
+                      "number,title,body,issueType"
                   ],
                   capture_output=True,
                   text=True
@@ -237,7 +237,7 @@ jobs:
                       at_title,
                       "--label",
                       "acceptance-test",
-                      "--type",
+                      "--issueType",
                       "Acceptance Test",
                       "--body",
                       body
