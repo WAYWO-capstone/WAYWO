@@ -248,15 +248,13 @@ jobs:
               # create acceptance test
               # -------------------------------------------------
 
-              body = f"""**# Acceptance test**
+              body = f"""# Acceptance test
 
           Link to user story:
 
           #{feature_number} - {feature_title}
 
-          {feature_url}
-
-          **## Acceptance criteria**
+          ## Acceptance criteria
 
           {criteria}
           """
