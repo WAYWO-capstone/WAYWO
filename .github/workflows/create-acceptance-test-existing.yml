@@ -150,7 +150,7 @@ jobs:
               # get acceptance criteria
               # -------------------------------------------------
 
-              marker = "**# Acceptance Criteria**"
+              marker = "# Acceptance Criteria"
 
               if marker not in feature_body:
                   print("Skipping: no Acceptance Criteria section.")
