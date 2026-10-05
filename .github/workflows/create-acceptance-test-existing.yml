@@ -70,24 +70,30 @@ jobs:
               # get parent issue
               # -------------------------------------------------
 
+              owner, repo_name = repo.split("/", 1)
+
+              query = """
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $number) {
+                    parent {
+                      number
+                      title
+                    }
+                  }
+                }
+              }
+              """
+
               result = subprocess.run(
                   [
                       "gh",
                       "api",
                       "graphql",
-                      "-f",
-                      f"query=query($owner:String!, $repo:String!, $number:Int!) {{ "
-                      f"repository(owner:$owner, name:$repo) {{ "
-                      f"issue(number:$number) {{ "
-                      f"parent {{ number title }} "
-                      f"}} "
-                      f"}}",
-                      "-F",
-                      "owner=WAYWO-capstone",
-                      "-F",
-                      "repo=WAYWO",
-                      "-F",
-                      f"number={feature_number}"
+                      "-f", f"query={query}",
+                      "-f", f"owner={owner}",
+                      "-f", f"repo={repo_name}",
+                      "-F", f"number={feature_number}"
                   ],
                   capture_output=True,
                   text=True
@@ -102,6 +108,7 @@ jobs:
                   data = json.loads(result.stdout)
               except json.JSONDecodeError:
                   print("Skipping: invalid GraphQL response.")
+                  print(result.stdout)
                   continue
 
               parent = (
@@ -119,7 +126,9 @@ jobs:
               parent_number = parent.get("number")
               parent_title = parent.get("title", "")
 
-              print(f"Parent issue: #{parent_number} - {parent_title}")
+              print(
+                  f"Parent issue: #{parent_number} - {parent_title}"
+              )
                 
               # -------------------------------------------------
               # gxtract Epic number
