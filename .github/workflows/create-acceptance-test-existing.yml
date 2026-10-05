@@ -272,7 +272,7 @@ jobs:
                       at_title,
                       "--label",
                       "acceptance-test",
-                      "--issueType",
+                      "--type",
                       "Acceptance Test",
                       "--body",
                       body
