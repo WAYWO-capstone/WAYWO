@@ -27,18 +27,11 @@ jobs:
           REPO: ${{ github.repository }}
           FEATURE_NUMBER: ${{ github.event.issue.number }}
         run: |
-          PARENT_DATA=$(gh api \
-            "/repos/$REPO/issues/$FEATURE_NUMBER/sub_issues/parent")
-
-          PARENT_NUMBER=$(echo "$PARENT_DATA" | jq -r '.number')
-          PARENT_TITLE=$(echo "$PARENT_DATA" | jq -r '.title')
-
-          echo "Parent issue number: $PARENT_NUMBER"
-          echo "Parent issue title: $PARENT_TITLE"
-
-          echo "parent_number=$PARENT_NUMBER" >> "$GITHUB_OUTPUT"
-          echo "parent_title=$PARENT_TITLE" >> "$GITHUB_OUTPUT"
-
+          ISSUE_DATA=$(gh api \
+            "/repos/$REPO/issues/$FEATURE_NUMBER" \
+            --include)
+            
+          echo "$ISSUE_DATA"
       # ---------------------------------------------------------
       # 2. get the epic number and the user story number
       # ---------------------------------------------------------
