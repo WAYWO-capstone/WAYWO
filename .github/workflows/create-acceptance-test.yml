@@ -1,0 +1,217 @@
+name: Create Acceptance Test for Feature
+
+on:
+  issues:
+    types: [opened]
+
+permissions:
+  issues: write
+
+jobs:
+  create-acceptance-test:
+
+    # Only run when the newly created issue is a Feature
+    if: github.event.issue.issueType.name == 'Feature'
+
+    runs-on: ubuntu-latest
+
+    steps:
+
+      # ---------------------------------------------------------
+      # 1. get the parent issue of the user story (Epic)
+      # ---------------------------------------------------------
+      - name: Get parent issue
+        id: parent
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          FEATURE_NUMBER: ${{ github.event.issue.number }}
+        run: |
+
+          OWNER="${REPO%%/*}"
+          REPO_NAME="${REPO#*/}"
+
+          QUERY='
+          query($owner: String!, $repo: String!, $number: Int!) {
+            repository(owner: $owner, name: $repo) {
+              issue(number: $number) {
+                parent {
+                  number
+                  title
+                }
+              }
+            }
+          }
+          '
+
+          RESULT=$(gh api graphql \
+            -f query="$QUERY" \
+            -f owner="$OWNER" \
+            -f repo="$REPO_NAME" \
+            -F number="$FEATURE_NUMBER")
+
+          echo "GraphQL response:"
+          echo "$RESULT"
+
+          PARENT_NUMBER=$(echo "$RESULT" | jq -r \
+            '.data.repository.issue.parent.number // empty')
+
+          PARENT_TITLE=$(echo "$RESULT" | jq -r \
+            '.data.repository.issue.parent.title // empty')
+
+          if [ -z "$PARENT_NUMBER" ]; then
+            echo "ERROR: Could not find parent Epic for Feature #$FEATURE_NUMBER."
+            exit 1
+          fi
+
+          if [ -z "$PARENT_TITLE" ]; then
+            echo "ERROR: Parent issue has no title."
+            exit 1
+          fi
+
+          echo "Parent issue number: $PARENT_NUMBER"
+          echo "Parent issue title: $PARENT_TITLE"
+
+          echo "parent_number=$PARENT_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "parent_title=$PARENT_TITLE" >> "$GITHUB_OUTPUT"
+
+
+      # ---------------------------------------------------------
+      # 2. get the epic number and the user story number
+      # ---------------------------------------------------------
+      - name: Get issue numbers
+        id: numbers
+        env:
+          PARENT_TITLE: ${{ steps.parent.outputs.parent_title }}
+          FEATURE_TITLE: ${{ github.event.issue.title }}
+        run: |
+
+          EPIC_NUMBER=$(echo "$PARENT_TITLE" | \
+            grep -oE 'EPIC[[:space:]]+[0-9]+' | \
+            grep -oE '[0-9]+' | \
+            head -1)
+
+          STORY_NUMBER=$(echo "$FEATURE_TITLE" | \
+            grep -oE 'US[[:space:]]+[0-9]+' | \
+            grep -oE '[0-9]+' | \
+            head -1)
+
+          if [ -z "$EPIC_NUMBER" ]; then
+            echo "ERROR: Could not extract Epic number from parent title:"
+            echo "$PARENT_TITLE"
+            exit 1
+          fi
+
+          if [ -z "$STORY_NUMBER" ]; then
+            echo "ERROR: Could not extract Story number from Feature title:"
+            echo "$FEATURE_TITLE"
+            exit 1
+          fi
+
+          echo "Epic number: $EPIC_NUMBER"
+          echo "Story number: $STORY_NUMBER"
+
+          echo "epic_number=$EPIC_NUMBER" >> "$GITHUB_OUTPUT"
+          echo "story_number=$STORY_NUMBER" >> "$GITHUB_OUTPUT"
+
+      # ---------------------------------------------------------
+      # 3. get acceptance criteria from the user story
+      # ---------------------------------------------------------
+      - name: Extract acceptance criteria
+        id: criteria
+        env:
+          ISSUE_BODY: ${{ github.event.issue.body }}
+        run: |
+
+          python <<'PY'
+          import os
+          import re
+
+          body = os.environ.get("ISSUE_BODY", "")
+
+          # Find:
+          # # Acceptance Criteria
+
+          criteria_match = re.search(
+              r"# Acceptance Criteria",
+              body,
+              re.IGNORECASE
+          )
+
+          if not criteria_match:
+              print("ERROR: No Acceptance Criteria section found.")
+              exit(1)
+
+          criteria = body[criteria_match.end():]
+
+          # Remove the Additional context section.
+          additional_context_match = re.search(
+              r"**Additional context**",
+              criteria,
+              re.IGNORECASE
+          )
+
+          if additional_context_match:
+              criteria = criteria[
+                  :additional_context_match.start()
+              ]
+
+          criteria = criteria.strip()
+
+          if not criteria:
+              print("ERROR: Acceptance Criteria section is empty.")
+              exit(1)
+
+          with open(os.environ["GITHUB_OUTPUT"], "a") as f:
+              f.write("criteria<<EOF\n")
+              f.write(criteria)
+              f.write("\nEOF\n")
+          PY
+
+      # ---------------------------------------------------------
+      # 4. create the acceptance test issue
+      # ---------------------------------------------------------
+      - name: Create Acceptance Test
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+
+          EPIC_NUMBER: ${{ steps.numbers.outputs.epic_number }}
+          STORY_NUMBER: ${{ steps.numbers.outputs.story_number }}
+
+          FEATURE_NUMBER: ${{ github.event.issue.number }}
+          FEATURE_TITLE: ${{ github.event.issue.title }}
+          FEATURE_URL: ${{ github.event.issue.html_url }}
+
+          CRITERIA: ${{ steps.criteria.outputs.criteria }}
+
+        run: |
+
+          # Remove "US X:" from the beginning of the title.
+          STORY_TITLE=$(echo "$FEATURE_TITLE" | \
+            sed -E 's/^US[[:space:]]+[0-9]+[[:space:]]*:[[:space:]]*//')
+
+          AT_TITLE="AT $EPIC_NUMBER.$STORY_NUMBER: $STORY_TITLE"
+
+          echo "Creating Acceptance Test:"
+          echo "$AT_TITLE"
+
+          BODY=$(cat <<EOF
+          # Acceptance test
+
+          Link to user story:
+
+          #$FEATURE_NUMBER - $FEATURE_TITLE
+
+          ## Acceptance criteria
+
+          $CRITERIA
+          EOF
+          )
+
+          gh issue create \
+            --repo "$REPO" \
+            --title "$AT_TITLE" \
+            --label "acceptance-test" \
+            --type "Acceptance Test" \
+            --body "$BODY"
