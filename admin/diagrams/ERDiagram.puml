@@ -1,0 +1,272 @@
+@startchen
+
+' ===== Entities =====
+
+entity USER {
+  id <<key>>
+  username
+  email
+  createdAt
+}
+
+entity PROFILE <<weak>> {
+  bio
+  profilePictureLink
+}
+
+entity CATEGORY {
+  name <<key>>
+  description
+}
+
+entity TAG {
+  name <<key>>
+}
+
+entity PROJECT {
+  id <<key>>
+  title
+  summary
+  description
+  status
+  createdAt
+  lastAutosavedAt
+  publishedAt
+  completedAt
+}
+
+entity PROJECT_CONTENT {
+  id <<key>>
+  createdAt
+}
+
+entity UPDATE {
+  title
+  body
+  type
+  updatedAt
+}
+
+entity RESOURCE {
+  title
+  description
+}
+
+entity FEED_ITEM {
+  id <<key>>
+  title
+  public
+  body
+  createdAt
+}
+
+entity COMMENT {
+  id <<key>>
+  body
+  editedAt
+}
+
+entity FILE_ASSET {
+  id <<key>>
+  fileName
+  type
+  size
+  uploadedAt
+}
+
+entity FOLDER <<weak>> {
+  name <<key>>
+  createdAt
+}
+
+entity BOOKMARK {
+  id <<key>>
+  savedAt
+  notificationsEnabled
+}
+
+entity NOTIFICATION {
+  id <<key>>
+  type
+  message
+  createdAt
+  readAt
+}
+
+entity REPORT {
+  id <<key>>
+  reason
+  details
+  status
+  createdAt
+  reviewedAt
+}
+
+entity PROJECT_DOCUMENTATION <<weak>> {
+  generatedAt
+  version
+  status
+}
+
+entity DOC_SECTION {
+  id <<key>>
+  type
+  title
+  content
+}
+
+' ===== Specialization =====
+
+PROJECT_CONTENT =>= d { UPDATE, RESOURCE }
+
+' ===== Relationships =====
+
+relationship HAS <<identifying>> {
+}
+relationship OWNS {
+}
+relationship CREATES {
+}
+relationship WRITES {
+}
+relationship FILED_UNDER {
+}
+relationship TAGGED_WITH {
+}
+relationship CONTAINS {
+}
+relationship PROJECT_POST {
+}
+relationship UPDATE_POST {
+}
+relationship HAS_COMMENT {
+}
+relationship REPLIES_TO {
+}
+relationship ATTACHES {
+}
+relationship RESOLVES {
+}
+relationship FILE_OF {
+}
+relationship ORGANIZES <<identifying>> {
+}
+relationship GROUPS {
+}
+relationship SAVES {
+}
+relationship SAVED_PROJECT {
+}
+relationship SAVED_CREATOR {
+}
+relationship FOLLOWS_PROJECT {
+  followedAt
+  notificationsEnabled
+}
+relationship FOLLOWS_CREATOR {
+  followedAt
+  notificationsEnabled
+}
+relationship RECEIVES {
+}
+relationship ABOUT {
+}
+relationship FILES {
+}
+relationship TARGETS {
+}
+relationship DOCUMENTED_BY <<identifying>> {
+}
+relationship SECTIONS {
+}
+
+' ----- User & Profile -----
+USER -1- HAS
+HAS =1= PROFILE
+
+USER -M- OWNS
+OWNS =N= PROJECT
+
+USER -1- CREATES
+CREATES =N= FEED_ITEM
+
+USER -1- WRITES
+WRITES =N= COMMENT
+
+' ----- Project -----
+PROJECT =N= FILED_UNDER
+FILED_UNDER -1- CATEGORY
+
+PROJECT -M- TAGGED_WITH
+TAGGED_WITH -N- TAG
+
+PROJECT -1- CONTAINS
+CONTAINS =N= PROJECT_CONTENT
+
+' ----- Feed -----
+PROJECT -1- PROJECT_POST
+PROJECT_POST -N- FEED_ITEM
+
+UPDATE -1- UPDATE_POST
+UPDATE_POST -N- FEED_ITEM
+
+FEED_ITEM -1- HAS_COMMENT
+HAS_COMMENT =N= COMMENT
+
+COMMENT -N- REPLIES_TO
+REPLIES_TO -1- COMMENT
+
+' ----- Attachments -----
+UPDATE -1- ATTACHES
+ATTACHES -N- FILE_ASSET
+
+UPDATE -N- RESOLVES
+RESOLVES -1- UPDATE
+
+RESOURCE =1= FILE_OF
+FILE_OF -1- FILE_ASSET
+
+' ----- Folders & Bookmarks -----
+USER -1- ORGANIZES
+ORGANIZES =N= FOLDER
+
+FOLDER -1- GROUPS
+GROUPS -N- BOOKMARK
+
+USER -1- SAVES
+SAVES =N= BOOKMARK
+
+BOOKMARK -N- SAVED_PROJECT
+SAVED_PROJECT -1- PROJECT
+
+BOOKMARK -N- SAVED_CREATOR
+SAVED_CREATOR -1- USER
+
+' ----- Social & Notifications -----
+USER -M- FOLLOWS_PROJECT
+FOLLOWS_PROJECT -N- PROJECT
+
+USER -M- FOLLOWS_CREATOR
+FOLLOWS_CREATOR -N- USER
+
+USER -1- RECEIVES
+RECEIVES =N= NOTIFICATION
+
+NOTIFICATION =N= ABOUT
+ABOUT -1- FEED_ITEM
+
+' ----- Moderation -----
+USER -1- FILES
+FILES =N= REPORT
+
+REPORT =N= TARGETS
+TARGETS -1- FEED_ITEM
+
+' ----- Documentation -----
+PROJECT -1- DOCUMENTED_BY
+DOCUMENTED_BY =1= PROJECT_DOCUMENTATION
+
+PROJECT_DOCUMENTATION -1- SECTIONS
+SECTIONS =N= DOC_SECTION
+
+@endchen
