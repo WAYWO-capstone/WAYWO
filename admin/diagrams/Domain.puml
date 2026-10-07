@@ -1,0 +1,225 @@
+@startuml
+top to bottom direction
+
+class User {
+  +String id
+  +String username
+  +String email
+  +DateTime createdAt
+}
+
+class Profile {
+  +String bio
+  +String profilePictureLink
+}
+
+class Category {
+  +String name
+  +String description
+}
+
+class Tag {
+  +String name
+}
+
+class Project {
+  +String id
+  +String title
+  +String summary
+  +String description
+  +ProjectStatus status
+  +DateTime createdAt
+  +DateTime lastAutosavedAt
+  +DateTime publishedAt
+  +DateTime completedAt
+}
+
+abstract class FeedItem {
+  +String id
+  +String title
+  +Boolean public
+  +String body
+  +DateTime createdAt
+}
+
+'  // class Tutorial {
+'  //   +String id
+'  //   +String title
+'  //   +Time completionTimeEstimate
+'  //   +number  costEstimate
+'  // }
+
+'  // class Step {
+'  //  +String id
+'  //  +number stepNumber
+'  //  +String title
+'  //  +String text
+'  //  }
+
+class Update {
+  +String title
+  +String body
+  +UpdateType type
+  +DateTime updatedAt
+}
+
+class Comment {
+  +String body
+  +DateTime editedAt
+}
+
+class Resource {
+  +String title
+  +String description
+}
+
+class FileAsset {
+  +String fileName
+  +String type
+  +Long size
+  +DateTime uploadedAt
+}
+
+class Bookmark {
+  +DateTime savedAt
+  +boolean notificationsEnabled
+}
+
+class Folder {
+  +String name
+  +DateTime createdAt
+}
+
+class Follow {
+  +DateTime followedAt
+  +boolean notificationsEnabled
+}
+
+class Notification {
+  +NotificationType type
+  +String message
+  +DateTime createdAt
+  +DateTime readAt
+}
+
+class Report {
+  +String reason
+  +String details
+  +ReportStatus status
+  +DateTime createdAt
+  +DateTime reviewedAt
+}
+
+class ProjectDocumentation {
+  +DateTime generatedAt
+  +int version
+  +DocumentationStatus status
+}
+
+class DocumentationSection {
+  +SectionType type
+  +String title
+  +String content
+}
+
+enum ProjectStatus {
+  DRAFT
+  ACTIVE
+  COMPLETED
+}
+
+enum UpdateType {
+  PROGRESS
+  DECISION
+  PROBLEM
+  SOLUTION
+}
+
+enum ReportStatus {
+  OPEN
+  DISMISSED
+  CONTENT_REMOVED
+}
+
+enum DocumentationStatus {
+  GENERATED
+  REVIEWED
+  OUTDATED
+}
+
+enum SectionType {
+  STEP
+  DECISION
+  PROBLEM
+  SOLUTION
+  RESOURCE
+}
+
+enum NotificationType {
+  NEW_UPDATE
+  NEW_COMMENT
+  PROJECT_COMPLETED
+  NEW_PROJECT
+}
+
+' Enums
+Project ..> ProjectStatus
+Update ..> UpdateType
+Report ..> ReportStatus
+ProjectDocumentation ..> DocumentationStatus
+DocumentationSection ..> SectionType
+Notification ..> NotificationType
+
+' User & Profile
+User "1" *-- "1" Profile : has
+User "1..*" --> "0..*" Project : owns
+User "1" --> "0..*" FeedItem : creates
+User "1" --> "0..*" Comment : writes
+
+' Tutorial
+'  // Tutorial "1" -- "0..*" Project : made from
+'  // Tutorial "0..*" <-- "1" User : creates
+'  // Tutorial "1" *-- "1..*" Step : contains
+'  // Step "1" -- "0..*" FileAsset : attachements
+
+' Project & Content hierarchy
+Project "0..*" --> "1" Category: filed under
+Project "0..*" --> "0..*" Tag : tagged with
+Project "1" *-- "0..*" Update: contains
+Project "1" *-- "0..*" Resource: contains
+
+' Parent-Child hierarchy for FeedItem and Comment
+Project "1" --|> "0..*" FeedItem : project posts
+Update "1" --|> "0..*" FeedItem : update posts
+'  //  Tutorial "1" --|> "0..*" FeedItem : tutorial posts
+FeedItem "1" *-- "0..*" Comment : child comments
+
+' Attachments & Replies
+Update "1" *-- "0..*" FileAsset : attachments
+Update "0..*" --> "0..1" Update : resolves
+Comment "0..*" --> "0..1" Comment : replies to
+Resource "1" --> "1" FileAsset : file
+
+' Folders & Bookmarks
+User "1" *-- "0..*" Folder : organizes with
+Folder "1" o-- "0..*" Bookmark : groups
+User "1" --> "0..*" Bookmark : saves
+Bookmark "0..*" --> "0..1" Project : saved project
+Bookmark "0..*" --> "0..1" User : saved creator
+
+' Social & Notifications
+User "1" --> "0..*" Follow : follows
+Follow "0..*" --> "0..1" Project : followed project
+Follow "0..*" --> "0..1" User : followed creator
+
+User "1" --> "0..*" Notification : receives
+Notification "0..*" --> "1" FeedItem: about
+
+' Moderation
+User "1" --> "0..*" Report : files
+Report "0..*" --> "1" FeedItem: targets
+
+' Documentation
+Project "1" *-- "0..1" ProjectDocumentation : documented by
+ProjectDocumentation "1" *-- "1..*" DocumentationSection : sections
+@enduml
