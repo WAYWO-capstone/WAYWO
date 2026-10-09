@@ -49,7 +49,12 @@ def upgrade() -> None:
     sa.Column('id', sa.Uuid(), nullable=False),
     sa.Column('summary', sa.String(length=500), nullable=False),
     sa.Column('description', sa.Text(), nullable=False),
-    sa.Column('status', sa.Enum('DRAFT', 'ACTIVE', 'COMPLETED', name='project_status'), nullable=False),
+    sa.Column(
+        "status",
+        sa.Enum("DRAFT", "ACTIVE", "COMPLETED", name="project_status",
+                native_enum=False, create_constraint=True, length=20),
+        nullable=False,
+    ),    
     sa.Column('category_id', sa.Uuid(), nullable=False),
     sa.Column('last_autosaved_at', sa.DateTime(timezone=True), nullable=True),
     sa.Column('published_at', sa.DateTime(timezone=True), nullable=True),

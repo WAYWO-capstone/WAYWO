@@ -20,7 +20,8 @@ class FeedItem(Base):
 
     id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
     type: Mapped[FeedItemType] = mapped_column(
-        Enum(FeedItemType, native_enum=False, length=30)
+        Enum(FeedItemType, name="feed_item_type",
+            native_enum=False, create_constraint=True, length=30)
     )
     # "User creates FeedItem" -- for a Project this is the owner.
     # TODO: add ForeignKey("users.id", ondelete="CASCADE") once the Accounts

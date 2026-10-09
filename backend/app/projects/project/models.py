@@ -43,7 +43,9 @@ class Project(FeedItem):
     summary: Mapped[str] = mapped_column(String(500))
     description: Mapped[str] = mapped_column(Text, default="")
     status: Mapped[ProjectStatus] = mapped_column(
-        Enum(ProjectStatus, name="project_status"), default=ProjectStatus.DRAFT
+        Enum(ProjectStatus, name="project_status",
+            native_enum=False, create_constraint=True, length=20),
+        default=ProjectStatus.DRAFT,
     )
     category_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("categories.id"), index=True
