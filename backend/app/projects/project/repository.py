@@ -16,6 +16,9 @@ class ProjectRepository:
     def get_category(self, category_id: uuid.UUID) -> Category | None:
         return self._session.get(Category, category_id)
 
+    def get(self, project_id: uuid.UUID) -> Project | None:
+        return self._session.get(Project, project_id)
+
     def get_or_create_tags(self, names: list[str]) -> list[Tag]:
         if not names:
             return []
@@ -30,5 +33,9 @@ class ProjectRepository:
 
     def add(self, project: Project) -> Project:
         self._session.add(project)
+        self._session.flush()
+        return project
+
+    def update(self, project: Project) -> Project:
         self._session.flush()
         return project
