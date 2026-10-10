@@ -6,6 +6,8 @@ __pycache__/
 # C extensions
 *.so
 
+admin/planning/user_stories.md
+
 # Distribution / packaging
 .Python
 build/
