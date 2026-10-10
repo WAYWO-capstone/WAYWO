@@ -1,8 +1,9 @@
 """Request and response schemas for users and profiles."""
 
 from datetime import datetime
+import uuid
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import BaseModel, ConfigDict, Field, field_validator
 
 
 class UserCreate(BaseModel):
@@ -12,12 +13,10 @@ class UserCreate(BaseModel):
     email: str = Field(min_length=3, max_length=255)
     password: str = Field(min_length=8, max_length=128)
 
-
-class UserUpdate(BaseModel):
-    """Payload used to update a user's editable account fields."""
-
-    username: str | None = Field(default=None, min_length=3, max_length=50)
-    email: str | None = Field(default=None, min_length=3, max_length=255)
+    @field_validator("email")
+    @classmethod
+    def normalize_email(cls, value: str) -> str:
+        return value.strip().lower()
 
 
 class UserResponse(BaseModel):
@@ -25,7 +24,7 @@ class UserResponse(BaseModel):
 
     model_config = ConfigDict(from_attributes=True)
 
-    id: str
+    id: uuid.UUID
     username: str
     email: str
     created_at: datetime
