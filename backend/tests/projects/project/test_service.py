@@ -7,7 +7,7 @@ from app.projects.project.enums import ProjectStatus
 from app.projects.project.exceptions import CategoryNotFoundError
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.project.schemas import ProjectCreate
+from app.projects.project.schemas import ProjectCreate, ProjectUpdate
 from app.projects.project.service import ProjectService
 
 
@@ -135,3 +135,67 @@ class TestCreateProject:
 
         repository.get_or_create_tags.assert_called_once_with([])
         assert project.tags == []
+
+
+class TestUpdateProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Original title",
+            summary="Original summary",
+            description="Original description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_updates_owned_project_fields(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        data = ProjectUpdate(
+            title="Updated title",
+            summary="Updated summary",
+            description="Updated description",
+        )
+
+        result = service.update_project(project.id, author_id, data)
+
+        assert result is project
+        assert project.title == "Updated title"
+        assert project.summary == "Updated summary"
+        assert project.description == "Updated description"
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_missing_project(self, service, repository, author_id):
+        project_id = uuid.uuid4()
+        repository.get.return_value = None
+
+        with pytest.raises(Exception, match="does not exist"):
+            service.update_project(project_id, author_id, ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+    def test_rejects_project_owned_by_another_user(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(Exception, match="does not own"):
+            service.update_project(project.id, uuid.uuid4(), ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+    def test_validates_replacement_category(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+        repository.get_category.return_value = None
+        category_id = uuid.uuid4()
+
+        with pytest.raises(CategoryNotFoundError):
+            service.update_project(
+                project.id, author_id, ProjectUpdate(category_id=category_id)
+            )
+
+        repository.update.assert_not_called()
