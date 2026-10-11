@@ -51,6 +51,22 @@ def update_project(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
 
 
+@router.post("/{project_id}/publish", response_model=ProjectRead)
+def publish_project(
+    project_id: uuid.UUID,
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    try:
+        return service.publish_project(project_id, current_user_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+    except ProjectNotOwnedError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+    except InvalidProjectStatusTransitionError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+
+
 @router.patch("/{project_id}/status", response_model=ProjectRead)
 def update_project_status(
     project_id: uuid.UUID,
