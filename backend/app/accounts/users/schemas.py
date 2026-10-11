@@ -9,6 +9,8 @@ from pydantic import BaseModel, ConfigDict, EmailStr, Field, field_validator
 class UserCreate(BaseModel):
     """Payload used to create a user account."""
 
+    model_config = ConfigDict(extra="forbid")
+
     username: str = Field(min_length=3, max_length=50)
     email: EmailStr = Field(min_length=3, max_length=255)
     password: str = Field(min_length=8, max_length=128)
