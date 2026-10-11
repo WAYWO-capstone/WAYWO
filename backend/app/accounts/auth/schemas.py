@@ -1,17 +1,12 @@
 """Request and response schemas for authentication."""
 
-import uuid
-from datetime import datetime
+from pydantic import BaseModel, Field
 
-from pydantic import BaseModel, ConfigDict, Field
+from app.accounts.users.schemas import UserCreate, UserResponse
 
 
-class RegisterRequest(BaseModel):
-    """Credentials and identity fields required to register."""
-
-    username: str = Field(min_length=3, max_length=50)
-    email: str = Field(min_length=3, max_length=255)
-    password: str = Field(min_length=8, max_length=128)
+RegisterRequest = UserCreate
+AuthenticatedUser = UserResponse
 
 
 class LoginRequest(BaseModel):
@@ -33,14 +28,3 @@ class RefreshRequest(BaseModel):
     """Refresh token payload."""
 
     refresh_token: str
-
-
-class AuthenticatedUser(BaseModel):
-    """Public identity returned by authentication endpoints."""
-
-    model_config = ConfigDict(from_attributes=True)
-
-    id: uuid.UUID
-    username: str
-    email: str
-    created_at: datetime
