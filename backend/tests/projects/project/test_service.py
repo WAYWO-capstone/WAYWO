@@ -1,13 +1,17 @@
 import uuid
+from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
 import pytest
 
 from app.projects.project.enums import ProjectStatus
-from app.projects.project.exceptions import CategoryNotFoundError
+from app.projects.project.exceptions import (
+    CategoryNotFoundError,
+    InvalidProjectStatusTransitionError,
+)
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.project.schemas import ProjectCreate, ProjectUpdate
+from app.projects.project.schemas import ProjectCreate, ProjectStatusUpdate, ProjectUpdate
 from app.projects.project.service import ProjectService
 
 
@@ -176,6 +180,7 @@ class TestUpdateProject:
 
         repository.update.assert_not_called()
 
+
     def test_rejects_project_owned_by_another_user(
         self, service, repository, project, author_id
     ):
@@ -197,5 +202,128 @@ class TestUpdateProject:
             service.update_project(
                 project.id, author_id, ProjectUpdate(category_id=category_id)
             )
+
+        repository.update.assert_not_called()
+
+
+class TestUpdateStatus:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Original title",
+            summary="Original summary",
+            description="Original description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_sets_active_status_and_clears_completed_at(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.COMPLETED
+        project.completed_at = datetime.now(timezone.utc)
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        project.public = True
+
+        result = service.update_status(
+            project.id,
+            author_id,
+            ProjectStatusUpdate(status=ProjectStatus.ACTIVE),
+        )
+
+        assert result is project
+        assert project.status == ProjectStatus.ACTIVE
+        assert project.completed_at is None
+        repository.update.assert_called_once_with(project)
+
+    def test_sets_completed_status_and_timestamp(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        project.public = True
+
+        result = service.update_status(
+            project.id,
+            author_id,
+            ProjectStatusUpdate(status=ProjectStatus.COMPLETED),
+        )
+
+        assert result is project
+        assert project.status == ProjectStatus.COMPLETED
+        assert project.completed_at is not None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_status_reset_to_draft(self):
+        with pytest.raises(ValueError, match="ACTIVE or COMPLETED"):
+            ProjectStatusUpdate(status=ProjectStatus.DRAFT)
+
+    def test_rejects_status_change_for_another_user(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(Exception, match="does not own"):
+            service.update_status(
+                project.id,
+                uuid.uuid4(),
+                ProjectStatusUpdate(status=ProjectStatus.ACTIVE),
+            )
+
+        repository.update.assert_not_called()
+
+    def test_rejects_status_change_before_publishing(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="published"):
+            service.update_status(
+                project.id,
+                author_id,
+                ProjectStatusUpdate(status=ProjectStatus.COMPLETED),
+            )
+
+        repository.update.assert_not_called()
+
+
+class TestPublishProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Draft project",
+            summary="A draft summary",
+            description="A draft description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_publishes_draft_as_active_and_public(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.publish_project(project.id, author_id)
+
+        assert result is project
+        assert project.status == ProjectStatus.ACTIVE
+        assert project.public is True
+        assert project.published_at is not None
+        assert project.completed_at is None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_publishing_an_already_published_project(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="already published"):
+            service.publish_project(project.id, author_id)
 
         repository.update.assert_not_called()
