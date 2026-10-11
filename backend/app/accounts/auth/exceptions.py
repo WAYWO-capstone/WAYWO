@@ -7,3 +7,6 @@ class AuthenticationError(ValueError):
 
 class DuplicateIdentityError(ValueError):
     """Raised when an email or username is already registered."""
+
+class InvalidTokenError(ValueError):
+    """Raised when a token is invalid or cannot be decoded."""

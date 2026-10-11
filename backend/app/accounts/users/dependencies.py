@@ -5,7 +5,7 @@ from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
 from app.accounts.auth.repository import AuthRepository
-from app.accounts.auth.security import InvalidTokenError
+from app.accounts.auth.exceptions import InvalidTokenError
 from app.accounts.auth.service import AuthService
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
