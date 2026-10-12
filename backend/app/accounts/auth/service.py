@@ -1,11 +1,18 @@
 """Authentication business logic."""
 
-from app.accounts.auth.exceptions import AuthenticationError, DuplicateIdentityError
+import uuid
+
+from app.accounts.auth.exceptions import (
+    AuthenticationError,
+    DuplicateIdentityError,
+    InvalidTokenError,
+)
 from app.accounts.auth.repository import AuthRepository
-from app.accounts.auth.schemas import LoginRequest, TokenResponse
+from app.accounts.auth.schemas import LoginRequest, RefreshRequest, TokenResponse
 from app.accounts.auth.security import (
     create_access_token,
     create_refresh_token,
+    decode_token,
     hash_password,
     verify_password,
 )
@@ -50,6 +57,27 @@ class AuthService:
         if user is None or not password_matches:
             raise AuthenticationError("Invalid login credentials")
 
+        return self._tokens_for(user)
+
+    def refresh(self, payload: RefreshRequest) -> TokenResponse:
+        """Issue a new token pair from a valid refresh token."""
+
+        token_payload = decode_token(
+            payload.refresh_token,
+            settings.jwt_secret_key,
+            expected_type="refresh",
+        )
+        try:
+            user_id = uuid.UUID(token_payload["sub"])
+        except ValueError as exc:
+            raise InvalidTokenError("Authentication token has no subject") from exc
+
+        user = self._users.get_user_by_id(user_id)
+        if user is None:
+            raise AuthenticationError("Invalid login credentials")
+        return self._tokens_for(user)
+
+    def _tokens_for(self, user: User) -> TokenResponse:
         subject = str(user.id)
         return TokenResponse(
             access_token=create_access_token(subject, settings.jwt_secret_key),
