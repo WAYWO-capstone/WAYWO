@@ -103,3 +103,21 @@ class ProjectService:
         project.published_at = now
         project.completed_at = None
         return self._repo.update(project)
+
+    def unpublish_project(
+        self, project_id: uuid.UUID, author_id: uuid.UUID
+    ) -> Project:
+        project = self._repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != author_id:
+            raise ProjectNotOwnedError(project_id)
+        if project.status != ProjectStatus.ACTIVE or not project.public:
+            raise InvalidProjectStatusTransitionError(
+                project_id, "only active published projects can be unpublished"
+            )
+
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        project.published_at = None
+        return self._repo.update(project)

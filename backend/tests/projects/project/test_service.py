@@ -327,3 +327,47 @@ class TestPublishProject:
             service.publish_project(project.id, author_id)
 
         repository.update.assert_not_called()
+
+
+class TestUnpublishProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Published project",
+            summary="A published summary",
+            description="A published description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_unpublishes_active_project_as_private_draft(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        project.published_at = datetime.now(timezone.utc)
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.unpublish_project(project.id, author_id)
+
+        assert result is project
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        assert project.published_at is None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_unpublishing_completed_project(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.COMPLETED
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(
+            InvalidProjectStatusTransitionError,
+            match="only active published projects",
+        ):
+            service.unpublish_project(project.id, author_id)
+
+        repository.update.assert_not_called()
