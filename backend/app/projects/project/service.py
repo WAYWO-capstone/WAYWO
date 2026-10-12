@@ -112,12 +112,17 @@ class ProjectService:
             raise ProjectNotFoundError(project_id)
         if project.author_id != author_id:
             raise ProjectNotOwnedError(project_id)
-        if project.status != ProjectStatus.ACTIVE or not project.public:
+        if project.status not in (
+            ProjectStatus.ACTIVE,
+            ProjectStatus.COMPLETED,
+        ) or not project.public:
             raise InvalidProjectStatusTransitionError(
-                project_id, "only active published projects can be unpublished"
+                project_id,
+                "only active or completed published projects can be unpublished",
             )
 
         project.status = ProjectStatus.DRAFT
         project.public = False
         project.published_at = None
+        project.completed_at = None
         return self._repo.update(project)
