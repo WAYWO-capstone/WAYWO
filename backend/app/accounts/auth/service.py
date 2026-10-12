@@ -1,15 +1,22 @@
 """Authentication business logic."""
 
-from app.accounts.auth.exceptions import DuplicateIdentityError
+from app.accounts.auth.exceptions import AuthenticationError, DuplicateIdentityError
 from app.accounts.auth.repository import AuthRepository
-from app.accounts.auth.security import hash_password
+from app.accounts.auth.schemas import LoginRequest, TokenResponse
+from app.accounts.auth.security import (
+    create_access_token,
+    create_refresh_token,
+    hash_password,
+    verify_password,
+)
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import UserCreate
+from app.core.config import settings
 
 
 class AuthService:
-    """Creates accounts from a registration payload."""
+    """Creates accounts and signs users in."""
 
     def __init__(self, users: UserRepository, auth: AuthRepository) -> None:
         self._users = users
@@ -28,3 +35,23 @@ class AuthService:
         )
         self._auth.add_credentials(user.id, hash_password(payload.password))
         return user
+
+    def login(self, payload: LoginRequest) -> TokenResponse:
+        """Verify a login and return access and refresh tokens."""
+
+        user = self._users.get_user_by_email(payload.login)
+        if user is None:
+            user = self._users.get_user_by_username(payload.login)
+        credentials = None if user is None else self._auth.get_credentials(user.id)
+        password_matches = (
+            credentials is not None
+            and verify_password(payload.password, credentials.password_hash)
+        )
+        if user is None or not password_matches:
+            raise AuthenticationError("Invalid login credentials")
+
+        subject = str(user.id)
+        return TokenResponse(
+            access_token=create_access_token(subject, settings.jwt_secret_key),
+            refresh_token=create_refresh_token(subject, settings.jwt_secret_key),
+        )
