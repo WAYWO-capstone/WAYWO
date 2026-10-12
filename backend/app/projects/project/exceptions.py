@@ -16,3 +16,9 @@ class ProjectNotOwnedError(Exception):
     def __init__(self, project_id: uuid.UUID):
         super().__init__(f"User does not own project {project_id}")
         self.project_id = project_id
+
+
+class InvalidProjectStatusTransitionError(Exception):
+    def __init__(self, project_id: uuid.UUID, message: str):
+        super().__init__(f"Project {project_id}: {message}")
+        self.project_id = project_id

@@ -80,6 +80,17 @@ class ProjectUpdate(BaseModel):
         return self
 
 
+class ProjectStatusUpdate(BaseModel):
+    status: ProjectStatus
+
+    @field_validator("status")
+    @classmethod
+    def status_must_be_active_or_completed(cls, value: ProjectStatus) -> ProjectStatus:
+        if value not in (ProjectStatus.ACTIVE, ProjectStatus.COMPLETED):
+            raise ValueError("status must be ACTIVE or COMPLETED")
+        return value
+
+
 class CategoryRead(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 

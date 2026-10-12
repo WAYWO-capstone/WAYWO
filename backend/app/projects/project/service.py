@@ -1,14 +1,16 @@
 import uuid
+from datetime import datetime, timezone
 
 from app.projects.project.enums import ProjectStatus
 from app.projects.project.exceptions import (
     CategoryNotFoundError,
+    InvalidProjectStatusTransitionError,
     ProjectNotFoundError,
     ProjectNotOwnedError,
 )
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.project.schemas import ProjectCreate, ProjectUpdate
+from app.projects.project.schemas import ProjectCreate, ProjectStatusUpdate, ProjectUpdate
 
 
 class ProjectService:
@@ -56,4 +58,71 @@ class ProjectService:
 
         for field, value in changes.items():
             setattr(project, field, value)
+        return self._repo.update(project)
+
+    def update_status(
+        self,
+        project_id: uuid.UUID,
+        author_id: uuid.UUID,
+        data: ProjectStatusUpdate,
+    ) -> Project:
+        project = self._repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != author_id:
+            raise ProjectNotOwnedError(project_id)
+        if project.status == ProjectStatus.DRAFT or not project.public:
+            raise InvalidProjectStatusTransitionError(
+                project_id, "must be published before its status can change"
+            )
+
+        project.status = data.status
+        project.completed_at = (
+            datetime.now(timezone.utc)
+            if data.status == ProjectStatus.COMPLETED
+            else None
+        )
+        return self._repo.update(project)
+
+    def publish_project(
+        self, project_id: uuid.UUID, author_id: uuid.UUID
+    ) -> Project:
+        project = self._repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != author_id:
+            raise ProjectNotOwnedError(project_id)
+        if project.status != ProjectStatus.DRAFT or project.public:
+            raise InvalidProjectStatusTransitionError(
+                project_id, "is already published"
+            )
+
+        now = datetime.now(timezone.utc)
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        project.published_at = now
+        project.completed_at = None
+        return self._repo.update(project)
+
+    def unpublish_project(
+        self, project_id: uuid.UUID, author_id: uuid.UUID
+    ) -> Project:
+        project = self._repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != author_id:
+            raise ProjectNotOwnedError(project_id)
+        if project.status not in (
+            ProjectStatus.ACTIVE,
+            ProjectStatus.COMPLETED,
+        ) or not project.public:
+            raise InvalidProjectStatusTransitionError(
+                project_id,
+                "only active or completed published projects can be unpublished",
+            )
+
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        project.published_at = None
+        project.completed_at = None
         return self._repo.update(project)
