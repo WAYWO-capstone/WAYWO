@@ -62,10 +62,19 @@ class AuthService:
     def refresh(self, payload: RefreshRequest) -> TokenResponse:
         """Issue a new token pair from a valid refresh token."""
 
+        user = self._user_from_token(payload.refresh_token, expected_type="refresh")
+        return self._tokens_for(user)
+
+    def get_user_from_access_token(self, token: str) -> User:
+        """Return the user identified by a valid access token."""
+
+        return self._user_from_token(token, expected_type="access")
+
+    def _user_from_token(self, token: str, *, expected_type: str) -> User:
         token_payload = decode_token(
-            payload.refresh_token,
+            token,
             settings.jwt_secret_key,
-            expected_type="refresh",
+            expected_type=expected_type,
         )
         try:
             user_id = uuid.UUID(token_payload["sub"])
@@ -74,8 +83,8 @@ class AuthService:
 
         user = self._users.get_user_by_id(user_id)
         if user is None:
-            raise AuthenticationError("Invalid login credentials")
-        return self._tokens_for(user)
+            raise InvalidTokenError("Authentication token has no subject")
+        return user
 
     def _tokens_for(self, user: User) -> TokenResponse:
         subject = str(user.id)
