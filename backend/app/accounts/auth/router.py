@@ -1,9 +1,18 @@
 from fastapi import APIRouter, Depends, HTTPException, status
 from sqlalchemy.orm import Session
 
-from app.accounts.auth.exceptions import AuthenticationError, DuplicateIdentityError
+from app.accounts.auth.exceptions import (
+    AuthenticationError,
+    DuplicateIdentityError,
+    InvalidTokenError,
+)
 from app.accounts.auth.repository import AuthRepository
-from app.accounts.auth.schemas import LoginRequest, RegisterRequest, TokenResponse
+from app.accounts.auth.schemas import (
+    LoginRequest,
+    RefreshRequest,
+    RegisterRequest,
+    TokenResponse,
+)
 from app.accounts.auth.service import AuthService
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import UserResponse
@@ -45,6 +54,23 @@ def login(
     try:
         return service.login(payload)
     except AuthenticationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail=str(exc),
+        ) from exc
+
+
+@router.post("/refresh", response_model=TokenResponse)
+def refresh(
+    payload: RefreshRequest,
+    session: Session = Depends(get_session),
+) -> TokenResponse:
+    """Issue a new token pair from a refresh token."""
+
+    service = AuthService(UserRepository(session), AuthRepository(session))
+    try:
+        return service.refresh(payload)
+    except (AuthenticationError, InvalidTokenError) as exc:
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
