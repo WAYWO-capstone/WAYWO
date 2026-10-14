@@ -1,0 +1,85 @@
+name: CI
+
+on:
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+jobs:
+  backend:
+    name: Backend - Pylint and Pytest
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres_ci:postgres_ci@localhost:5432/waywo_ci
+      JWT_SECRET_KEY: ci-only-jwt-secret
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres_ci
+          POSTGRES_PASSWORD: postgres_ci
+          POSTGRES_DB: waywo_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres_ci -d waywo_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
+
+    defaults:
+      run:
+        working-directory: backend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+          cache: pip
+          cache-dependency-path: backend/requirements.txt
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install -r requirements.txt
+          pip install pylint pytest
+
+      - name: Run database migrations
+        run: alembic upgrade head
+
+      - name: Run Pylint
+        run: |
+          python -m pylint $(git ls-files '*.py')
+
+      - name: Run Pytest
+        working-directory: backend
+        run: python -m pytest -v
+
+  frontend:
+    name: Frontend - TypeScript, Tests and Build
+    runs-on: ubuntu-latest
+
+    defaults:
+      run:
+        working-directory: frontend
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+      - name: Install bun
+        uses: oven-sh/setup-bun@v2
+      - name: Install dependencies
+        run: bun install
+      - name: Run tests (Vitest)
+        run: bun run test --run
+      - name: Build frontend
+        run: bun run build
+      - name: Lint (oxlint)
+        run: bun run lint
