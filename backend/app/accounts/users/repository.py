@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.accounts.users.models import User
 
+
 class UserRepository:
     """Data access only. Flushes but never commits."""
 
@@ -29,4 +30,4 @@ class UserRepository:
     def add_user(self, user: User) -> User:
         self._session.add(user)
         self._session.flush()
-        return user   
+        return user
