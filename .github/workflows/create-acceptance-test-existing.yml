@@ -1,0 +1,296 @@
+name: Create Acceptance Tests for Existing User Stories
+
+on:
+  workflow_dispatch:
+
+permissions:
+  issues: write
+
+jobs:
+  create-acceptance-tests:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Find existing User Stories
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+        run: |
+
+          # get all open issues that have the Feature issueType
+          gh issue list \
+            --repo "$REPO" \
+            --state open \
+            --limit 1000 \
+            --json number,title,body,issueType,url \
+            > /tmp/features.json
+
+          python <<'PY'
+          import json
+          import os
+          import subprocess
+          import re
+
+          repo = os.environ["REPO"]
+
+          with open("/tmp/features.json") as f:
+              issues = json.load(f)
+
+          print(f"Found {len(issues)} Feature issues.")
+
+          for feature in issues:
+
+              feature_number = feature["number"]
+              feature_title = feature["title"]
+              feature_body = feature.get("body") or ""
+              feature_url = feature["url"]
+
+              print()
+              print("=" * 60)
+              print(f"Processing Feature #{feature_number}")
+              print(feature_title)
+
+              # -------------------------------------------------
+              # get story number from title
+              # -------------------------------------------------
+
+              story_match = re.search(
+                  r"US\s+(\d+)",
+                  feature_title,
+                  re.IGNORECASE
+              )
+
+              if not story_match:
+                  print("Skipping: could not find User Story number.")
+                  continue
+
+              story_number = story_match.group(1)
+
+              # -------------------------------------------------
+              # get parent issue
+              # -------------------------------------------------
+
+              owner, repo_name = repo.split("/", 1)
+
+              query = """
+              query($owner: String!, $repo: String!, $number: Int!) {
+                repository(owner: $owner, name: $repo) {
+                  issue(number: $number) {
+                    parent {
+                      number
+                      title
+                    }
+                  }
+                }
+              }
+              """
+
+              result = subprocess.run(
+                  [
+                      "gh",
+                      "api",
+                      "graphql",
+                      "-f", f"query={query}",
+                      "-f", f"owner={owner}",
+                      "-f", f"repo={repo_name}",
+                      "-F", f"number={feature_number}"
+                  ],
+                  capture_output=True,
+                  text=True
+              )
+
+              if result.returncode != 0:
+                  print("Error getting parent issue:")
+                  print(result.stderr)
+                  continue
+
+              try:
+                  data = json.loads(result.stdout)
+              except json.JSONDecodeError:
+                  print("Skipping: invalid GraphQL response.")
+                  print(result.stdout)
+                  continue
+
+              parent = (
+                  data
+                  .get("data", {})
+                  .get("repository", {})
+                  .get("issue", {})
+                  .get("parent")
+              )
+
+              if not parent:
+                  print("Skipping: no parent issue found.")
+                  continue
+
+              parent_number = parent.get("number")
+              parent_title = parent.get("title", "")
+
+              print(
+                  f"Parent issue: #{parent_number} - {parent_title}"
+              )
+                
+              # -------------------------------------------------
+              # gxtract Epic number
+              # -------------------------------------------------
+
+              epic_match = re.search(
+                  r"EPIC\s+(\d+)",
+                  parent_title,
+                  re.IGNORECASE
+              )
+
+              if not epic_match:
+                  print("Skipping: could not find Epic number.")
+                  continue
+
+              epic_number = epic_match.group(1)
+
+              # -------------------------------------------------
+              # get acceptance criteria
+              # -------------------------------------------------
+
+              marker = "# Acceptance Criteria"
+
+              if marker not in feature_body:
+                  print("Skipping: no Acceptance Criteria section.")
+                  continue
+
+              criteria = feature_body.split(marker, 1)[1]
+
+              # remove additional context section
+              additional_context_marker = "**\\*\\*Additional context\\*\\*"
+
+              if additional_context_marker in criteria:
+                  criteria = criteria.split(
+                      additional_context_marker,
+                      1
+                  )[0]
+
+              criteria = criteria.strip()
+
+              if not criteria:
+                  print("Skipping: Acceptance Criteria is empty.")
+                  continue
+
+              # -------------------------------------------------
+              # determine acceptance test title
+              # -------------------------------------------------
+
+              # Remove "US X:" from the beginning of the title
+              story_title = re.sub(
+                  r"^US\s+\d+\s*:\s*",
+                  "",
+                  feature_title,
+                  flags=re.IGNORECASE
+              ).strip()
+
+              at_title = (
+                  f"AT {epic_number}.{story_number}: "
+                  f"{story_title}"
+              )
+
+              print(f"Expected Acceptance Test: {at_title}")
+
+              # -------------------------------------------------
+              # check if an AT already exists for this user story
+              # -------------------------------------------------
+
+              search_result = subprocess.run(
+                  [
+                      "gh",
+                      "issue",
+                      "list",
+                      "--repo",
+                      repo,
+                      "--state",
+                      "all",
+                      "--limit",
+                      "1000",
+                      "--search",
+                      f'"AT {epic_number}.{story_number}:"',
+                      "--json",
+                      "number,title,body,issueType"
+                  ],
+                  capture_output=True,
+                  text=True
+              )
+
+              try:
+                  existing_issues = json.loads(
+                      search_result.stdout
+                  )
+              except json.JSONDecodeError:
+                  existing_issues = []
+
+              already_exists = False
+
+              for existing in existing_issues:
+
+                  existing_body = existing.get("body") or ""
+
+                  # make sure the AT actually links to this specific user Story.
+                  if (
+                      f"#{feature_number}" in existing_body
+                      or feature_url in existing_body
+                  ):
+                      already_exists = True
+                      print(
+                          f"Acceptance Test already exists: "
+                          f"#{existing['number']}"
+                      )
+                      break
+
+              if already_exists:
+                  continue
+
+              # -------------------------------------------------
+              # create acceptance test
+              # -------------------------------------------------
+
+              body = f"""# Acceptance test
+
+          Link to user story:
+
+          #{feature_number} - {feature_title}
+
+          ## Acceptance criteria
+
+          {criteria}
+          """
+
+              create_result = subprocess.run(
+                  [
+                      "gh",
+                      "issue",
+                      "create",
+                      "--repo",
+                      repo,
+                      "--title",
+                      at_title,
+                      "--label",
+                      "acceptance-test",
+                      "--type",
+                      "Acceptance Test",
+                      "--body",
+                      body
+                  ],
+                  capture_output=True,
+                  text=True
+              )
+
+              if create_result.returncode == 0:
+                  print(
+                      f"Created Acceptance Test: "
+                      f"{create_result.stdout.strip()}"
+                  )
+              else:
+                  print(
+                      "ERROR creating Acceptance Test:"
+                  )
+                  print(create_result.stderr)
+
+          print()
+          print("=" * 60)
+          print("Finished scanning existing User Stories.")
+          PY
