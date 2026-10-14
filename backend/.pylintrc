@@ -1,5 +1,5 @@
 [MAIN]
-ignore-paths=^alembic/.*$
+ignore-paths=^alembic/versions/.*$
 
 [MESSAGES CONTROL]
 disable =
