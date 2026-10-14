@@ -1,3 +1,6 @@
+[MAIN]
+ignore-paths=^alembic/.*$
+
 [MESSAGES CONTROL]
 disable =
     duplicate-code,
