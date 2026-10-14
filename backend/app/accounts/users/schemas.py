@@ -35,3 +35,22 @@ class UserResponse(BaseModel):
     username: str
     email: str
     created_at: datetime
+
+
+class ProfileUpdate(BaseModel):
+    """Fields a user can change on their own profile."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    bio: str | None = Field(default=None, max_length=500)
+    profile_picture_link: str | None = Field(default=None, max_length=2048)
+
+
+class ProfileResponse(BaseModel):
+    """Profile details returned by the API."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    username: str
+    bio: str | None
+    profile_picture_link: str | None
