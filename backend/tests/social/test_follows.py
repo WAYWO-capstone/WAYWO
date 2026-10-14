@@ -137,3 +137,51 @@ def test_unfollow_returns_404_when_not_following(client: TestClient) -> None:
 
     assert response.status_code == 404
     assert response.json()["detail"] == "You do not follow this creator"
+
+
+def test_following_status_is_false_before_a_follow(client: TestClient) -> None:
+    follower = _register(client)
+    creator = _register(client)
+    token = _login(client, follower)
+
+    response = client.get(
+        f"/follows/{creator['username']}",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 200
+    assert response.json() == {"is_following": False}
+
+
+def test_following_status_is_true_after_a_follow(client: TestClient) -> None:
+    follower = _register(client)
+    creator = _register(client)
+    token = _login(client, follower)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.post(f"/follows/{creator['username']}", headers=headers)
+
+    response = client.get(f"/follows/{creator['username']}", headers=headers)
+
+    assert response.status_code == 200
+    assert response.json() == {"is_following": True}
+
+
+def test_following_status_requires_a_token(client: TestClient) -> None:
+    creator = _register(client)
+
+    response = client.get(f"/follows/{creator['username']}")
+
+    assert response.status_code == 401
+
+
+def test_following_status_returns_404_for_an_unknown_user(client: TestClient) -> None:
+    account = _register(client)
+    token = _login(client, account)
+
+    response = client.get(
+        "/follows/missing-user",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "User not found"

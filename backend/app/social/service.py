@@ -28,6 +28,15 @@ class SocialService:
             CreatorFollow(follower_id=follower.id, followed_id=followed.id)
         )
 
+    def is_following(self, follower: User, followed: User) -> bool:
+        """Return whether the follower already follows the creator."""
+
+        if follower.id == followed.id:
+            return False
+        return (
+            self._social.get_creator_follow(follower.id, followed.id) is not None
+        )
+
     def unfollow_creator(self, follower: User, followed: User) -> None:
         """Remove a follow from one user to another."""
 

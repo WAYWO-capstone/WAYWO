@@ -6,6 +6,12 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict
 
 
+class FollowingStatusResponse(BaseModel):
+    """Whether the logged-in user follows a creator."""
+
+    is_following: bool
+
+
 class CreatorFollowResponse(BaseModel):
     """A creator follow returned by the API."""
 
