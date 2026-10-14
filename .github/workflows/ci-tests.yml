@@ -34,7 +34,7 @@ jobs:
           python -m pip install --upgrade pip
           pip install -r requirements.txt
           pip install pylint pytest
-          
+
       - name: Run database migrations
         run: alembic upgrade head
         
