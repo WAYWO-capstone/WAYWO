@@ -13,6 +13,24 @@ jobs:
   backend:
     name: Backend - Pylint and Pytest
     runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgresql://postgres_ci:postgres_ci@localhost:5432/waywo_ci
+      JWT_SECRET_KEY: ci-only-jwt-secret
+
+    services:
+      postgres:
+        image: postgres:18
+        env:
+          POSTGRES_USER: postgres_ci
+          POSTGRES_PASSWORD: postgres_ci
+          POSTGRES_DB: waywo_ci
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd="pg_isready -U postgres_ci -d waywo_ci"
+          --health-interval=10s
+          --health-timeout=5s
+          --health-retries=5
 
     defaults:
       run:
@@ -37,7 +55,7 @@ jobs:
 
       - name: Run database migrations
         run: alembic upgrade head
-        
+
       - name: Run Pylint
         run: |
           python -m pylint $(git ls-files '*.py')
