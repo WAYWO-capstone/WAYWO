@@ -1,3 +1,5 @@
+"""Database engine and session management."""
+
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
@@ -18,6 +20,7 @@ SessionLocal = sessionmaker(
     expire_on_commit=False,
     bind=engine,
 )
+
 
 def get_session() -> Iterator[Session]:
     with SessionLocal() as session:
