@@ -254,7 +254,7 @@ class TestSaveDraft:
         repository.update.assert_not_called()
 
     def test_rejects_saving_draft_owned_by_another_user(
-        self, service, repository, project, author_id
+        self, service, repository, project
     ):
         repository.get.return_value = project
 
