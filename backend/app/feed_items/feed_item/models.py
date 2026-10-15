@@ -5,7 +5,7 @@ Implemented as joined-table inheritance: shared columns live in `feed_items`,
 subclass columns in their own table keyed by the same id.
 """
 import uuid
-from datetime import datetime, timezone
+from datetime import datetime
 
 from sqlalchemy import Boolean, DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
@@ -24,8 +24,8 @@ class FeedItem(Base):
             native_enum=False, create_constraint=True, length=30)
     )
     # "User creates FeedItem" -- for a Project this is the owner.
-    # TODO: add ForeignKey("users.id", ondelete="CASCADE") once the Accounts
-    # module (owned by another team) provides the users table.
+    # Add ForeignKey("users.id", ondelete="CASCADE") when the Accounts
+    # module provides the users table.
     author_id: Mapped[uuid.UUID] = mapped_column(index=True)
     title: Mapped[str] = mapped_column(String(200))
     public: Mapped[bool] = mapped_column(Boolean, default=False)

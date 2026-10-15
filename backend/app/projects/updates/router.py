@@ -24,8 +24,10 @@ def get_project_history(
         updates, total = service.list_project_updates(
             project_id, user_id, limit=limit, offset=offset
         )
-    except ProjectNotFoundError:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found")
+    except ProjectNotFoundError as exc:
+        raise HTTPException(
+            status.HTTP_404_NOT_FOUND, "Project not found"
+        ) from exc
 
     return UpdateHistoryPage(
         items=updates, total=total, limit=limit, offset=offset
