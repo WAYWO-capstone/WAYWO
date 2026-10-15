@@ -31,7 +31,7 @@ def create_project(
     try:
         return service.create_project(current_user_id, payload)
     except CategoryNotFoundError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
 @router.patch("/{project_id}", response_model=ProjectRead)
@@ -44,11 +44,11 @@ def update_project(
     try:
         return service.update_project(project_id, current_user_id, payload)
     except ProjectNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     except ProjectNotOwnedError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except CategoryNotFoundError as exc:
-        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc))
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
 @router.patch("/{project_id}/draft", response_model=ProjectRead)
@@ -79,11 +79,11 @@ def publish_project(
     try:
         return service.publish_project(project_id, current_user_id)
     except ProjectNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     except ProjectNotOwnedError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except InvalidProjectStatusTransitionError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
 
 @router.post("/{project_id}/unpublish", response_model=ProjectRead)
@@ -95,11 +95,11 @@ def unpublish_project(
     try:
         return service.unpublish_project(project_id, current_user_id)
     except ProjectNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     except ProjectNotOwnedError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except InvalidProjectStatusTransitionError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
 
 @router.patch("/{project_id}/status", response_model=ProjectRead)
@@ -112,8 +112,8 @@ def update_project_status(
     try:
         return service.update_status(project_id, current_user_id, payload)
     except ProjectNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc))
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     except ProjectNotOwnedError as exc:
-        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc))
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except InvalidProjectStatusTransitionError as exc:
-        raise HTTPException(status.HTTP_409_CONFLICT, str(exc))
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc

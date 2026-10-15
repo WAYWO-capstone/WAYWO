@@ -1,3 +1,5 @@
+"""FastAPI application entrypoint and health-check routes."""
+
 from fastapi import FastAPI
 from sqlalchemy import text
 
