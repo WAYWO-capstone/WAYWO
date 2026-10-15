@@ -35,6 +35,11 @@ export function saveTokens(tokens: AuthTokens, remember: boolean) {
   listeners.forEach((listener) => listener());
 }
 
+export function clearTokens() {
+  removeTokens();
+  listeners.forEach((listener) => listener());
+}
+
 function isExpired(jwt: string): boolean {
   try {
     const payload = JSON.parse(

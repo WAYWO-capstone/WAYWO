@@ -20,13 +20,13 @@ interface TokenResponse {
 }
 
 export async function login(
-  email: string,
+  identifier: string,
   password: string,
 ): Promise<AuthTokens> {
   const response = await fetch(`${API_URL}/auth/login`, {
     method: "POST",
     headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ login: email, password }),
+    body: JSON.stringify({ login: identifier, password }),
   });
   if (!response.ok) throw new ApiError(response.status);
 

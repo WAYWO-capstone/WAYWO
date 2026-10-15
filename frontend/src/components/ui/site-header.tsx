@@ -4,12 +4,12 @@
  */
 
 import { Link, useRouterState } from "@tanstack/react-router";
-import { Search } from "lucide-react";
+import { LogOut, Search } from "lucide-react";
 
 import logo from "@/assets/waywo-logo.png";
 import { buttonVariants } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { useIsAuthenticated } from "@/lib/auth";
+import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 // TODO: point these links once those pages exist (for future)
@@ -20,6 +20,7 @@ const authButtonClass =
 
 export function SiteHeader() {
   const isAuthenticated = useIsAuthenticated();
+  const logout = useLogout();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -60,32 +61,47 @@ export function SiteHeader() {
           <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
         </form>
 
-        {!isAuthenticated && (
-          <div className="ml-auto flex items-center gap-2 sm:gap-4 md:ml-6">
-            <Link
-              to="/login"
+        <div className="ml-auto flex items-center gap-2 sm:gap-4 md:ml-6">
+          
+          {isAuthenticated ? (
+            <button
+              type="button"
+              onClick={logout}
               className={cn(
-                buttonVariants({
-                  variant: onLoginPage ? "default" : "outline",
-                }),
+                buttonVariants({ variant: "outline" }),
                 authButtonClass,
               )}
             >
-              Log in
-            </Link>
-            <a
-              href="/register"
-              className={cn(
-                buttonVariants({
-                  variant: onLoginPage ? "outline" : "default",
-                }),
-                authButtonClass,
-              )}
-            >
-              Sign up
-            </a>
-          </div>
-        )}
+              <LogOut className="size-4" />
+              Log out
+            </button>
+          ) : (
+            <>
+              <Link
+                to="/login"
+                className={cn(
+                  buttonVariants({
+                    variant: onLoginPage ? "default" : "outline",
+                  }),
+                  authButtonClass,
+                )}
+              >
+                Log in
+              </Link>
+              <a
+                href="/register"
+                className={cn(
+                  buttonVariants({
+                    variant: onLoginPage ? "outline" : "default",
+                  }),
+                  authButtonClass,
+                )}
+              >
+                Sign up
+              </a>
+            </>
+          )}
+        </div>
       </div>
     </header>
   );
