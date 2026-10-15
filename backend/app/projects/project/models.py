@@ -1,6 +1,9 @@
 import uuid
 from datetime import datetime
 
+# Pylint does not recognize SQLAlchemy's generic mapped annotations.
+# pylint: disable=unsubscriptable-object
+
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 

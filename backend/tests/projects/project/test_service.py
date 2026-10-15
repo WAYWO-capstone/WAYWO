@@ -182,7 +182,7 @@ class TestUpdateProject:
 
 
     def test_rejects_project_owned_by_another_user(
-        self, service, repository, project, author_id
+        self, service, repository, project
     ):
         repository.get.return_value = project
 
@@ -260,7 +260,7 @@ class TestUpdateStatus:
             ProjectStatusUpdate(status=ProjectStatus.DRAFT)
 
     def test_rejects_status_change_for_another_user(
-        self, service, repository, project, author_id
+        self, service, repository, project
     ):
         repository.get.return_value = project
 

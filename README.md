@@ -17,6 +17,7 @@ Before getting started, install the following:
 - [Git](https://git-scm.com/)
 - [Python 3.12+](https://www.python.org/)
 - [PostgreSQL 18+](https://www.postgresql.org/)
+- [Bun.js](https://bun.com/)
 
 Make sure the required tools are available from your terminal:
 
@@ -24,6 +25,7 @@ Make sure the required tools are available from your terminal:
 git --version
 python --version
 psql --version
+bun --version
 ```
 
 ---
@@ -155,6 +157,24 @@ http://localhost:8000/docs
 
 > **TODO:** Add frontend setup instructions once the frontend technology and project structure are finalized.
 
+## 1. Install Frontend Dependencies
+
+From the root, navigate to the frontend:
+
+```bash
+cd frontend
+```
+
+Install the required dependencies:
+
+```bash
+bun i
+```
+
+## 2. Run the Vite Development Server
+```bash
+bun dev
+```
 ---
 
 # Wiki

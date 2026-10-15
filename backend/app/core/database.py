@@ -1,3 +1,5 @@
+"""Database engine and session management."""
+
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
