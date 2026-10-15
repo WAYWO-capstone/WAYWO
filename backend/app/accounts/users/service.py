@@ -1,5 +1,6 @@
 """Business logic for users and profiles."""
 
+from app.accounts.users.exceptions import ProfilePictureNotFoundError
 from app.accounts.users.models import Profile, User
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
@@ -52,6 +53,16 @@ class UserService:
         profile.profile_picture_link = link
         saved = self._users.save_profile(profile)
         return self._response(user, saved)
+
+    def delete_profile_picture(self, user: User, storage: ObjectStorage) -> None:
+        """Remove the profile picture and clear its link."""
+
+        profile = self._users.get_profile(user.id)
+        if profile is None or profile.profile_picture_link is None:
+            raise ProfilePictureNotFoundError("You do not have a profile picture")
+        storage.delete_profile_picture(user.id)
+        profile.profile_picture_link = None
+        self._users.save_profile(profile)
 
     def _response(self, user: User, profile: Profile | None) -> ProfileResponse:
         return ProfileResponse(

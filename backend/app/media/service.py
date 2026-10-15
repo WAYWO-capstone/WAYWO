@@ -55,3 +55,12 @@ class ObjectStorage:
             )
         base = settings.r2_public_base_url.rstrip("/")
         return f"{base}/{key}"
+
+    def delete_profile_picture(self, user_id: uuid.UUID) -> None:
+        """Remove every stored profile picture for this user."""
+
+        for extension in _IMAGE_EXTENSIONS.values():
+            self._client.delete_object(
+                Bucket=settings.r2_bucket_name,
+                Key=f"profile-pictures/{user_id}.{extension}",
+            )

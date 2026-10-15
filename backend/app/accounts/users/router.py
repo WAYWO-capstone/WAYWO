@@ -1,7 +1,16 @@
-from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
+from fastapi import (
+    APIRouter,
+    Depends,
+    File,
+    HTTPException,
+    Response,
+    UploadFile,
+    status,
+)
 from sqlalchemy.orm import Session
 
 from app.accounts.users.dependencies import get_current_user
+from app.accounts.users.exceptions import ProfilePictureNotFoundError
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
@@ -55,6 +64,26 @@ def upload_my_profile_picture(
             status_code=status.HTTP_400_BAD_REQUEST,
             detail=str(exc),
         ) from exc
+
+
+@router.delete("/me/picture", status_code=status.HTTP_204_NO_CONTENT)
+def delete_my_profile_picture(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Response:
+    """Delete the logged-in user's profile picture."""
+
+    try:
+        UserService(UserRepository(session)).delete_profile_picture(
+            current_user,
+            ObjectStorage(),
+        )
+    except ProfilePictureNotFoundError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail=str(exc),
+        ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.get("/{username}", response_model=ProfileResponse)

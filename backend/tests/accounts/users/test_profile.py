@@ -206,6 +206,55 @@ def test_upload_profile_picture_rejects_a_file_over_5_mb(
     assert response.json()["detail"] == "Profile picture must be 5 MB or smaller"
 
 
+def test_delete_profile_picture_clears_the_link(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    account, token = _register_and_login(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.patch(
+        "/users/me",
+        headers=headers,
+        json={
+            "bio": "Making a table",
+            "profile_picture_link": "https://photos.example/me.png",
+        },
+    )
+    _block_r2(monkeypatch)
+    monkeypatch.setattr(
+        "app.accounts.users.router.ObjectStorage.delete_profile_picture",
+        lambda self, user_id: None,
+    )
+
+    response = client.delete("/users/me/picture", headers=headers)
+    public_response = client.get(f"/users/{account['username']}")
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert public_response.json()["profile_picture_link"] is None
+    assert public_response.json()["bio"] == "Making a table"
+
+
+def test_delete_profile_picture_requires_a_token(client: TestClient) -> None:
+    response = client.delete("/users/me/picture")
+
+    assert response.status_code == 401
+
+
+def test_delete_profile_picture_returns_404_when_missing(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, token = _register_and_login(client)
+    _block_r2(monkeypatch)
+
+    response = client.delete(
+        "/users/me/picture",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "You do not have a profile picture"
+
+
 def test_public_profile_returns_404_for_an_unknown_user(client: TestClient) -> None:
     response = client.get("/users/missing-user")
 
