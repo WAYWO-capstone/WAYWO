@@ -22,20 +22,20 @@ export const Route = createFileRoute("/login")({
 });
 
 interface FieldErrors {
-  email?: string;
+  identifier?: string;
   password?: string;
 }
 
-function validate(email: string, password: string): FieldErrors {
+function validate(identifier: string, password: string): FieldErrors {
   const errors: FieldErrors = {};
-  if (!email.trim()) errors.email = "Enter your email address.";
+  if (!identifier.trim()) errors.identifier = "Enter your email or username.";
   if (!password) errors.password = "Enter your password.";
   return errors;
 }
 
 function errorMessage(error: Error): string {
   if (error instanceof ApiError && error.status === 401)
-    return "Incorrect email or password.";
+    return "Incorrect email, username or password.";
   if (error instanceof TypeError)
     return "Can't reach the server. Check your connection and try again.";
   return "Something went wrong. Please try again.";
@@ -46,19 +46,19 @@ function LoginPage() {
   const { redirect: redirectTo } = Route.useSearch();
   const { mutate, isPending, error } = useLogin();
 
-  const [email, setEmail] = useState("");
+  const [identifier, setIdentifier] = useState("");
   const [password, setPassword] = useState("");
   const [remember, setRemember] = useState(false);
   const [fieldErrors, setFieldErrors] = useState<FieldErrors>({});
 
   function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault();
-    const errors = validate(email, password);
+    const errors = validate(identifier, password);
     setFieldErrors(errors);
-    if (errors.email || errors.password) return;
+    if (errors.identifier || errors.password) return;
 
     mutate(
-      { email, password, remember },
+      { identifier, password, remember },
       {
         onSuccess: () =>
           navigate({ href: safeRedirect(redirectTo), replace: true }),
@@ -91,22 +91,29 @@ function LoginPage() {
       >
         <div className="space-y-6">
           <div>
-            <label htmlFor="email" className="mb-3 block font-semibold">
-              Email address <span className="text-primary">*</span>
+            <label htmlFor="identifier" className="mb-3 block font-semibold">
+              Email or username <span className="text-primary">*</span>
             </label>
             <Input
-              id="email"
-              type="email"
+              id="identifier"
+              type="text"
               autoComplete="username"
-              placeholder="janedoe@example.com"
-              value={email}
-              onChange={(event) => setEmail(event.target.value)}
-              aria-invalid={!!fieldErrors.email}
-              aria-describedby={fieldErrors.email ? "email-error" : undefined}
+              autoCapitalize="none"
+              spellCheck={false}
+              placeholder="janedoe@example.com or janedoe"
+              value={identifier}
+              onChange={(event) => setIdentifier(event.target.value)}
+              aria-invalid={!!fieldErrors.identifier}
+              aria-describedby={
+                fieldErrors.identifier ? "identifier-error" : undefined
+              }
             />
-            {fieldErrors.email && (
-              <p id="email-error" className="mt-1.5 text-sm text-destructive">
-                {fieldErrors.email}
+            {fieldErrors.identifier && (
+              <p
+                id="identifier-error"
+                className="mt-1.5 text-sm text-destructive"
+              >
+                {fieldErrors.identifier}
               </p>
             )}
           </div>

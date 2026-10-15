@@ -7,7 +7,7 @@ import { login } from "@/lib/api";
 import { isAuthenticated, saveTokens, subscribe } from "@/lib/token-store";
 
 interface LoginInput {
-  email: string;
+  identifier: string;
   password: string;
   remember: boolean;
 }
@@ -18,8 +18,8 @@ export function useIsAuthenticated() {
 
 export function useLogin() {
   return useMutation({
-    mutationFn: ({ email, password }: LoginInput) =>
-      login(email.trim(), password),
+    mutationFn: ({ identifier, password }: LoginInput) =>
+      login(identifier.trim(), password),
     onSuccess: (tokens, { remember }) => saveTokens(tokens, remember),
   });
 }
