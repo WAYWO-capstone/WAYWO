@@ -5,10 +5,17 @@
 
 @custom-variant dark (&:is(.dark *));
 
-:root {
-  --background: oklch(1 0 0);
+@theme {
+  --color-brand-mahogany: #3c1518;
+  --color-brand-garnet: #69140e;
+  --color-brand-rust: #a44200;
+  --color-brand-bronze: #d58936;
+}
 
-  --foreground: oklch(0.145 0 0);
+:root {
+  --background: #fffdf9;
+
+  --foreground: var(--color-brand-mahogany);
 
   --card: oklch(1 0 0);
 
@@ -18,7 +25,7 @@
 
   --popover-foreground: oklch(0.145 0 0);
 
-  --primary: oklch(0.205 0 0);
+  --primary: var(--color-brand-garnet);
 
   --primary-foreground: oklch(0.985 0 0);
 
@@ -28,15 +35,17 @@
 
   --muted: oklch(0.97 0 0);
 
-  --muted-foreground: oklch(0.556 0 0);
+  --muted-foreground: #6f5a55;
 
   --accent-foreground: oklch(0.205 0 0);
 
   --destructive: oklch(0.577 0.245 27.325);
 
-  --input: oklch(0.922 0 0);
+  --border: #ecdfd4;
 
-  --ring: oklch(0.708 0 0);
+  --input: #e6d6c8;
+
+  --ring: var(--color-brand-bronze);
 
   --chart-1: oklch(0.87 0 0);
 
