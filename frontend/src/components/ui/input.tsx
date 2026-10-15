@@ -4,7 +4,7 @@
 * So all inputs look the same and any future input can reuse it.
 */
 
-import { cn } from "cn"
+import { cn } from "@/lib/utils"
 
 function Input({ className, ...props }: React.ComponentProps<"input">) {
   return (
