@@ -3,6 +3,10 @@
 from app.accounts.users.models import Profile, User
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
+from app.media.exceptions import ImageTooLargeError
+from app.media.service import ObjectStorage
+
+MAX_PROFILE_PICTURE_BYTES = 5 * 1024 * 1024
 
 
 class UserService:
@@ -27,6 +31,25 @@ class UserService:
             profile.bio = payload.bio
         if "profile_picture_link" in payload.model_fields_set:
             profile.profile_picture_link = payload.profile_picture_link
+        saved = self._users.save_profile(profile)
+        return self._response(user, saved)
+
+    def set_profile_picture(
+        self,
+        user: User,
+        content: bytes,
+        content_type: str,
+        storage: ObjectStorage,
+    ) -> ProfileResponse:
+        """Upload a profile picture and save its public link."""
+
+        if len(content) > MAX_PROFILE_PICTURE_BYTES:
+            raise ImageTooLargeError("Profile picture must be 5 MB or smaller")
+        link = storage.upload_profile_picture(user.id, content, content_type)
+        profile = self._users.get_profile(user.id)
+        if profile is None:
+            profile = Profile(user_id=user.id)
+        profile.profile_picture_link = link
         saved = self._users.save_profile(profile)
         return self._response(user, saved)
 

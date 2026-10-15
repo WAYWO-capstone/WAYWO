@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, File, HTTPException, UploadFile, status
 from sqlalchemy.orm import Session
 
 from app.accounts.users.dependencies import get_current_user
@@ -7,6 +7,8 @@ from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
 from app.accounts.users.service import UserService
 from app.core.database import get_session
+from app.media.exceptions import ImageTooLargeError, UnsupportedImageError
+from app.media.service import ObjectStorage
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -30,6 +32,29 @@ def update_my_profile(
     """Update the logged-in user's bio or picture link."""
 
     return UserService(UserRepository(session)).update_profile(current_user, payload)
+
+
+@router.post("/me/picture", response_model=ProfileResponse)
+def upload_my_profile_picture(
+    file: UploadFile = File(...),
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> ProfileResponse:
+    """Upload the logged-in user's profile picture."""
+
+    content = file.file.read()
+    try:
+        return UserService(UserRepository(session)).set_profile_picture(
+            current_user,
+            content,
+            file.content_type or "",
+            ObjectStorage(),
+        )
+    except (UnsupportedImageError, ImageTooLargeError) as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
 
 
 @router.get("/{username}", response_model=ProfileResponse)
