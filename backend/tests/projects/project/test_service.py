@@ -206,6 +206,64 @@ class TestUpdateProject:
         repository.update.assert_not_called()
 
 
+class TestSaveDraft:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Draft title",
+            summary="Draft summary",
+            description="Draft description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_saves_owned_private_draft_without_publishing(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        data = ProjectUpdate(
+            title="Updated draft title",
+            description="Updated draft description",
+        )
+
+        result = service.save_draft(project.id, author_id, data)
+
+        assert result is project
+        assert project.title == "Updated draft title"
+        assert project.description == "Updated draft description"
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_saving_published_project_as_draft(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(
+            InvalidProjectStatusTransitionError,
+            match="private draft",
+        ):
+            service.save_draft(project.id, author_id, ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+    def test_rejects_saving_draft_owned_by_another_user(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(Exception, match="does not own"):
+            service.save_draft(project.id, uuid.uuid4(), ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+
 class TestUpdateStatus:
     @pytest.fixture
     def project(self, author_id):
