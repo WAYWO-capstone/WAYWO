@@ -264,6 +264,59 @@ class TestSaveDraft:
         repository.update.assert_not_called()
 
 
+class TestAutosaveProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Draft title",
+            summary="Draft summary",
+            description="Draft description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_autosaves_private_draft_and_sets_timestamp(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.autosave_project(
+            project.id,
+            author_id,
+            ProjectUpdate(title="Autosaved title"),
+        )
+
+        assert result is project
+        assert project.title == "Autosaved title"
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        assert project.last_autosaved_at is not None
+        assert project.last_autosaved_at.tzinfo is not None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_autosaving_published_project(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(
+            InvalidProjectStatusTransitionError,
+            match="private draft",
+        ):
+            service.autosave_project(
+                project.id,
+                author_id,
+                ProjectUpdate(title="Should fail"),
+            )
+
+        repository.update.assert_not_called()
+
+
 class TestUpdateStatus:
     @pytest.fixture
     def project(self, author_id):
