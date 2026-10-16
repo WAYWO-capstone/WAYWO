@@ -1,6 +1,8 @@
 // Calls to the WAYWO backend API
 
 import type { AuthTokens } from "@/lib/token-store";
+import wretch from "wretch";
+import { queryStringAddon } from "wretch/addons";
 
 const API_URL = import.meta.env.VITE_API_URL ?? "/api";
 
@@ -13,6 +15,10 @@ export class ApiError extends Error {
     this.status = status;
   }
 }
+
+export const api = wretch(API_URL)
+  .options({ credentials: "include" })
+  .addon(queryStringAddon);
 
 interface TokenResponse {
   access_token: string;
@@ -32,4 +38,25 @@ export async function login(
 
   const data: TokenResponse = await response.json();
   return { accessToken: data.access_token, refreshToken: data.refresh_token };
+}
+
+export async function register(RegisterationInput: {
+  username: string;
+  email: string;
+  password: string;
+}) {
+  return api
+    .url("/auth/register")
+    .post(RegisterationInput)
+    .res((res) => {
+      if (!res.ok) throw new ApiError(res.status);
+      return res.json();
+    })
+    .catch((err) => {
+      if (err instanceof ApiError) {
+        throw err;
+      } else {
+        throw new Error("Network error or server is unreachable.");
+      }
+    });
 }
