@@ -51,6 +51,44 @@ def update_project(
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
 
 
+@router.patch("/{project_id}/draft", response_model=ProjectRead)
+def save_draft(
+    project_id: uuid.UUID,
+    payload: ProjectUpdate,
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    try:
+        return service.save_draft(project_id, current_user_id, payload)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except ProjectNotOwnedError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
+    except CategoryNotFoundError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+    except InvalidProjectStatusTransitionError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
+
+@router.patch("/{project_id}/autosave", response_model=ProjectRead)
+def autosave_project(
+    project_id: uuid.UUID,
+    payload: ProjectUpdate,
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    try:
+        return service.autosave_project(project_id, current_user_id, payload)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except ProjectNotOwnedError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
+    except CategoryNotFoundError as exc:
+        raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+    except InvalidProjectStatusTransitionError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
+
 @router.post("/{project_id}/publish", response_model=ProjectRead)
 def publish_project(
     project_id: uuid.UUID,
