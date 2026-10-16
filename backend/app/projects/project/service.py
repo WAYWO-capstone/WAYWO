@@ -46,6 +46,27 @@ class ProjectService:
         if project.author_id != author_id:
             raise ProjectNotOwnedError(project_id)
 
+        self._apply_project_changes(project, data)
+        return self._repo.update(project)
+
+    def autosave_project(
+        self, project_id: uuid.UUID, author_id: uuid.UUID, data: ProjectUpdate
+    ) -> Project:
+        project = self._repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != author_id:
+            raise ProjectNotOwnedError(project_id)
+        if project.status != ProjectStatus.DRAFT or project.public:
+            raise InvalidProjectStatusTransitionError(
+                project_id, "must be a private draft to autosave"
+            )
+
+        self._apply_project_changes(project, data)
+        project.last_autosaved_at = datetime.now(timezone.utc)
+        return self._repo.update(project)
+
+    def _apply_project_changes(self, project: Project, data: ProjectUpdate) -> None:
         changes = data.model_dump(exclude_unset=True)
         if "category_id" in changes:
             category = self._repo.get_category(changes["category_id"])
@@ -55,10 +76,9 @@ class ProjectService:
             changes.pop("category_id")
         if "tags" in changes:
             project.tags = self._repo.get_or_create_tags(changes.pop("tags"))
-
         for field, value in changes.items():
             setattr(project, field, value)
-        return self._repo.update(project)
+            setattr(project, field, value)
 
     def save_draft(
         self, project_id: uuid.UUID, author_id: uuid.UUID, data: ProjectUpdate
@@ -73,18 +93,7 @@ class ProjectService:
                 project_id, "must be a private draft to save as a draft"
             )
 
-        changes = data.model_dump(exclude_unset=True)
-        if "category_id" in changes:
-            category = self._repo.get_category(changes["category_id"])
-            if category is None:
-                raise CategoryNotFoundError(changes["category_id"])
-            project.category = category
-            changes.pop("category_id")
-        if "tags" in changes:
-            project.tags = self._repo.get_or_create_tags(changes.pop("tags"))
-
-        for field, value in changes.items():
-            setattr(project, field, value)
+        self._apply_project_changes(project, data)
         return self._repo.update(project)
 
     def update_status(
