@@ -14,7 +14,7 @@ from app.accounts.users.exceptions import ProfilePictureNotFoundError
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
-from app.accounts.users.service import UserService
+from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES, UserService
 from app.core.database import get_session
 from app.media.exceptions import ImageTooLargeError, UnsupportedImageError
 from app.media.service import ObjectStorage
@@ -51,7 +51,7 @@ def upload_my_profile_picture(
 ) -> ProfileResponse:
     """Upload the logged-in user's profile picture."""
 
-    content = file.file.read()
+    content = file.file.read(MAX_PROFILE_PICTURE_BYTES + 1)
     try:
         return UserService(UserRepository(session)).set_profile_picture(
             current_user,

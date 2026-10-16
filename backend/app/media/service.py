@@ -1,5 +1,6 @@
 """Business logic for media assets."""
 
+import time
 import uuid
 
 import boto3
@@ -54,7 +55,7 @@ class ObjectStorage:
                 Key=f"profile-pictures/{user_id}.{other}",
             )
         base = settings.r2_public_base_url.rstrip("/")
-        return f"{base}/{key}"
+        return f"{base}/{key}?v={int(time.time())}"
 
     def delete_profile_picture(self, user_id: uuid.UUID) -> None:
         """Remove every stored profile picture for this user."""
