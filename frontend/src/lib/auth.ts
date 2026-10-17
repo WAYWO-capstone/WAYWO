@@ -4,7 +4,7 @@ import { useMutation, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
 
-import { login } from "@/lib/api";
+import { login, register } from "@/lib/api";
 import {
   clearTokens,
   isAuthenticated,
@@ -18,6 +18,12 @@ interface LoginInput {
   remember: boolean;
 }
 
+export interface RegistrationInput {
+  username: string;
+  email: string;
+  password: string;
+}
+
 export function useIsAuthenticated() {
   return useSyncExternalStore(subscribe, isAuthenticated);
 }
@@ -27,6 +33,13 @@ export function useLogin() {
     mutationFn: ({ identifier, password }: LoginInput) =>
       login(identifier.trim(), password),
     onSuccess: (tokens, { remember }) => saveTokens(tokens, remember),
+  });
+}
+
+export function useRegister() {
+  return useMutation({
+    mutationFn: ({ username, email, password }: RegistrationInput) =>
+      register({ username: username.trim(), email: email.trim(), password }),
   });
 }
 
