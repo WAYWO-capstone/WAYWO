@@ -2,7 +2,7 @@
 
 import type { AuthTokens } from "@/lib/token-store";
 
-const API_URL = import.meta.env.VITE_API_URL ?? "/api";
+const API_URL = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
 export class ApiError extends Error {
   readonly status: number;
@@ -28,8 +28,39 @@ export async function login(
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({ login: identifier, password }),
   });
+
   if (!response.ok) throw new ApiError(response.status);
 
   const data: TokenResponse = await response.json();
-  return { accessToken: data.access_token, refreshToken: data.refresh_token };
+
+  return {
+    accessToken: data.access_token,
+    refreshToken: data.refresh_token,
+  };
+}
+
+// Public profile fields returned by the backend
+export interface PublicProfile {
+  username: string;
+  bio: string | null;
+  profile_picture_link: string | null;
+}
+
+export async function getPublicProfile(
+  username: string,
+  signal?: AbortSignal,
+): Promise<PublicProfile> {
+  // /users/me belongs to the signed-in user
+  if (username.trim().toLowerCase() === "me") {
+    throw new ApiError(404);
+  }
+
+  const response = await fetch(
+    `${API_URL}/users/${encodeURIComponent(username)}`,
+    { signal },
+  );
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
 }
