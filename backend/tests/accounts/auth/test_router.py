@@ -60,6 +60,15 @@ def test_register_rejects_duplicate_email(client: TestClient) -> None:
     assert response.json()["detail"] == "Email is already registered"
 
 
+def test_register_rejects_a_slash_in_the_username(client: TestClient) -> None:
+    account = _account()
+    account["username"] = "ada/lovelace"
+
+    response = client.post("/auth/register", json=account)
+
+    assert response.status_code == 422
+
+
 def test_register_rejects_duplicate_username(client: TestClient) -> None:
     account = _account()
     client.post("/auth/register", json=account)

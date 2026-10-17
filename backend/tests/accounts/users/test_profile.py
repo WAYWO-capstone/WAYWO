@@ -2,9 +2,11 @@ from collections.abc import Iterator
 import uuid
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.accounts.users.router import get_profile
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES
 from app.core.database import SessionLocal, get_session
 from app.main import app
@@ -253,6 +255,18 @@ def test_delete_profile_picture_returns_404_when_missing(
 
     assert response.status_code == 404
     assert response.json()["detail"] == "You do not have a profile picture"
+
+
+def test_public_profile_rejects_a_slash_in_the_username() -> None:
+    session = SessionLocal()
+    try:
+        with pytest.raises(HTTPException) as exc:
+            get_profile("ada/lovelace", session)
+    finally:
+        session.close()
+
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "Username cannot contain '/'"
 
 
 def test_public_profile_returns_404_for_an_unknown_user(client: TestClient) -> None:

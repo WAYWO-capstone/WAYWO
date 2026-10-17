@@ -15,6 +15,15 @@ def test_user_create_normalizes_valid_email() -> None:
     assert user.email == "test.user@example.com"
 
 
+def test_user_create_rejects_a_slash_in_the_username() -> None:
+    with pytest.raises(ValidationError):
+        UserCreate(
+            username="ada/lovelace",
+            email="ada@example.com",
+            password="password123",
+        )
+
+
 def test_user_create_rejects_invalid_email() -> None:
     with pytest.raises(ValidationError):
         UserCreate(

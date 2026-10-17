@@ -18,7 +18,10 @@ class UserCreate(BaseModel):
     @field_validator("username", mode="before")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        return value.strip()
+        username = value.strip()
+        if "/" in username:
+            raise ValueError("Username cannot contain '/'")
+        return username
 
     @field_validator("email")
     @classmethod
