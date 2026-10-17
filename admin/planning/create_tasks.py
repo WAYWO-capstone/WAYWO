@@ -576,15 +576,6 @@ def ensure_milestone(repo: str | None, title: str) -> str:
     return title
 
 
-def ensure_labels(repo: str | None, labels: Sequence[str]) -> None:
-    for label in sorted(set(labels)):
-        if label:
-            run_gh(
-                ["label", "create", label, "--color", "0366d6", "--force"],
-                repo=repo,
-            )
-
-
 def add_to_project(
     repo: str | None, issue_url: str, project_number: str, project_owner: str
 ) -> None:
@@ -827,7 +818,6 @@ def process_iteration_plan(
                 project=project_number,
             )
             continue
-        ensure_labels(repo, epic.labels)
         existing = find_existing_issue(
             repo,
             title=title,
@@ -881,7 +871,6 @@ def process_iteration_plan(
                 )
             continue
         labels = [story.label] if story.label else []
-        ensure_labels(repo, labels + task_labels)
         feature = find_existing_issue(
             repo, title=title, marker=f"<!-- waywo-import:feature:{story.number} -->"
         ) or create_issue(repo, title, body, "Feature", labels=labels, milestone=milestone)
@@ -892,7 +881,6 @@ def process_iteration_plan(
         for task in story.tasks:
             sp_label = STORY_POINTS_BY_HOURS.get(_hours_from_estimate(task.estimate) or "")
             labels = list(dict.fromkeys(task.labels + ([sp_label] if sp_label else [])))
-            ensure_labels(repo, labels)
             task_body_text = iteration_task_body(story, task, title)
             task_issue = find_existing_issue(
                 repo,
