@@ -69,6 +69,15 @@ def test_register_rejects_a_slash_in_the_username(client: TestClient) -> None:
     assert response.status_code == 422
 
 
+def test_register_rejects_the_username_me(client: TestClient) -> None:
+    account = _account()
+    account["username"] = "me"
+
+    response = client.post("/auth/register", json=account)
+
+    assert response.status_code == 422
+
+
 def test_register_rejects_duplicate_username(client: TestClient) -> None:
     account = _account()
     client.post("/auth/register", json=account)

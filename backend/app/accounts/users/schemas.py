@@ -21,6 +21,8 @@ class UserCreate(BaseModel):
         username = value.strip()
         if "/" in username:
             raise ValueError("Username cannot contain '/'")
+        if username.lower() == "me":
+            raise ValueError("Username cannot be 'me'")
         return username
 
     @field_validator("email")
