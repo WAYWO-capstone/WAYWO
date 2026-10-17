@@ -2,7 +2,7 @@
   "lockfileVersion": 1,
   "workspaces": {
     "": {
-      "name": "waymo",
+      "name": "waywo",
       "dependencies": {
         "@base-ui/react": "^1.9.0",
         "@fontsource-variable/geist": "^5.3.0",

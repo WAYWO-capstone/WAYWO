@@ -51,9 +51,10 @@ function validate(
 
 function errorMessage(error: Error): string {
   if (error instanceof ApiError && error.status === 409) {
-    if (error.message.includes("username")) {
+    const message = error.message.toLowerCase();
+    if (message.includes("username")) {
       return "Username is already in use.";
-    } else if (error.message.includes("email")) {
+    } else if (message.includes("email")) {
       return "Email is already in use.";
     }
   }
@@ -77,7 +78,13 @@ function RegisterPage() {
     event.preventDefault();
     const errors = validate(username, email, password, passwordConfirmation);
     setFieldErrors(errors);
-    if (errors.username || errors.password) return;
+    if (
+      errors.username ||
+      errors.email ||
+      errors.password ||
+      errors.passwordConfirmation
+    )
+      return;
 
     mutate(
       { username, email, password },
@@ -116,7 +123,7 @@ function RegisterPage() {
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
-              placeholder="janedoe"
+              placeholder="Enter a username"
               value={username}
               onChange={(event) => setUsername(event.target.value)}
               aria-invalid={!!fieldErrors.username}
@@ -144,7 +151,7 @@ function RegisterPage() {
               autoComplete="email"
               autoCapitalize="none"
               spellCheck={false}
-              placeholder="janedoe@mail.ca"
+              placeholder="Enter your email address"
               value={email}
               onChange={(event) => setEmail(event.target.value)}
               aria-invalid={!!fieldErrors.email}
