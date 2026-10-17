@@ -5,8 +5,7 @@ import uuid
 from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
-from app.accounts.users.models import User
-
+from app.accounts.users.models import Profile, User
 
 class UserRepository:
     """Data access only. Flushes but never commits."""
@@ -31,3 +30,11 @@ class UserRepository:
         self._session.add(user)
         self._session.flush()
         return user
+
+    def get_profile(self, user_id: uuid.UUID) -> Profile | None:
+        return self._session.get(Profile, user_id)
+
+    def save_profile(self, profile: Profile) -> Profile:
+        self._session.add(profile)
+        self._session.flush()
+        return profile 

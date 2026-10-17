@@ -1,4 +1,5 @@
 import { createRootRouteWithContext, Outlet } from "@tanstack/react-router";
+import { SiteHeader } from "@/components/ui/site-header";
 import type { RouterContext } from "../router";
 
 export const Route = createRootRouteWithContext<RouterContext>()({
@@ -7,10 +8,11 @@ export const Route = createRootRouteWithContext<RouterContext>()({
 
 function RootComponent() {
   return (
-    <>
-      <div className="flex min-h-svh">
+    <div className="flex min-h-svh flex-col">
+      <SiteHeader />
+      <main className="flex flex-1 flex-col">
         <Outlet />
-      </div>
-    </>
+      </main>
+    </div>
   );
 }

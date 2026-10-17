@@ -3,7 +3,7 @@
 from datetime import datetime
 import uuid
 
-from sqlalchemy import DateTime, Index, String, func
+from sqlalchemy import DateTime, ForeignKey, Index, String, func
 from sqlalchemy.orm import Mapped, mapped_column
 
 from app.core.database import Base
@@ -31,4 +31,20 @@ class User(Base):
         DateTime(timezone=True),
         nullable=False,
         server_default=func.now(),
+    )
+
+
+class Profile(Base):
+    """Public profile details owned by one user."""
+
+    __tablename__ = "profiles"
+
+    user_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("users.id", ondelete="CASCADE"),
+        primary_key=True,
+    )
+    bio: Mapped[str | None] = mapped_column(String(500), nullable=True)
+    profile_picture_link: Mapped[str | None] = mapped_column(
+        String(2048),
+        nullable=True,
     )
