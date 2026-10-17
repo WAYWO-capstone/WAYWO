@@ -5,6 +5,7 @@ import pytest
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
+from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES
 from app.core.database import SessionLocal, get_session
 from app.main import app
 
@@ -33,6 +34,13 @@ def _account() -> dict[str, str]:
         "email": f"user-{suffix}@example.com",
         "password": "password123",
     }
+
+
+def _block_r2(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "app.media.service.boto3.client",
+        lambda *args, **kwargs: object(),
+    )
 
 
 def _register_and_login(client: TestClient) -> tuple[dict[str, str], str]:
@@ -119,6 +127,132 @@ def test_public_profile_does_not_require_a_token(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["username"] == account["username"]
     assert response.json()["bio"] == "Public bio"
+
+
+def test_upload_profile_picture_saves_the_public_link(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    account, token = _register_and_login(client)
+    _block_r2(monkeypatch)
+
+    def fake_upload(
+        self, user_id: uuid.UUID, content: bytes, content_type: str
+    ) -> str:
+        return "https://photos.example/me.png"
+
+    monkeypatch.setattr(
+        "app.accounts.users.router.ObjectStorage.upload_profile_picture",
+        fake_upload,
+    )
+
+    response = client.post(
+        "/users/me/picture",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("me.png", b"image-bytes", "image/png")},
+    )
+    public_response = client.get(f"/users/{account['username']}")
+
+    assert response.status_code == 200
+    assert response.json()["profile_picture_link"] == "https://photos.example/me.png"
+    assert public_response.json()["profile_picture_link"] == "https://photos.example/me.png"
+
+
+def test_upload_profile_picture_requires_a_token(client: TestClient) -> None:
+    response = client.post(
+        "/users/me/picture",
+        files={"file": ("me.png", b"image-bytes", "image/png")},
+    )
+
+    assert response.status_code == 401
+
+
+def test_upload_profile_picture_rejects_a_non_image(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, token = _register_and_login(client)
+    _block_r2(monkeypatch)
+
+    response = client.post(
+        "/users/me/picture",
+        headers={"Authorization": f"Bearer {token}"},
+        files={"file": ("notes.txt", b"hello", "text/plain")},
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == (
+        "Profile picture must be a JPEG, PNG, or WebP image"
+    )
+
+
+def test_upload_profile_picture_rejects_a_file_over_5_mb(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, token = _register_and_login(client)
+    _block_r2(monkeypatch)
+
+    response = client.post(
+        "/users/me/picture",
+        headers={"Authorization": f"Bearer {token}"},
+        files={
+            "file": (
+                "me.png",
+                b"x" * (MAX_PROFILE_PICTURE_BYTES + 1),
+                "image/png",
+            )
+        },
+    )
+
+    assert response.status_code == 400
+    assert response.json()["detail"] == "Profile picture must be 5 MB or smaller"
+
+
+def test_delete_profile_picture_clears_the_link(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    account, token = _register_and_login(client)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.patch(
+        "/users/me",
+        headers=headers,
+        json={
+            "bio": "Making a table",
+            "profile_picture_link": "https://photos.example/me.png",
+        },
+    )
+    _block_r2(monkeypatch)
+    monkeypatch.setattr(
+        "app.accounts.users.router.ObjectStorage.delete_profile_picture",
+        lambda self, user_id: None,
+    )
+
+    response = client.delete("/users/me/picture", headers=headers)
+    public_response = client.get(f"/users/{account['username']}")
+
+    assert response.status_code == 204
+    assert response.content == b""
+    assert public_response.json()["profile_picture_link"] is None
+    assert public_response.json()["bio"] == "Making a table"
+
+
+def test_delete_profile_picture_requires_a_token(client: TestClient) -> None:
+    response = client.delete("/users/me/picture")
+
+    assert response.status_code == 401
+
+
+def test_delete_profile_picture_returns_404_when_missing(
+    client: TestClient, monkeypatch: pytest.MonkeyPatch
+) -> None:
+    _, token = _register_and_login(client)
+    _block_r2(monkeypatch)
+
+    response = client.delete(
+        "/users/me/picture",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert response.status_code == 404
+    assert response.json()["detail"] == "You do not have a profile picture"
 
 
 def test_public_profile_returns_404_for_an_unknown_user(client: TestClient) -> None:
