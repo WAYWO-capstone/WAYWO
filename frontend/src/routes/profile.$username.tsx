@@ -58,6 +58,7 @@ function CreatorProfileRoute() {
       pictureUrl: profile.data.profile_picture_link,
     }}
     followAction={<FollowButton username={profile.data.username} />}
+    projects={[]}
 
   />
 );

@@ -2,6 +2,7 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { ProfileProjects, type ProfileProject } from "@/components/profile/profile-projects";
 import { cn } from "@/lib/utils";
 
 export interface CreatorProfile {
@@ -16,6 +17,7 @@ export interface CreatorProfile {
 
 interface PublicProfilePageProps {
   profile: CreatorProfile;
+  projects?: readonly ProfileProject[];
   followAction?: ReactNode;
 }
 
@@ -35,15 +37,16 @@ export function ProfilePageFrame({ children }: { children: ReactNode }) {
   );
 }
 
-// Profile data is fetched in the route
+// Profile data is fetched in the route.
 export function PublicProfilePage({
   profile,
+    projects,
   followAction,
 }: PublicProfilePageProps) {
   const name = profile.displayName?.trim() || profile.username;
-  // Hide counts that have not been provided
+  // Hide counts that have not been provided.
   const stats = [
-   { label: "projects", value: profile.projectCount },
+    { label: "projects", value: projects?.length ?? profile.projectCount },
     { label: "followers", value: profile.followersCount },
     { label: "following", value: profile.followingCount },
   ].filter((stat): stat is { label: string; value: number } =>
@@ -75,6 +78,7 @@ export function PublicProfilePage({
         </div>
       </section>
 
+     {projects !== undefined && <ProfileProjects projects={projects} />}
     </ProfilePageFrame>
   );
 }
