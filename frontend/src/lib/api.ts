@@ -69,6 +69,15 @@ export interface ProjectView extends ProjectResult {
   author: { username: string; profile_picture_link: string | null };
 }
 
+export interface DraftProject {
+  id: string;
+  title: string;
+  summary: string;
+  status: "DRAFT";
+  category: ProjectCategory;
+  created_at: string;
+}
+
 async function projectRequest<T>(path: string, init?: RequestInit): Promise<T> {
   const tokens = getTokens();
   const response = await fetch(`${API_URL}${path}`, {
@@ -89,6 +98,10 @@ export function getProjectCategories() {
 
 export function getProject(projectId: string) {
   return projectRequest<ProjectView>(`/projects/${projectId}`);
+}
+
+export function getMyDrafts() {
+  return projectRequest<DraftProject[]>("/projects/mine/drafts");
 }
 
 export function createProject(data: ProjectInput) {

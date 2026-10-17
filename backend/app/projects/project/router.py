@@ -5,6 +5,7 @@ from fastapi import APIRouter, Depends, HTTPException, status
 from app.projects.project.dependencies import (
     get_current_user_id,
     get_project_service,
+    get_optional_current_user_id,
 )
 from app.projects.project.exceptions import (
     CategoryNotFoundError,
@@ -30,13 +31,22 @@ def list_categories(service: ProjectService = Depends(get_project_service)):
     return service.list_categories()
 
 
+@router.get("/mine/drafts", response_model=list[ProjectRead])
+def list_my_drafts(
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    return service.list_private_drafts(current_user_id)
+
+
 @router.get("/{project_id}", response_model=ProjectDetailRead)
 def get_project(
     project_id: uuid.UUID,
+    viewer_id: uuid.UUID | None = Depends(get_optional_current_user_id),
     service: ProjectService = Depends(get_project_service),
 ):
     try:
-        return service.get_public_project(project_id)
+        return service.get_project_for_view(project_id, viewer_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found") from exc
 

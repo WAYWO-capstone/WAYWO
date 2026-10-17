@@ -12,8 +12,11 @@ import { Input } from "@/components/ui/input";
 import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-// TODO: point these links once those pages exist (for future)
-const NAV_ITEMS = ["Explore", "Projects", "Community"];
+const NAV_ITEMS = [
+  { label: "Explore", to: "/" },
+  { label: "Projects", to: "/projects" },
+  { label: "Community", to: "/" },
+] as const;
 
 const authButtonClass =
   "h-10 rounded-xl px-4 font-semibold sm:h-12 sm:px-7 sm:text-base";
@@ -38,11 +41,11 @@ export function SiteHeader() {
         <nav aria-label="Main" className="ml-14 hidden gap-12 lg:flex">
           {NAV_ITEMS.map((item) => (
             <Link
-              key={item}
-              to="/"
-              className="text-lg font-semibold hover:text-brand-rust"
+              key={item.label}
+              to={item.to}
+              className={`text-lg font-semibold hover:text-brand-rust ${pathname === item.to ? "text-brand-garnet" : ""}`}
             >
-              {item}
+              {item.label}
             </Link>
           ))}
         </nav>

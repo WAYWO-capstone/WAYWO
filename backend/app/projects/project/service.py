@@ -20,13 +20,15 @@ class ProjectService:
     def list_categories(self):
         return self._repo.list_categories()
 
-    def get_public_project(self, project_id: uuid.UUID):
+    def get_project_for_view(
+        self, project_id: uuid.UUID, viewer_id: uuid.UUID | None = None
+    ):
         result = self._repo.get_with_author(project_id)
         if result is None:
             raise ProjectNotFoundError(project_id)
 
         project, username, profile_picture_link = result
-        if not project.public:
+        if not project.public and project.author_id != viewer_id:
             raise ProjectNotFoundError(project_id)
 
         project_data = ProjectRead.model_validate(project).model_dump()
@@ -35,6 +37,9 @@ class ProjectService:
             "profile_picture_link": profile_picture_link,
         }
         return project_data
+
+    def list_private_drafts(self, author_id: uuid.UUID) -> list[Project]:
+        return self._repo.list_private_drafts(author_id)
 
     def create_project(self, author_id: uuid.UUID, data: ProjectCreate) -> Project:
         category = self._repo.get_category(data.category_id)

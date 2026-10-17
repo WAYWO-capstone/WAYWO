@@ -3,6 +3,26 @@ import { useQuery } from "@tanstack/react-query";
 import { Bell, Bookmark, CircleAlert, LoaderCircle } from "lucide-react";
 import { getProject, type ProjectView } from "@/lib/api";
 
+const previewProject: ProjectView = {
+  id: "preview-project",
+  author_id: "preview-author",
+  title: "Handmade Crochet Tote Bag",
+  summary: "A sturdy everyday bag made from recycled cotton yarn.",
+  description: "This sample project shows how the project details appear here. I designed a simple tote shape, tested a few stitch patterns, and chose recycled cotton yarn for durability.",
+  status: "ACTIVE",
+  public: true,
+  category: { id: "preview-category", name: "Crochet", description: "Crochet projects" },
+  tags: [
+    { id: "preview-tag-1", name: "crochet" },
+    { id: "preview-tag-2", name: "handmade" },
+  ],
+  created_at: "2026-05-12T12:00:00Z",
+  last_autosaved_at: null,
+  published_at: "2026-05-13T12:00:00Z",
+  completed_at: null,
+  author: { username: "Anna Ji", profile_picture_link: null },
+};
+
 export const Route = createFileRoute("/view-project")({
   validateSearch: (search: Record<string, unknown>) => ({
     projectId: typeof search.projectId === "string" ? search.projectId : undefined,
@@ -31,13 +51,9 @@ function ViewProjectPage() {
     queryFn: () => getProject(projectId!),
     enabled: Boolean(projectId),
   });
-  const project = projectQuery.data;
+  const project = projectId ? projectQuery.data : previewProject;
 
-  if (!projectId) {
-    return <p className="mx-auto w-full max-w-7xl px-6 py-16 text-center text-muted-foreground">Choose a project to view.</p>;
-  }
-
-  if (projectQuery.isLoading) {
+  if (projectId && projectQuery.isLoading) {
     return <div className="flex flex-1 items-center justify-center gap-2 py-20 text-muted-foreground"><LoaderCircle className="size-5 animate-spin" />Loading project...</div>;
   }
 
@@ -47,8 +63,9 @@ function ViewProjectPage() {
 
   return (
     <div className="flex-1 bg-white">
-      <div className="flex h-36 items-center justify-center bg-[#f8ede1] text-sm text-brand-mahogany/80 sm:h-44">
-        [project banner image]
+      <div className="relative flex h-36 items-center justify-center bg-[#f8ede1] text-sm text-brand-mahogany/80 sm:h-44">
+        <span>[project banner image]</span>
+        {!projectId && <span className="absolute top-3 right-4 rounded-full bg-white/80 px-3 py-1 text-xs font-medium">Sample preview</span>}
       </div>
 
       <section className="mx-auto max-w-7xl px-5 py-5 sm:px-8">
