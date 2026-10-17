@@ -4,6 +4,7 @@ from sqlalchemy import select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from app.accounts.users.models import Profile, User
 from app.projects.project.models import Category, Project, Tag
 
 
@@ -16,8 +17,20 @@ class ProjectRepository:
     def get_category(self, category_id: uuid.UUID) -> Category | None:
         return self._session.get(Category, category_id)
 
+    def list_categories(self) -> list[Category]:
+        return list(self._session.scalars(select(Category).order_by(Category.name)))
+
     def get(self, project_id: uuid.UUID) -> Project | None:
         return self._session.get(Project, project_id)
+
+    def get_with_author(self, project_id: uuid.UUID):
+        statement = (
+            select(Project, User.username, Profile.profile_picture_link)
+            .outerjoin(User, User.id == Project.author_id)
+            .outerjoin(Profile, Profile.user_id == User.id)
+            .where(Project.id == project_id)
+        )
+        return self._session.execute(statement).one_or_none()
 
     def get_or_create_tags(self, names: list[str]) -> list[Tag]:
         if not names:

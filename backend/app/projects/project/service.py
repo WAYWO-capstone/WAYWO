@@ -10,12 +10,31 @@ from app.projects.project.exceptions import (
 )
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.project.schemas import ProjectCreate, ProjectStatusUpdate, ProjectUpdate
+from app.projects.project.schemas import ProjectCreate, ProjectRead, ProjectStatusUpdate, ProjectUpdate
 
 
 class ProjectService:
     def __init__(self, repository: ProjectRepository):
         self._repo = repository
+
+    def list_categories(self):
+        return self._repo.list_categories()
+
+    def get_public_project(self, project_id: uuid.UUID):
+        result = self._repo.get_with_author(project_id)
+        if result is None:
+            raise ProjectNotFoundError(project_id)
+
+        project, username, profile_picture_link = result
+        if not project.public:
+            raise ProjectNotFoundError(project_id)
+
+        project_data = ProjectRead.model_validate(project).model_dump()
+        project_data["author"] = {
+            "username": username or "Unknown creator",
+            "profile_picture_link": profile_picture_link,
+        }
+        return project_data
 
     def create_project(self, author_id: uuid.UUID, data: ProjectCreate) -> Project:
         category = self._repo.get_category(data.category_id)

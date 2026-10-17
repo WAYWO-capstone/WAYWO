@@ -13,7 +13,9 @@ from app.projects.project.exceptions import (
     ProjectNotOwnedError,
 )
 from app.projects.project.schemas import (
+    CategoryRead,
     ProjectCreate,
+    ProjectDetailRead,
     ProjectRead,
     ProjectStatusUpdate,
     ProjectUpdate,
@@ -21,6 +23,22 @@ from app.projects.project.schemas import (
 from app.projects.project.service import ProjectService
 
 router = APIRouter(tags=["projects"])
+
+
+@router.get("/categories", response_model=list[CategoryRead])
+def list_categories(service: ProjectService = Depends(get_project_service)):
+    return service.list_categories()
+
+
+@router.get("/{project_id}", response_model=ProjectDetailRead)
+def get_project(
+    project_id: uuid.UUID,
+    service: ProjectService = Depends(get_project_service),
+):
+    try:
+        return service.get_public_project(project_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found") from exc
 
 @router.post("", response_model=ProjectRead, status_code=status.HTTP_201_CREATED)
 def create_project(

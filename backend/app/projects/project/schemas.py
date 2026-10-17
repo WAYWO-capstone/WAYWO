@@ -122,3 +122,12 @@ class ProjectRead(BaseModel):
     last_autosaved_at: datetime | None
     published_at: datetime | None
     completed_at: datetime | None
+
+
+class ProjectAuthorRead(BaseModel):
+    username: str
+    profile_picture_link: str | None
+
+
+class ProjectDetailRead(ProjectRead):
+    author: ProjectAuthorRead
