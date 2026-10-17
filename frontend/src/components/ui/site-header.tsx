@@ -4,15 +4,14 @@
  */
 
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LogOut, Search, UserRound } from "lucide-react";
-import { ProfileAvatar } from "@/components/profile/profile-avatar";
+import { LogOut, Search } from "lucide-react";
 
 import logo from "@/assets/waywo-logo.png";
 import { buttonVariants } from "@/components/ui/button";
+import { HeaderProfileMenu } from "@/components/ui/header-profile-menu";
 import { Input } from "@/components/ui/input";
-import {useCurrentProfile, useIsAuthenticated, useLogout, } from "@/lib/auth";
+import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
-
 
 // TODO: point these links once those pages exist (for future)
 const NAV_ITEMS = ["Explore", "Projects", "Community"];
@@ -22,7 +21,6 @@ const authButtonClass =
 
 export function SiteHeader() {
   const isAuthenticated = useIsAuthenticated();
-  const profile = useCurrentProfile();
   const logout = useLogout();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
@@ -66,37 +64,19 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 sm:gap-4 md:ml-6">
           
+          {isAuthenticated && <HeaderProfileMenu />}
           {isAuthenticated ? (
-            <>
-  {profile.data ? (
-    <ProfileAvatar
-      key={profile.data.username}
-      username={profile.data.username}
-      src={profile.data.profile_picture_link}
-      className="size-9 text-sm sm:size-10"
-    />
-  ) : (
-    <span
-      role="img"
-      aria-label="Your profile picture"
-      className="inline-flex size-9 shrink-0 items-center justify-center rounded-full border border-brand-mahogany/30 bg-[#f5e4cf] text-brand-mahogany sm:size-10"
-    >
-      <UserRound aria-hidden="true" className="size-5" />
-    </span>
-  )}
-
-  <button
-    type="button"
-    onClick={logout}
-    className={cn(
-      buttonVariants({ variant: "outline" }),
-      authButtonClass,
-    )}
-  >
-    <LogOut className="size-4" />
-    Log out
-  </button>
-</>
+            <button
+              type="button"
+              onClick={logout}
+              className={cn(
+                buttonVariants({ variant: "outline" }),
+                authButtonClass,
+              )}
+            >
+              <LogOut className="size-4" />
+              Log out
+            </button>
           ) : (
             <>
               <Link
