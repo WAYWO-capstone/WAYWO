@@ -38,7 +38,7 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> ProfileResponse:
-    """Update the logged-in user's bio or picture link."""
+    """Update the logged-in user's bio."""
 
     return UserService(UserRepository(session)).update_profile(current_user, payload)
 

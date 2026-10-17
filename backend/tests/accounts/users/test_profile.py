@@ -91,19 +91,25 @@ def test_update_my_profile_changes_only_the_sent_field(client: TestClient) -> No
         headers=headers,
         json={"bio": "Making a table"},
     )
-    picture_response = client.patch(
+
+    assert bio_response.status_code == 200
+    assert bio_response.json() == {
+        "username": account["username"],
+        "bio": "Making a table",
+        "profile_picture_link": None,
+    }
+
+
+def test_update_my_profile_rejects_a_picture_link(client: TestClient) -> None:
+    _, token = _register_and_login(client)
+
+    response = client.patch(
         "/users/me",
-        headers=headers,
+        headers={"Authorization": f"Bearer {token}"},
         json={"profile_picture_link": "https://example.com/me.png"},
     )
 
-    assert bio_response.status_code == 200
-    assert picture_response.status_code == 200
-    assert picture_response.json() == {
-        "username": account["username"],
-        "bio": "Making a table",
-        "profile_picture_link": "https://example.com/me.png",
-    }
+    assert response.status_code == 422
 
 
 def test_update_my_profile_rejects_account_fields(client: TestClient) -> None:
@@ -271,12 +277,18 @@ def test_delete_profile_picture_clears_the_link(
     client.patch(
         "/users/me",
         headers=headers,
-        json={
-            "bio": "Making a table",
-            "profile_picture_link": "https://photos.example/me.png",
-        },
+        json={"bio": "Making a table"},
     )
     _block_r2(monkeypatch)
+    monkeypatch.setattr(
+        "app.accounts.users.router.ObjectStorage.upload_profile_picture",
+        lambda self, user_id, content, content_type: "https://photos.example/me.png",
+    )
+    client.post(
+        "/users/me/picture",
+        headers=headers,
+        files={"file": ("me.png", b"image-bytes", "image/png")},
+    )
     monkeypatch.setattr(
         "app.accounts.users.router.ObjectStorage.delete_profile_picture",
         lambda self, user_id: None,

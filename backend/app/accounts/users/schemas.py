@@ -48,7 +48,6 @@ class ProfileUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     bio: str | None = Field(default=None, max_length=500)
-    profile_picture_link: str | None = Field(default=None, max_length=2048)
 
 
 class ProfileResponse(BaseModel):
