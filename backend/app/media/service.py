@@ -2,8 +2,10 @@
 
 import time
 import uuid
+from io import BytesIO
 
 import boto3
+from PIL import Image, UnidentifiedImageError
 
 from app.core.config import settings
 from app.media.exceptions import UnsupportedImageError
@@ -13,6 +15,27 @@ _IMAGE_EXTENSIONS = {
     "image/png": "png",
     "image/webp": "webp",
 }
+_IMAGE_FORMATS = {
+    "image/jpeg": "JPEG",
+    "image/png": "PNG",
+    "image/webp": "WEBP",
+}
+
+
+def _require_real_image(content: bytes, content_type: str) -> None:
+    """Reject bytes that are not the image type named by the content type."""
+
+    try:
+        with Image.open(BytesIO(content)) as image:
+            if image.format != _IMAGE_FORMATS[content_type]:
+                raise UnsupportedImageError(
+                    "Profile picture must be a JPEG, PNG, or WebP image"
+                )
+            image.verify()
+    except (UnidentifiedImageError, OSError, Image.DecompressionBombError) as exc:
+        raise UnsupportedImageError(
+            "Profile picture must be a JPEG, PNG, or WebP image"
+        ) from exc
 
 
 class ObjectStorage:
@@ -40,6 +63,7 @@ class ObjectStorage:
             raise UnsupportedImageError(
                 "Profile picture must be a JPEG, PNG, or WebP image"
             )
+        _require_real_image(content, content_type)
         key = f"profile-pictures/{user_id}.{extension}"
         self._client.put_object(
             Bucket=settings.r2_bucket_name,
