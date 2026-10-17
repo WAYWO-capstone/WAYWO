@@ -17,7 +17,7 @@ from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES, UserService
 from app.core.database import get_session
 from app.media.exceptions import ImageTooLargeError, UnsupportedImageError
-from app.media.service import ObjectStorage
+from app.media.service import ObjectStorage, get_object_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -48,6 +48,7 @@ def upload_my_profile_picture(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
+    storage: ObjectStorage = Depends(get_object_storage),
 ) -> ProfileResponse:
     """Upload the logged-in user's profile picture."""
 
@@ -57,7 +58,7 @@ def upload_my_profile_picture(
             current_user,
             content,
             file.content_type or "",
-            ObjectStorage(),
+            storage,
         )
     except (UnsupportedImageError, ImageTooLargeError) as exc:
         raise HTTPException(
@@ -70,13 +71,14 @@ def upload_my_profile_picture(
 def delete_my_profile_picture(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
+    storage: ObjectStorage = Depends(get_object_storage),
 ) -> Response:
     """Delete the logged-in user's profile picture."""
 
     try:
         UserService(UserRepository(session)).delete_profile_picture(
             current_user,
-            ObjectStorage(),
+            storage,
         )
     except ProfilePictureNotFoundError as exc:
         raise HTTPException(
@@ -106,3 +108,6 @@ def get_profile(
             detail="User not found",
         )
     return UserService(users).get_profile(user)
+
+
+get_object_storage()

@@ -12,10 +12,12 @@ from app.accounts.users.router import get_profile
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES
 from app.core.database import SessionLocal, get_session
 from app.main import app
+from app.media.service import get_object_storage
 
 
 @pytest.fixture
 def client() -> Iterator[TestClient]:
+    get_object_storage.cache_clear()
     session = SessionLocal()
 
     def override_get_session() -> Iterator[Session]:

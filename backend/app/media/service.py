@@ -2,6 +2,7 @@
 
 import time
 import uuid
+from functools import lru_cache
 from io import BytesIO
 
 import boto3
@@ -89,3 +90,10 @@ class ObjectStorage:
                 Bucket=settings.r2_bucket_name,
                 Key=f"profile-pictures/{user_id}.{extension}",
             )
+
+
+@lru_cache
+def get_object_storage() -> ObjectStorage:
+    """Return the shared Cloudflare client."""
+
+    return ObjectStorage()
