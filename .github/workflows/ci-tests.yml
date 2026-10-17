@@ -9,7 +9,7 @@ permissions:
 
 jobs:
   backend:
-    name: Backend - Pylint and Pytest
+    name: Backend - Quality, Tests and Coverage
     runs-on: ubuntu-latest
     env:
       DATABASE_URL: postgresql://postgres_ci:postgres_ci@localhost:5432/waywo_ci
@@ -49,21 +49,35 @@ jobs:
         run: |
           python -m pip install --upgrade pip
           pip install -r requirements.txt
-          pip install pylint pytest
 
       - name: Run database migrations
         run: alembic upgrade head
+
+      - name: Run Ruff
+        run: python -m ruff check .
 
       - name: Run Pylint
         run: |
           python -m pylint $(git ls-files '*.py')
 
-      - name: Run Pytest
-        working-directory: backend
-        run: python -m pytest -v
+      - name: Run Pytest with coverage
+        run: >
+          python -m pytest -v
+          --cov=app
+          --cov-fail-under=70
+          --cov-report=term-missing
+          --cov-report=xml:coverage.xml
+
+      - name: Upload backend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: backend-coverage
+          path: backend/coverage.xml
+          if-no-files-found: error
 
   frontend:
-    name: Frontend - TypeScript, Tests and Build
+    name: Frontend - Quality, Tests and Coverage
     runs-on: ubuntu-latest
 
     defaults:
@@ -77,9 +91,17 @@ jobs:
         uses: oven-sh/setup-bun@v2
       - name: Install dependencies
         run: bun install
-      - name: Run tests (Vitest)
-        run: bun run test --run
+      - name: Run tests with coverage (Vitest)
+        run: bun run test:coverage
       - name: Build frontend
         run: bun run build
       - name: Lint (oxlint)
         run: bun run lint
+
+      - name: Upload frontend coverage
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-coverage
+          path: frontend/coverage
+          if-no-files-found: error

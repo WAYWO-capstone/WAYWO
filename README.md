@@ -121,6 +121,7 @@ Example:
 
 ```env
 DATABASE_URL=postgresql://<username>:<password>@localhost:5432/waywo
+JWT_SECRET_KEY=<long-random-secret>
 ```
 
 ## 5. Run Database Migrations
