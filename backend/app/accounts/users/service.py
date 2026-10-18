@@ -38,15 +38,13 @@ class UserService:
         )
 
     def update_profile(self, user: User, payload: ProfileUpdate) -> ProfileResponse:
-        """Change bio or picture link. Leave out a field to keep its current value."""
+        """Change the bio. Leave it out to keep the current value."""
 
         profile = self._users.get_profile(user.id)
         if profile is None:
             profile = Profile(user_id=user.id)
         if "bio" in payload.model_fields_set:
             profile.bio = payload.bio
-        if "profile_picture_link" in payload.model_fields_set:
-            profile.profile_picture_link = payload.profile_picture_link
         saved = self._users.save_profile(profile)
         return self._response(user, saved)
 

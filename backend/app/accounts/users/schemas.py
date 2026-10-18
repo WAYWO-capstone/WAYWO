@@ -18,7 +18,12 @@ class UserCreate(BaseModel):
     @field_validator("username", mode="before")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        return value.strip()
+        username = value.strip()
+        if "/" in username:
+            raise ValueError("Username cannot contain '/'")
+        if username.lower() == "me":
+            raise ValueError("Username cannot be 'me'")
+        return username
 
     @field_validator("email")
     @classmethod
@@ -43,7 +48,6 @@ class ProfileUpdate(BaseModel):
     model_config = ConfigDict(extra="forbid")
 
     bio: str | None = Field(default=None, max_length=500)
-    profile_picture_link: str | None = Field(default=None, max_length=2048)
 
 
 class ProfileResponse(BaseModel):

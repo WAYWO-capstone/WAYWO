@@ -2,11 +2,13 @@ from collections.abc import Iterator
 import uuid
 
 import pytest
+from fastapi import HTTPException
 from fastapi.testclient import TestClient
 from sqlalchemy.orm import Session
 
 from app.core.database import SessionLocal, get_session
 from app.main import app
+from app.social.router import _followed_user
 
 
 @pytest.fixture
@@ -47,6 +49,18 @@ def _login(client: TestClient, account: dict[str, str]) -> str:
         json={"login": account["email"], "password": account["password"]},
     )
     return login.json()["access_token"]
+
+
+def test_follow_rejects_a_slash_in_the_username() -> None:
+    session = SessionLocal()
+    try:
+        with pytest.raises(HTTPException) as exc:
+            _followed_user("ada/lovelace", session)
+    finally:
+        session.close()
+
+    assert exc.value.status_code == 400
+    assert exc.value.detail == "Username cannot contain '/'"
 
 
 def test_follow_requires_a_token(client: TestClient) -> None:
