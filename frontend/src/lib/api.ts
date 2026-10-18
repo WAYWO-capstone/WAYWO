@@ -1,6 +1,5 @@
 // Calls to the WAYWO backend API
-
-import type { AuthTokens } from "@/lib/token-store";
+import { getTokens, type AuthTokens } from "@/lib/token-store";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
@@ -46,6 +45,10 @@ export interface PublicProfile {
   profile_picture_link: string | null;
 }
 
+export interface AccountProfile extends PublicProfile {
+  email: string;
+}
+
 export async function getPublicProfile(
   username: string,
   signal?: AbortSignal,
@@ -59,6 +62,25 @@ export async function getPublicProfile(
     `${API_URL}/users/${encodeURIComponent(username)}`,
     { signal },
   );
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
+}
+
+// Load the signed-in user's profile for the header.
+export async function getCurrentProfile(
+  signal?: AbortSignal,
+): Promise<AccountProfile> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const response = await fetch(`${API_URL}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    signal,
+  });
 
   if (!response.ok) throw new ApiError(response.status);
 

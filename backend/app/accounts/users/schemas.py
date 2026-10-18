@@ -58,3 +58,9 @@ class ProfileResponse(BaseModel):
     username: str
     bio: str | None
     profile_picture_link: str | None
+
+
+class AccountProfileResponse(ProfileResponse):
+    """Signed-in profile, including the account email."""
+
+    email: str
