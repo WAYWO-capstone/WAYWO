@@ -135,10 +135,10 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
             </div>
 
             <div className="min-w-0 flex-1 basis-36">
-              <label htmlFor="profile-name" className="mb-1.5 block text-sm font-semibold">Name</label>
+              <label htmlFor="profile-name" className="mb-1.5 block text-sm font-semibold">Username</label>
               <div className="flex items-center gap-1">
                 <Input id="profile-name" value={profile.username} readOnly className={fieldClassName} />
-                <EditButton label="Edit name" />
+                <EditButton label="Edit username" />
               </div>
             </div>
 
