@@ -45,6 +45,10 @@ export interface PublicProfile {
   profile_picture_link: string | null;
 }
 
+export interface AccountProfile extends PublicProfile {
+  email: string;
+}
+
 export async function getPublicProfile(
   username: string,
   signal?: AbortSignal,
@@ -67,7 +71,7 @@ export async function getPublicProfile(
 // Load the signed-in user's profile for the header.
 export async function getCurrentProfile(
   signal?: AbortSignal,
-): Promise<PublicProfile> {
+): Promise<AccountProfile> {
   const tokens = getTokens();
   if (!tokens) throw new ApiError(401);
 

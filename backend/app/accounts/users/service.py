@@ -3,7 +3,11 @@
 from app.accounts.users.exceptions import ProfilePictureNotFoundError
 from app.accounts.users.models import Profile, User
 from app.accounts.users.repository import UserRepository
-from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
+from app.accounts.users.schemas import (
+    AccountProfileResponse,
+    ProfileResponse,
+    ProfileUpdate,
+)
 from app.media.exceptions import ImageTooLargeError
 from app.media.service import ObjectStorage
 
@@ -21,6 +25,17 @@ class UserService:
 
         profile = self._users.get_profile(user.id)
         return self._response(user, profile)
+
+    def get_account_profile(self, user: User) -> AccountProfileResponse:
+        """Return the signed-in user's profile, including their email."""
+
+        profile = self.get_profile(user)
+        return AccountProfileResponse(
+            username=profile.username,
+            bio=profile.bio,
+            profile_picture_link=profile.profile_picture_link,
+            email=user.email,
+        )
 
     def update_profile(self, user: User, payload: ProfileUpdate) -> ProfileResponse:
         """Change bio or picture link. Leave out a field to keep its current value."""
