@@ -4,13 +4,18 @@ import {
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
-import { ArrowRight, CircleAlert, LoaderCircle } from "lucide-react";
-import { useState, type SubmitEvent } from "react";
+import {
+  ArrowRight,
+  CheckCircle,
+  CircleAlert,
+  LoaderCircle,
+} from "lucide-react";
+import { useEffect, useState, type SubmitEvent } from "react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { ApiError } from "@/lib/api";
-import { useRegister } from "@/lib/auth";
+import { safeRedirect, useRegister } from "@/lib/auth";
 import { isAuthenticated } from "@/lib/token-store";
 import { isValidEmail } from "@/lib/utils/string-utils";
 
@@ -19,7 +24,8 @@ export const Route = createFileRoute("/register")({
     redirect: typeof search.redirect === "string" ? search.redirect : undefined,
   }),
   beforeLoad: ({ search }) => {
-    if (isAuthenticated()) throw redirect({ href: search.redirect ?? "/" });
+    if (isAuthenticated())
+      throw redirect({ href: safeRedirect(search.redirect) });
   },
   component: RegisterPage,
 });
@@ -65,8 +71,7 @@ function errorMessage(error: Error): string {
 }
 
 function RegisterPage() {
-  const navigate = useNavigate();
-  const { mutate, isPending, error } = useRegister();
+  const { mutate, isPending, error, isSuccess } = useRegister();
 
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
@@ -86,12 +91,11 @@ function RegisterPage() {
     )
       return;
 
-    mutate(
-      { username, email, password },
-      {
-        onSuccess: () => navigate({ href: "/login", replace: true }),
-      },
-    );
+    mutate({ username, email, password });
+  }
+
+  if (isSuccess) {
+    return <RegistrationCompletedMessage />;
   }
 
   return (
@@ -252,6 +256,42 @@ function RegisterPage() {
           </Link>
         </p>
       </form>
+    </div>
+  );
+}
+
+function RegistrationCompletedMessage() {
+  const navigate = useNavigate();
+
+  useEffect(() => {
+    const timeoutId = window.setTimeout(() => {
+      void navigate({ href: "/login", replace: true });
+    }, 5 * 1000);
+
+    return () => window.clearTimeout(timeoutId);
+  }, [navigate]);
+
+  return (
+    <div className="flex flex-1 flex-col items-center justify-center px-4 py-16 sm:py-28">
+      <div
+        role="status"
+        className="w-full max-w-xl rounded-3xl border bg-card p-8 text-center shadow-xl shadow-brand-mahogany/5 sm:p-11"
+      >
+        <CheckCircle className="mx-auto size-14 text-brand-rust" />
+        <h1 className="mt-6 text-4xl leading-none font-extrabold tracking-tight sm:text-5xl">
+          Account created<span className="text-brand-rust">.</span>
+        </h1>
+        <p className="mt-5 text-lg text-muted-foreground">
+          Your account has been created. We'll take you to the login page in a
+          few seconds.
+        </p>
+        <Link
+          to={"/login"}
+          className="mt-8 inline-block font-bold text-primary hover:underline"
+        >
+          Go to login now
+        </Link>
+      </div>
     </div>
   );
 }
