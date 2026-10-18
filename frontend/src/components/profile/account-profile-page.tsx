@@ -14,11 +14,11 @@ import {
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { PublicProfile } from "@/lib/api";
+import type { AccountProfile } from "@/lib/api";
 
 
 interface AccountProfilePageProps {
-  profile: PublicProfile;
+  profile: AccountProfile;
   onLogout: () => void;
 }
 // main sidebar options
@@ -145,8 +145,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
             <div className="min-w-0 flex-1 basis-48">
               <label htmlFor="profile-email" className="mb-1.5 block text-sm font-semibold">Email</label>
               <div className="flex items-center gap-1">
-                {/* The profile response does not include the account email yet. */}
-                <Input id="profile-email" type="email" value="" placeholder="Email address" readOnly className={fieldClassName} />
+                <Input id="profile-email" type="email" value={profile.email} readOnly className={fieldClassName} />
                 <EditButton label="Edit email" />
               </div>
             </div>

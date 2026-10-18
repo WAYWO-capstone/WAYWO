@@ -13,7 +13,11 @@ from app.accounts.users.dependencies import get_current_user
 from app.accounts.users.exceptions import ProfilePictureNotFoundError
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
-from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
+from app.accounts.users.schemas import (
+    AccountProfileResponse,
+    ProfileResponse,
+    ProfileUpdate,
+)
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES, UserService
 from app.core.database import get_session
 from app.media.exceptions import ImageTooLargeError, UnsupportedImageError
@@ -22,14 +26,14 @@ from app.media.service import ObjectStorage
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/me", response_model=ProfileResponse)
+@router.get("/me", response_model=AccountProfileResponse)
 def get_my_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
-) -> ProfileResponse:
-    """Return the logged-in user's profile."""
+) -> AccountProfileResponse:
+    """Return the logged-in user's profile, including their email."""
 
-    return UserService(UserRepository(session)).get_profile(current_user)
+    return UserService(UserRepository(session)).get_account_profile(current_user)
 
 
 @router.patch("/me", response_model=ProfileResponse)
