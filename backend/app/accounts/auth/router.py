@@ -8,12 +8,15 @@ from app.accounts.auth.exceptions import (
 )
 from app.accounts.auth.repository import AuthRepository
 from app.accounts.auth.schemas import (
+    EmailChangeRequest,
     LoginRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
 )
 from app.accounts.auth.service import AuthService
+from app.accounts.users.dependencies import get_current_user
+from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import UserResponse
 from app.core.database import get_session
@@ -75,3 +78,26 @@ def refresh(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail=str(exc),
         ) from exc
+
+
+@router.patch("/email", response_model=UserResponse)
+def change_email(
+    payload: EmailChangeRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> UserResponse:
+    # use the signed in account instead of taking a user id from the request
+    service = AuthService(UserRepository(session), AuthRepository(session))
+    try:
+        user = service.change_email(current_user, payload)
+    except AuthenticationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+    except DuplicateIdentityError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_409_CONFLICT,
+            detail=str(exc),
+        ) from exc
+    return UserResponse.model_validate(user)
