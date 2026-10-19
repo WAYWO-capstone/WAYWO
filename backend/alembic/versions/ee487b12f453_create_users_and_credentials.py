@@ -1,7 +1,7 @@
 """create users and credentials
 
 Revision ID: ee487b12f453
-Revises: 
+Revises:
 Create Date: 2026-10-11 21:39:06.476336
 
 """

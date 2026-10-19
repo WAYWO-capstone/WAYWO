@@ -81,6 +81,7 @@ def test_get_my_profile_returns_the_logged_in_user(client: TestClient) -> None:
         "username": account["username"],
         "bio": None,
         "profile_picture_link": None,
+        "email": account["email"],
     }
 
 
@@ -139,6 +140,7 @@ def test_public_profile_does_not_require_a_token(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["username"] == account["username"]
     assert response.json()["bio"] == "Public bio"
+    assert "email" not in response.json()
 
 
 def test_upload_profile_picture_saves_the_public_link(

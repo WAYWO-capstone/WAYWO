@@ -1,8 +1,7 @@
 // Calls to the WAYWO backend API
-
-import type { AuthTokens } from "@/lib/token-store";
 import wretch from "wretch";
 import { queryStringAddon } from "wretch/addons";
+import { getTokens, type AuthTokens } from "@/lib/token-store";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
@@ -104,6 +103,10 @@ export interface PublicProfile {
   profile_picture_link: string | null;
 }
 
+export interface AccountProfile extends PublicProfile {
+  email: string;
+}
+
 export async function getPublicProfile(
   username: string,
   signal?: AbortSignal,
@@ -117,6 +120,73 @@ export async function getPublicProfile(
     `${API_URL}/users/${encodeURIComponent(username)}`,
     { signal },
   );
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
+}
+
+// Load the signed-in user's profile for the header.
+export async function getCurrentProfile(
+  signal?: AbortSignal,
+): Promise<AccountProfile> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const response = await fetch(`${API_URL}/users/me`, {
+    headers: {
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    signal,
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
+}
+
+export interface ProfileUpdate {
+  bio?: string | null;
+}
+
+// send only the profile fields being changed
+export async function updateProfile(
+  changes: ProfileUpdate,
+): Promise<PublicProfile> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const response = await fetch(`${API_URL}/users/me`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    body: JSON.stringify(changes),
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
+}
+
+// send image using existing login token
+export async function uploadProfilePicture(
+  file: File,
+): Promise<PublicProfile> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/users/me/picture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    body: formData,
+  });
 
   if (!response.ok) throw new ApiError(response.status);
 

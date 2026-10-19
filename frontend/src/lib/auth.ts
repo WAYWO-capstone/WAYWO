@@ -1,12 +1,14 @@
 // React hooks for login state
 
-import { useMutation, useQueryClient } from "@tanstack/react-query";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
 
-import { login, register } from "@/lib/api";
+import { login, register, getCurrentProfile } from "@/lib/api";
+
 import {
   clearTokens,
+  getSessionKey,
   isAuthenticated,
   saveTokens,
   subscribe,
@@ -27,6 +29,18 @@ export interface RegistrationInput {
 export function useIsAuthenticated() {
   return useSyncExternalStore(subscribe, isAuthenticated);
 }
+export function useCurrentProfile() {
+  const sessionKey = useSyncExternalStore(subscribe, getSessionKey);
+
+  return useQuery({
+    queryKey: ["current-profile", sessionKey],
+    queryFn: ({ signal }) => getCurrentProfile(signal),
+    enabled: sessionKey !== null,
+    gcTime: 0,
+    retry: false,
+  });
+}
+
 
 export function useLogin() {
   return useMutation({

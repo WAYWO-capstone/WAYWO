@@ -57,7 +57,12 @@ def create_refresh_token(
     )
 
 
-def decode_token(token: str, secret_key: str, *, expected_type: str | None = None) -> dict[str, Any]:
+def decode_token(
+    token: str,
+    secret_key: str,
+    *,
+    expected_type: str | None = None,
+) -> dict[str, Any]:
     """Decode and validate a signed token."""
 
     try:

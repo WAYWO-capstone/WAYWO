@@ -8,6 +8,7 @@ import { LogOut, Search } from "lucide-react";
 
 import logo from "@/assets/waywo-logo.png";
 import { buttonVariants } from "@/components/ui/button";
+import { HeaderProfileMenu } from "@/components/ui/header-profile-menu";
 import { Input } from "@/components/ui/input";
 import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
@@ -63,6 +64,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 sm:gap-4 md:ml-6">
           
+          {isAuthenticated && <HeaderProfileMenu />}
           {isAuthenticated ? (
             <button
               type="button"
