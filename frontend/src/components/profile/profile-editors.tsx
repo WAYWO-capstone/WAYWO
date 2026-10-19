@@ -1,5 +1,11 @@
 import { LoaderCircle, Pencil } from "lucide-react";
-import { useRef, useState, type ChangeEvent, type FormEvent } from "react";
+import {
+  useEffect,
+  useRef,
+  useState,
+  type ChangeEvent,
+  type FormEvent,
+} from "react";
 
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/lib/api";
@@ -13,6 +19,16 @@ export function BioEditor({ bio }: { bio: string | null }) {
   const [draft, setDraft] = useState(bio ?? "");
   const textareaRef = useRef<HTMLTextAreaElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
+  const { isSuccess, reset } = saveBio;
+
+  useEffect(() => {
+    if (!isSuccess) return;
+
+    // hide the saved message after three seconds
+    const timer = window.setTimeout(reset, 3000);
+
+    return () => window.clearTimeout(timer);
+  }, [isSuccess, reset]);
 
   function finishEditing() {
     setEditing(false);
