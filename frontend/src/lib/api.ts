@@ -111,3 +111,26 @@ export async function updateProfile(
 
   return response.json();
 }
+
+// send image using existing login token
+export async function uploadProfilePicture(
+  file: File,
+): Promise<PublicProfile> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const formData = new FormData();
+  formData.append("file", file);
+
+  const response = await fetch(`${API_URL}/users/me/picture`, {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    body: formData,
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
+}

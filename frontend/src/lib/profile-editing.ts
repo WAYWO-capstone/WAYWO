@@ -1,6 +1,6 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { updateProfile, type PublicProfile } from "@/lib/api";
+import { updateProfile, uploadProfilePicture } from "@/lib/api";
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
@@ -8,20 +8,34 @@ export function useUpdateProfile() {
   return useMutation({
     mutationFn: updateProfile,
     onSuccess: async (saved) => {
-      // keep private account details out of the public profile cache
-      queryClient.setQueryData<PublicProfile>(
-        ["public-profile", saved.username.toLowerCase()],
-        {
-          username: saved.username,
-          bio: saved.bio,
-          profile_picture_link: saved.profile_picture_link,
-        },
-      );
+      // reload the full account profile so the email is kept
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["current-profile"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["public-profile", saved.username.toLowerCase()],
+        }),
+      ]);
+    },
+  });
+}
 
-      // reload the full account profile so its email is kept
-      await queryClient.invalidateQueries({
-        queryKey: ["current-profile"],
-      });
+export function useUpdateProfilePicture() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: uploadProfilePicture,
+    onSuccess: async (saved) => {
+      // refresh the header and profile pictures after uploading
+      await Promise.all([
+        queryClient.invalidateQueries({
+          queryKey: ["current-profile"],
+        }),
+        queryClient.invalidateQueries({
+          queryKey: ["public-profile", saved.username.toLowerCase()],
+        }),
+      ]);
     },
   });
 }

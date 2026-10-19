@@ -15,7 +15,7 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountProfile } from "@/lib/api";
-import { BioEditor } from "@/components/profile/profile-editors";
+import { BioEditor, ProfilePictureEditor, } from "@/components/profile/profile-editors"
 
 
 interface AccountProfilePageProps {
@@ -126,14 +126,11 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
           </div>
 
           <div className="mt-8 flex flex-wrap items-end gap-x-7 gap-y-6">
-            <div className="relative shrink-0">
-              <ProfileAvatar
-                username={profile.username}
-                src={profile.profile_picture_link}
-                className="size-20 text-xl"
-              />
-              <EditButton label="Edit profile picture" avatar />
-            </div>
+            <ProfilePictureEditor
+  key={profile.username}
+  username={profile.username}
+  src={profile.profile_picture_link}
+/>
 
             <div className="min-w-0 flex-1 basis-36">
               <label htmlFor="profile-name" className="mb-1.5 block text-sm font-semibold">Username</label>
