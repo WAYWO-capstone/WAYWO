@@ -49,7 +49,7 @@ export function DeleteProjectDialog({ project, onDeleted }: DeleteProjectDialogP
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogTrigger render={<button type="button" className="inline-flex h-11 items-center gap-2 rounded-md border border-[#ead7c7] bg-[#fbf0e4] px-4 text-sm font-semibold text-brand-garnet hover:bg-[#f6e4d2] focus-visible:ring-3 focus-visible:ring-ring/50" />}>
-        <Trash2 className="size-4" aria-hidden="true" />Delete
+        <Trash2 className="size-4" aria-hidden="true" />
       </DialogTrigger>
       <DialogContent showCloseButton={false} className="gap-0 rounded-2xl bg-background p-6 text-foreground sm:max-w-lg sm:p-8">
         <DialogTitle className="text-3xl font-bold tracking-tight">Delete project</DialogTitle>
