@@ -101,3 +101,5 @@ def change_email(
             detail=str(exc),
         ) from exc
     return UserResponse.model_validate(user)
+
+    

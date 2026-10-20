@@ -45,4 +45,4 @@ class UserRepository:
     def save_profile(self, profile: Profile) -> Profile:
         self._session.add(profile)
         self._session.flush()
-        return profile 
+        return profile
