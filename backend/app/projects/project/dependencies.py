@@ -23,7 +23,7 @@ def get_current_user_id(user: User = Depends(get_current_user)) -> uuid.UUID:
 
 def get_optional_current_user_id(
     credentials: HTTPAuthorizationCredentials | None = Depends(optional_bearer),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> uuid.UUID | None:
     if credentials is None:
         return None
@@ -35,5 +35,7 @@ def get_optional_current_user_id(
         return None
 
 
-def get_project_service(session: Session = Depends(get_session)) -> ProjectService:
+def get_project_service(
+    session: Session = Depends(get_session, scope="function"),
+) -> ProjectService:
     return ProjectService(ProjectRepository(session))

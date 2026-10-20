@@ -10,7 +10,7 @@ from app.projects.updates.service import UpdateService
 
 
 def get_update_service(
-    session: Annotated[Session, Depends(get_session)],
+    session: Annotated[Session, Depends(get_session, scope="function")],
 ) -> UpdateService:
     return UpdateService(
         UpdateRepository(session),

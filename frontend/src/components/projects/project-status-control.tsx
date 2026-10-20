@@ -7,7 +7,7 @@ interface ProjectStatusControlProps {
   status: ProjectView["status"];
   isOwner: boolean;
   isSaving: boolean;
-  hasError: boolean;
+  error: string | null;
   onChange: (status: ProjectView["status"]) => Promise<void>;
 }
 
@@ -15,7 +15,7 @@ export function ProjectStatusControl({
   status,
   isOwner,
   isSaving,
-  hasError,
+  error,
   onChange,
 }: ProjectStatusControlProps) {
   const [editing, setEditing] = useState(false);
@@ -37,7 +37,7 @@ export function ProjectStatusControl({
         ) : (
           <span className={pillClass}>{statusLabel(status)}</span>
         )}
-        {hasError && <p role="alert" className="mt-2 text-sm text-destructive">Could not update the project status. Please try again.</p>}
+        {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
       </div>
     );
   }
@@ -59,6 +59,9 @@ export function ProjectStatusControl({
           onKeyDown={(event) => {
             if (event.key === "Escape") setEditing(false);
           }}
+          onBlur={() => {
+            if (!isSaving) setEditing(false);
+          }}
           className="min-h-9 rounded-full border border-[#ead7c7] bg-white px-4 py-1.5 text-sm font-medium text-brand-mahogany outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
         >
           <option value="ACTIVE">Active</option>
@@ -67,7 +70,7 @@ export function ProjectStatusControl({
         </select>
         {isSaving && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
       </label>
-      {hasError && <p role="alert" className="mt-2 text-sm text-destructive">Could not update the project status. Please try again.</p>}
+      {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}
     </div>
   );
 }
