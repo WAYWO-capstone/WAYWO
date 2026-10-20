@@ -238,3 +238,19 @@ export function publishProject(projectId: string) {
     method: "POST",
   });
 }  
+
+export function unpublishProject(projectId: string) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/unpublish`, {
+    method: "POST",
+  });
+}
+
+export function updateProjectStatus(
+  projectId: string,
+  status: ProjectView["status"],
+) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
