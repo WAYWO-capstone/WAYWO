@@ -10,27 +10,8 @@ import {
   updateProjectStatus,
   type ProjectView,
 } from "@/lib/api";
+import { previewProject, previewUpdates } from "@/temp-mock-data";
 
-const previewProject: ProjectView = {
-  id: "preview-project",
-  author_id: "preview-author",
-  title: "Handmade Crochet Tote Bag",
-  summary: "A sturdy everyday bag made from recycled cotton yarn.",
-  description: "This sample project shows how the project details appear here. I designed a simple tote shape, tested a few stitch patterns, and chose recycled cotton yarn for durability.",
-  status: "ACTIVE",
-  public: true,
-  category: { id: "preview-category", name: "Crochet", description: "Crochet projects" },
-  tags: [
-    { id: "preview-tag-1", name: "crochet" },
-    { id: "preview-tag-2", name: "handmade" },
-  ],
-  created_at: "2026-05-12T12:00:00Z",
-  last_autosaved_at: null,
-  published_at: "2026-05-13T12:00:00Z",
-  completed_at: null,
-  author: { username: "Anna Ji", profile_picture_link: null },
-  is_owner: false,
-};
 
 export const Route = createFileRoute("/view-project")({
   validateSearch: (search: Record<string, unknown>) => ({
@@ -94,6 +75,7 @@ function ViewProjectPage() {
     <ProjectDetail
       project={project}
       isPreview={!projectId}
+      previewUpdates={previewUpdates}
       isOwner={isOwner}
       isSavingStatus={statusMutation.isPending}
       statusUpdateFailed={statusMutation.isError}

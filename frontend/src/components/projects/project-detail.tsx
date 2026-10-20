@@ -2,11 +2,13 @@ import { Link } from "@tanstack/react-router";
 import { Bell, Bookmark, Pencil } from "lucide-react";
 import { DeleteProjectDialog } from "@/components/projects/delete-project-dialog";
 import { ProjectStatusControl } from "@/components/projects/project-status-control";
-import type { ProjectView } from "@/lib/api";
+import { UpdateHistory } from "@/components/projects/update-history";
+import type { ProjectUpdate, ProjectView } from "@/lib/api";
 
 interface ProjectDetailProps {
   project: ProjectView;
   isPreview: boolean;
+  previewUpdates?: ProjectUpdate[];
   isOwner: boolean;
   isSavingStatus: boolean;
   statusUpdateFailed: boolean;
@@ -25,6 +27,7 @@ function formatDate(value: string) {
 export function ProjectDetail({
   project,
   isPreview,
+  previewUpdates,
   isOwner,
   isSavingStatus,
   statusUpdateFailed,
@@ -90,7 +93,7 @@ export function ProjectDetail({
       </nav>
 
       <div className="mx-auto grid max-w-7xl gap-5 px-5 py-8 sm:px-8 lg:grid-cols-[240px_minmax(0,1fr)_240px] lg:gap-8">
-        <aside className="h-fit min-h-[340px] rounded-lg border border-[#eadfd6] bg-[#fffdfa] p-4">
+        <aside className="h-fit min-h-[340px] rounded-lg border border-border bg-[#fffdfa] p-4">
           <h2 className="text-lg font-bold text-brand-mahogany">Description</h2>
           <p className="mt-3 whitespace-pre-wrap text-sm leading-6 text-foreground">{project.description || "No description provided."}</p>
 
@@ -101,16 +104,14 @@ export function ProjectDetail({
           <h3 className="mt-6 text-lg font-bold text-brand-mahogany">Tags</h3>
           {project.tags.length ? (
             <ul className="mt-2 flex flex-wrap gap-2">
-              {project.tags.map((tag) => <li key={tag.id} className="rounded-full border border-[#eadfd6] px-3 py-1 text-xs text-brand-mahogany">{tag.name}</li>)}
+              {project.tags.map((tag) => <li key={tag.id} className="rounded-full border border-border px-3 py-1 text-xs text-brand-mahogany">{tag.name}</li>)}
             </ul>
           ) : <p className="mt-2 text-sm text-muted-foreground">No tags</p>}
         </aside>
 
-        <section aria-labelledby="updates-heading" className="min-h-[420px] rounded-lg border border-[#eadfd6] bg-white p-4">
-          <h2 id="updates-heading" className="text-lg font-bold text-brand-mahogany">Updates</h2>
-        </section>
+        <UpdateHistory projectId={isPreview ? undefined : project.id} previewUpdates={previewUpdates} />
 
-        <aside aria-labelledby="resources-heading" className="min-h-[320px] rounded-lg border border-[#eadfd6] bg-white p-4">
+        <aside aria-labelledby="resources-heading" className="min-h-[320px] rounded-lg border border-border bg-white p-4">
           <h2 id="resources-heading" className="text-lg font-bold text-brand-mahogany">Resources</h2>
         </aside>
       </div>
