@@ -13,23 +13,27 @@ from app.accounts.users.dependencies import get_current_user
 from app.accounts.users.exceptions import ProfilePictureNotFoundError
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
-from app.accounts.users.schemas import ProfileResponse, ProfileUpdate
+from app.accounts.users.schemas import (
+    AccountProfileResponse,
+    ProfileResponse,
+    ProfileUpdate,
+)
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES, UserService
 from app.core.database import get_session
 from app.media.exceptions import ImageTooLargeError, UnsupportedImageError
-from app.media.service import ObjectStorage
+from app.media.service import ObjectStorage, get_object_storage
 
 router = APIRouter(prefix="/users", tags=["users"])
 
 
-@router.get("/me", response_model=ProfileResponse)
+@router.get("/me", response_model=AccountProfileResponse)
 def get_my_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
-) -> ProfileResponse:
-    """Return the logged-in user's profile."""
+) -> AccountProfileResponse:
+    """Return the logged-in user's profile, including their email."""
 
-    return UserService(UserRepository(session)).get_profile(current_user)
+    return UserService(UserRepository(session)).get_account_profile(current_user)
 
 
 @router.patch("/me", response_model=ProfileResponse)
@@ -38,7 +42,7 @@ def update_my_profile(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
 ) -> ProfileResponse:
-    """Update the logged-in user's bio or picture link."""
+    """Update the logged-in user's bio."""
 
     return UserService(UserRepository(session)).update_profile(current_user, payload)
 
@@ -48,6 +52,7 @@ def upload_my_profile_picture(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
+    storage: ObjectStorage = Depends(get_object_storage),
 ) -> ProfileResponse:
     """Upload the logged-in user's profile picture."""
 
@@ -57,7 +62,7 @@ def upload_my_profile_picture(
             current_user,
             content,
             file.content_type or "",
-            ObjectStorage(),
+            storage,
         )
     except (UnsupportedImageError, ImageTooLargeError) as exc:
         raise HTTPException(
@@ -70,13 +75,14 @@ def upload_my_profile_picture(
 def delete_my_profile_picture(
     current_user: User = Depends(get_current_user),
     session: Session = Depends(get_session),
+    storage: ObjectStorage = Depends(get_object_storage),
 ) -> Response:
     """Delete the logged-in user's profile picture."""
 
     try:
         UserService(UserRepository(session)).delete_profile_picture(
             current_user,
-            ObjectStorage(),
+            storage,
         )
     except ProfilePictureNotFoundError as exc:
         raise HTTPException(
@@ -93,6 +99,11 @@ def get_profile(
 ) -> ProfileResponse:
     """Return a user's public profile."""
 
+    if "/" in username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username cannot contain '/'",
+        )
     users = UserRepository(session)
     user = users.get_user_by_username(username)
     if user is None:
@@ -101,3 +112,6 @@ def get_profile(
             detail="User not found",
         )
     return UserService(users).get_profile(user)
+
+
+get_object_storage()

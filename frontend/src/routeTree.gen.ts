@@ -10,26 +10,36 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+<<<<<<< HEAD
 import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as ViewProjectRouteImport } from './routes/view-project'
+=======
+import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProfileIndexRouteImport } from './routes/profile.index'
+import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
+>>>>>>> sprint-1
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+<<<<<<< HEAD
 const CreateProjectRoute = CreateProjectRouteImport.update({
   id: '/create-project',
   path: '/create-project',
   getParentRoute: () => rootRouteImport,
 } as any)
+=======
+>>>>>>> sprint-1
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+<<<<<<< HEAD
 const ProjectsRoute = ProjectsRouteImport.update({
   id: '/projects',
   path: '/projects',
@@ -38,11 +48,22 @@ const ProjectsRoute = ProjectsRouteImport.update({
 const ViewProjectRoute = ViewProjectRouteImport.update({
   id: '/view-project',
   path: '/view-project',
+=======
+const ProfileIndexRoute = ProfileIndexRouteImport.update({
+  id: '/profile/',
+  path: '/profile/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
+  id: '/profile/$username',
+  path: '/profile/$username',
+>>>>>>> sprint-1
   getParentRoute: () => rootRouteImport,
 } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+<<<<<<< HEAD
   '/create-project': typeof CreateProjectRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
@@ -54,10 +75,22 @@ export interface FileRoutesByTo {
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/view-project': typeof ViewProjectRoute
+=======
+  '/login': typeof LoginRoute
+  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/': typeof ProfileIndexRoute
+}
+export interface FileRoutesByTo {
+  '/': typeof IndexRoute
+  '/login': typeof LoginRoute
+  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile': typeof ProfileIndexRoute
+>>>>>>> sprint-1
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+<<<<<<< HEAD
   '/create-project': typeof CreateProjectRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
@@ -75,14 +108,32 @@ export interface FileRouteTypes {
     | '/login'
     | '/projects'
     | '/view-project'
+=======
+  '/login': typeof LoginRoute
+  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/': typeof ProfileIndexRoute
+}
+export interface FileRouteTypes {
+  fileRoutesByFullPath: FileRoutesByFullPath
+  fullPaths: '/' | '/login' | '/profile/$username' | '/profile/'
+  fileRoutesByTo: FileRoutesByTo
+  to: '/' | '/login' | '/profile/$username' | '/profile'
+  id: '__root__' | '/' | '/login' | '/profile/$username' | '/profile/'
+>>>>>>> sprint-1
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+<<<<<<< HEAD
   CreateProjectRoute: typeof CreateProjectRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
   ViewProjectRoute: typeof ViewProjectRoute
+=======
+  LoginRoute: typeof LoginRoute
+  ProfileUsernameRoute: typeof ProfileUsernameRoute
+  ProfileIndexRoute: typeof ProfileIndexRoute
+>>>>>>> sprint-1
 }
 
 declare module '@tanstack/react-router' {
@@ -94,6 +145,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+<<<<<<< HEAD
     '/create-project': {
       id: '/create-project'
       path: '/create-project'
@@ -101,6 +153,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof CreateProjectRouteImport
       parentRoute: typeof rootRouteImport
     }
+=======
+>>>>>>> sprint-1
     '/login': {
       id: '/login'
       path: '/login'
@@ -108,6 +162,7 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+<<<<<<< HEAD
     '/projects': {
       id: '/projects'
       path: '/projects'
@@ -120,6 +175,20 @@ declare module '@tanstack/react-router' {
       path: '/view-project'
       fullPath: '/view-project'
       preLoaderRoute: typeof ViewProjectRouteImport
+=======
+    '/profile/': {
+      id: '/profile/'
+      path: '/profile'
+      fullPath: '/profile/'
+      preLoaderRoute: typeof ProfileIndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/profile/$username': {
+      id: '/profile/$username'
+      path: '/profile/$username'
+      fullPath: '/profile/$username'
+      preLoaderRoute: typeof ProfileUsernameRouteImport
+>>>>>>> sprint-1
       parentRoute: typeof rootRouteImport
     }
   }
@@ -127,10 +196,16 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+<<<<<<< HEAD
   CreateProjectRoute: CreateProjectRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,
   ViewProjectRoute: ViewProjectRoute,
+=======
+  LoginRoute: LoginRoute,
+  ProfileUsernameRoute: ProfileUsernameRoute,
+  ProfileIndexRoute: ProfileIndexRoute,
+>>>>>>> sprint-1
 }
 export const routeTree = rootRouteImport
   ._addFileChildren(rootRouteChildren)

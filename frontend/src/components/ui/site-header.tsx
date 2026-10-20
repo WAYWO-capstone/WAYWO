@@ -8,15 +8,13 @@ import { LogOut, Search } from "lucide-react";
 
 import logo from "@/assets/waywo-logo.png";
 import { buttonVariants } from "@/components/ui/button";
+import { HeaderProfileMenu } from "@/components/ui/header-profile-menu";
 import { Input } from "@/components/ui/input";
 import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-const NAV_ITEMS = [
-  { label: "Explore", to: "/" },
-  { label: "Projects", to: "/projects" },
-  { label: "Community", to: "/" },
-] as const;
+// TODO: point these links once those pages exist (for future)
+const NAV_ITEMS = ["Explore", "Projects", "Community"];
 
 const authButtonClass =
   "h-10 rounded-xl px-4 font-semibold sm:h-12 sm:px-7 sm:text-base";
@@ -41,11 +39,11 @@ export function SiteHeader() {
         <nav aria-label="Main" className="ml-14 hidden gap-12 lg:flex">
           {NAV_ITEMS.map((item) => (
             <Link
-              key={item.label}
-              to={item.to}
-              className={`text-lg font-semibold hover:text-brand-rust ${pathname === item.to ? "text-brand-garnet" : ""}`}
+              key={item}
+              to="/"
+              className="text-lg font-semibold hover:text-brand-rust"
             >
-              {item.label}
+              {item}
             </Link>
           ))}
         </nav>
@@ -66,6 +64,7 @@ export function SiteHeader() {
 
         <div className="ml-auto flex items-center gap-2 sm:gap-4 md:ml-6">
           
+          {isAuthenticated && <HeaderProfileMenu />}
           {isAuthenticated ? (
             <button
               type="button"
