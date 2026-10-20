@@ -1,6 +1,7 @@
 """Authentication business logic."""
 
 import uuid
+from sqlalchemy.exc import IntegrityError
 
 from app.accounts.auth.exceptions import (
     AuthenticationError,
@@ -8,7 +9,12 @@ from app.accounts.auth.exceptions import (
     InvalidTokenError,
 )
 from app.accounts.auth.repository import AuthRepository
-from app.accounts.auth.schemas import LoginRequest, RefreshRequest, TokenResponse
+from app.accounts.auth.schemas import (
+    EmailChangeRequest,
+    LoginRequest,
+    RefreshRequest,
+    TokenResponse,
+)
 from app.accounts.auth.security import (
     create_access_token,
     create_refresh_token,
@@ -42,6 +48,24 @@ class AuthService:
         )
         self._auth.add_credentials(user.id, hash_password(payload.password))
         return user
+
+    def change_email(self, user: User, payload: EmailChangeRequest) -> User:
+        # check the password using the existing password helper
+        credentials = self._auth.get_credentials(user.id)
+        if credentials is None or not verify_password(
+            payload.current_password,
+            credentials.password_hash,
+        ):
+            raise AuthenticationError("Current password is incorrect")
+
+        try:
+            return self._users.update_email(user, str(payload.email))
+        except IntegrityError as exc:
+            # check for a duplicate after the failed update is rolled back
+            existing = self._users.get_user_by_email(str(payload.email))
+            if existing is None or existing.id == user.id:
+                raise
+            raise DuplicateIdentityError("Email is already registered") from exc
 
     def login(self, payload: LoginRequest) -> TokenResponse:
         """Verify a login and return access and refresh tokens."""

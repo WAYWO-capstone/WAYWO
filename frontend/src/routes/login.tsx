@@ -100,7 +100,7 @@ function LoginPage() {
               autoComplete="username"
               autoCapitalize="none"
               spellCheck={false}
-              placeholder="janedoe@example.com or janedoe"
+              placeholder="Enter your email or username"
               value={identifier}
               onChange={(event) => setIdentifier(event.target.value)}
               aria-invalid={!!fieldErrors.identifier}
