@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 from sqlalchemy.orm import Session
 
 from app.accounts.auth.exceptions import (
@@ -10,6 +10,7 @@ from app.accounts.auth.repository import AuthRepository
 from app.accounts.auth.schemas import (
     EmailChangeRequest,
     LoginRequest,
+    PasswordChangeRequest,
     RefreshRequest,
     RegisterRequest,
     TokenResponse,
@@ -101,3 +102,25 @@ def change_email(
             detail=str(exc),
         ) from exc
     return UserResponse.model_validate(user)
+
+@router.patch(
+    "/password",
+    status_code=status.HTTP_204_NO_CONTENT,
+    response_class=Response,
+)
+def change_password(
+    payload: PasswordChangeRequest,
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session),
+) -> Response:
+    # change the password for the signed in account
+    service = AuthService(UserRepository(session), AuthRepository(session))
+    try:
+        service.change_password(current_user, payload)
+    except AuthenticationError as exc:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail=str(exc),
+        ) from exc
+
+    return Response(status_code=status.HTTP_204_NO_CONTENT)

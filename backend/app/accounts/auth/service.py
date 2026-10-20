@@ -12,6 +12,7 @@ from app.accounts.auth.repository import AuthRepository
 from app.accounts.auth.schemas import (
     EmailChangeRequest,
     LoginRequest,
+    PasswordChangeRequest,
     RefreshRequest,
     TokenResponse,
 )
@@ -66,6 +67,21 @@ class AuthService:
             if existing is None or existing.id == user.id:
                 raise
             raise DuplicateIdentityError("Email is already registered") from exc
+
+    def change_password(self, user: User, payload: PasswordChangeRequest) -> None:
+        # verify the current password before replacing its hash
+        credentials = self._auth.get_credentials(user.id)
+        if credentials is None or not verify_password(
+            payload.current_password,
+            credentials.password_hash,
+        ):
+            raise AuthenticationError("Current password is incorrect")
+
+        self._auth.update_password(
+            credentials,
+            hash_password(payload.new_password),
+        )
+
 
     def login(self, payload: LoginRequest) -> TokenResponse:
         """Verify a login and return access and refresh tokens."""
