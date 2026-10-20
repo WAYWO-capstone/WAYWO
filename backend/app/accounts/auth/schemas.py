@@ -41,3 +41,11 @@ class EmailChangeRequest(BaseModel):
     @classmethod
     def normalize_email(cls, value: EmailStr) -> str:
         return str(value).strip().lower()
+
+
+class PasswordChangeRequest(BaseModel):
+    # use the same new password limits as registration
+    model_config = ConfigDict(extra="forbid")
+
+    current_password: str = Field(min_length=1, max_length=128, repr=False)
+    new_password: str = Field(min_length=8, max_length=128, repr=False)

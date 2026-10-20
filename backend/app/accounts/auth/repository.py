@@ -25,3 +25,12 @@ class AuthRepository:
         self._session.add(credentials)
         self._session.flush()
         return credentials
+
+    def update_password(
+        self,
+        credentials: UserCredential,
+        password_hash: str,
+    ) -> None:
+        # save the new hash
+        credentials.password_hash = password_hash
+        self._session.flush()
