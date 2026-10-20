@@ -149,7 +149,9 @@ def test_upload_profile_picture_saves_the_public_link(
     account, token = _register_and_login(client)
     _block_r2(monkeypatch)
 
-    def fake_upload(self, user_id: uuid.UUID, content: bytes, content_type: str) -> str:
+    def fake_upload(
+        _self, _user_id: uuid.UUID, _content: bytes, _content_type: str
+    ) -> str:
         return "https://photos.example/me.png"
 
     monkeypatch.setattr(
@@ -223,10 +225,10 @@ def test_upload_profile_picture_accepts_a_real_png(
     account, token = _register_and_login(client)
 
     class StoredObject:
-        def put_object(self, **kwargs: object) -> None:
+        def put_object(self, **_kwargs: object) -> None:
             return None
 
-        def delete_object(self, **kwargs: object) -> None:
+        def delete_object(self, **_kwargs: object) -> None:
             return None
 
     monkeypatch.setattr(
