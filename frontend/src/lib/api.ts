@@ -308,6 +308,7 @@ async function projectRequest<T>(path: string, init?: RequestInit): Promise<T> {
     },
   });
   if (!response.ok) throw new ApiError(response.status);
+  if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
 }
 
@@ -352,6 +353,12 @@ export function autosaveProject(projectId: string, data: ProjectInput) {
   return projectRequest<ProjectResult>(`/projects/${projectId}/autosave`, {
     method: "PATCH",
     body: JSON.stringify(data),
+  });
+}
+
+export function deleteProject(projectId: string) {
+  return projectRequest<void>(`/projects/${projectId}`, {
+    method: "DELETE",
   });
 }
 

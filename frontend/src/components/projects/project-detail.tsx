@@ -1,5 +1,6 @@
 import { Link } from "@tanstack/react-router";
 import { Bell, Bookmark, Pencil } from "lucide-react";
+import { DeleteProjectDialog } from "@/components/projects/delete-project-dialog";
 import { ProjectStatusControl } from "@/components/projects/project-status-control";
 import type { ProjectView } from "@/lib/api";
 
@@ -10,6 +11,7 @@ interface ProjectDetailProps {
   isSavingStatus: boolean;
   statusUpdateFailed: boolean;
   onStatusChange: (status: ProjectView["status"]) => Promise<void>;
+  onDeleted: () => Promise<void>;
 }
 
 function formatDate(value: string) {
@@ -27,6 +29,7 @@ export function ProjectDetail({
   isSavingStatus,
   statusUpdateFailed,
   onStatusChange,
+  onDeleted,
 }: ProjectDetailProps) {
   return (
     <div className="flex-1 bg-white">
@@ -67,6 +70,7 @@ export function ProjectDetail({
                 <Pencil className="size-4" aria-hidden="true" />Edit project
               </Link>
             )}
+            {isOwner && <DeleteProjectDialog project={project} onDeleted={onDeleted} />}
             <button type="button" aria-label="Notifications" title="Notifications" className="flex size-11 items-center justify-center rounded-md border border-[#ead7c7] bg-[#fbf0e4] text-brand-mahogany hover:bg-[#f6e4d2]">
               <Bell className="size-5" aria-hidden="true" />
             </button>
