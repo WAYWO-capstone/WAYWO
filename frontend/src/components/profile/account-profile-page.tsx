@@ -15,7 +15,8 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountProfile } from "@/lib/api";
-import { BioEditor, ProfilePictureEditor, } from "@/components/profile/profile-editors"
+import {
+  BioEditor, EmailEditor, ProfilePictureEditor, } from "@/components/profile/profile-editors";
 
 
 interface AccountProfilePageProps {
@@ -125,7 +126,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
             <p className="mt-1 text-sm sm:text-base">Your details, your style, your preferences.</p>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-end gap-x-7 gap-y-6">
+                    <div className="mt-8 flex flex-wrap items-start gap-x-7 gap-y-6">
             <ProfilePictureEditor
   key={profile.username}
   username={profile.username}
@@ -140,13 +141,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
               </div>
             </div>
 
-            <div className="min-w-0 flex-1 basis-48">
-              <label htmlFor="profile-email" className="mb-1.5 block text-sm font-semibold">Email</label>
-              <div className="flex items-center gap-1">
-                <Input id="profile-email" type="email" value={profile.email} readOnly className={fieldClassName} />
-                <EditButton label="Edit email" />
-              </div>
-            </div>
+                      <EmailEditor key={profile.username} email={profile.email} />
           </div>
 
           <BioEditor key={profile.username} bio={profile.bio} />
