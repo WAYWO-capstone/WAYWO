@@ -41,4 +41,3 @@ class EmailChangeRequest(BaseModel):
     @classmethod
     def normalize_email(cls, value: EmailStr) -> str:
         return str(value).strip().lower()
-        

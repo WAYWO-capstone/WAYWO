@@ -244,4 +244,3 @@ def test_email_change_requires_both_fields(missing_field: str) -> None:
 
     with pytest.raises(ValidationError):
         EmailChangeRequest.model_validate(payload)
-        
