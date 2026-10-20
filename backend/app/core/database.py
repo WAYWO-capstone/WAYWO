@@ -1,13 +1,11 @@
+"""Database engine and session management."""
+
 from collections.abc import Iterator
 
 from sqlalchemy import create_engine
-from sqlalchemy.orm import DeclarativeBase, Session, sessionmaker
+from sqlalchemy.orm import Session, sessionmaker
 
 from app.core.config import settings
-
-
-class Base(DeclarativeBase):
-    pass
 
 
 engine = create_engine(settings.database_url)
@@ -18,6 +16,7 @@ SessionLocal = sessionmaker(
     expire_on_commit=False,
     bind=engine,
 )
+
 
 def get_session() -> Iterator[Session]:
     with SessionLocal() as session:
