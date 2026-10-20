@@ -328,10 +328,11 @@ export function getMyPublishedProjects() {
   return projectRequest<OwnedProject[]>("/projects/mine/published");
 }
 
-export function createProject(data: ProjectInput) {
+export function createProject(data: ProjectInput, options?: { keepalive?: boolean }) {
   return projectRequest<ProjectResult>("/projects", {
     method: "POST",
     body: JSON.stringify(data),
+    keepalive: options?.keepalive,
   });
 }
 
@@ -349,10 +350,11 @@ export function updateProject(projectId: string, data: ProjectInput) {
   });
 }
 
-export function autosaveProject(projectId: string, data: ProjectInput) {
+export function autosaveProject(projectId: string, data: ProjectInput, options?: { keepalive?: boolean }) {
   return projectRequest<ProjectResult>(`/projects/${projectId}/autosave`, {
     method: "PATCH",
     body: JSON.stringify(data),
+    keepalive: options?.keepalive,
   });
 }
 
