@@ -1,4 +1,4 @@
-import { LoaderCircle, Pencil } from "lucide-react";
+import { Eye, EyeOff, LoaderCircle, Pencil } from "lucide-react";
 import {
   useEffect,
   useRef,
@@ -287,7 +287,8 @@ export function EmailEditor({ email }: { email: string }) {
   const saveEmail = useUpdateEmail();
   const [editing, setEditing] = useState(false);
   const [draft, setDraft] = useState(email);
-  const [password, setPassword] = useState("");
+   const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(false);
   const emailRef = useRef<HTMLInputElement>(null);
   const editButtonRef = useRef<HTMLButtonElement>(null);
   const { isSuccess, reset } = saveEmail;
@@ -303,7 +304,8 @@ export function EmailEditor({ email }: { email: string }) {
 
   function startEditing() {
     setDraft(email);
-    setPassword("");
+      setPassword("");
+    setShowPassword(false);
     reset();
     setEditing(true);
     requestAnimationFrame(() => emailRef.current?.focus());
@@ -311,7 +313,8 @@ export function EmailEditor({ email }: { email: string }) {
 
   function finishEditing() {
     setEditing(false);
-    setPassword("");
+      setPassword("");
+    setShowPassword(false);
     requestAnimationFrame(() => editButtonRef.current?.focus());
   }
 
@@ -396,21 +399,38 @@ export function EmailEditor({ email }: { email: string }) {
             >
               Password
             </label>
-            <Input
-              id="profile-email-password"
-              name="current_password"
-              type="password"
-              autoComplete="current-password"
-              value={password}
-              onChange={(event) => setPassword(event.target.value)}
-              disabled={saveEmail.isPending}
-              required
-              maxLength={128}
-              aria-describedby={
-                saveEmail.isError ? "profile-email-error" : undefined
-              }
-              className="h-10 rounded-xl px-3 text-sm"
-            />
+                        <div className="relative">
+              <Input
+                id="profile-email-password"
+                name="current_password"
+                type={showPassword ? "text" : "password"}
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => setPassword(event.target.value)}
+                disabled={saveEmail.isPending}
+                required
+                maxLength={128}
+                aria-describedby={
+                  saveEmail.isError ? "profile-email-error" : undefined
+                }
+                className="h-11 rounded-xl pr-14 pl-3 text-sm"
+              />
+              <button
+                type="button"
+                onClick={() => setShowPassword((shown) => !shown)}
+                disabled={saveEmail.isPending}
+                aria-label={showPassword ? "Hide password" : "Show password"}
+                aria-controls="profile-email-password"
+                title={showPassword ? "Hide password" : "Show password"}
+                className="absolute inset-y-0 right-0 flex w-11 cursor-pointer items-center justify-center rounded-r-xl text-brand-mahogany outline-none hover:bg-muted focus-visible:ring-2 focus-visible:ring-ring disabled:cursor-wait disabled:opacity-60"
+              >
+                {showPassword ? (
+                  <EyeOff aria-hidden="true" className="size-5" />
+                ) : (
+                  <Eye aria-hidden="true" className="size-5" />
+                )}
+              </button>
+            </div>
           </div>
           <div className="flex flex-wrap gap-2">
             <Button
