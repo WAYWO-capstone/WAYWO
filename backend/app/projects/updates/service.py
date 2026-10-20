@@ -1,9 +1,11 @@
 import uuid
 
 from app.projects.project.exceptions import ProjectNotFoundError
+from app.projects.project.schemas import ProjectAuthorRead
 from app.projects.project.repository import ProjectRepository
-from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
+from app.projects.updates.schemas import UpdateRead
+
 
 class UpdateService:
     def __init__(
@@ -21,7 +23,7 @@ class UpdateService:
         *,
         limit: int,
         offset: int,
-    ) -> tuple[list[Update], int]:
+    ) -> tuple[list[UpdateRead], int]:
         """Return one page of a project's updates (newest first) and the total.
 
         A project the viewer may not see is reported as not found, so its
@@ -33,6 +35,25 @@ class UpdateService:
         ):
             raise ProjectNotFoundError(project_id)
 
-        return self._repo.list_for_project(
+        rows, total = self._repo.list_for_project(
             project_id, viewer_id, limit=limit, offset=offset
         )
+        items = [
+            UpdateRead(
+                id=update.id,
+                project_id=update.project_id,
+                author_id=update.author_id,
+                title=update.title,
+                body=update.body,
+                type=update.type,
+                public=update.public,
+                created_at=update.created_at,
+                updated_at=update.updated_at,
+                author=ProjectAuthorRead(
+                    username=username or "Unknown creator",
+                    profile_picture_link=profile_picture_link,
+                ),
+            )
+            for update, username, profile_picture_link in rows
+        ]
+        return items, total

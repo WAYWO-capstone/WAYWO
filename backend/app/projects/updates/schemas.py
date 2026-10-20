@@ -3,6 +3,7 @@ from datetime import datetime
 
 from pydantic import BaseModel, ConfigDict
 
+from app.projects.project.schemas import ProjectAuthorRead
 from app.projects.updates.models import UpdateType
 
 
@@ -18,6 +19,7 @@ class UpdateRead(BaseModel):
     public: bool
     created_at: datetime
     updated_at: datetime
+    author: ProjectAuthorRead
 
 
 class UpdateHistoryPage(BaseModel):
