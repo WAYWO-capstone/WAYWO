@@ -2,7 +2,7 @@
 
 from importlib import import_module
 
-from app.core.database import Base
+from app.core.base import Base
 
 MODEL_MODULES = (
     "app.accounts.auth.models",
