@@ -218,3 +218,26 @@ export async function updateEmail(
 
   return response.json();
 }
+
+export interface PasswordUpdate {
+  current_password: string;
+  new_password: string;
+}
+
+export async function updatePassword(
+  changes: PasswordUpdate,
+): Promise<void> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const response = await fetch(`${API_URL}/auth/password`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    body: JSON.stringify(changes),
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+}

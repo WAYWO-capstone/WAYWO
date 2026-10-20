@@ -1,6 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
 import {
+  updatePassword,
   updateEmail,
   updateProfile,
   uploadProfilePicture,
@@ -55,5 +56,12 @@ export function useUpdateEmail() {
         queryKey: ["current-profile"],
       });
     },
+  });
+}
+
+
+export function useUpdatePassword() {
+  return useMutation({
+    mutationFn: updatePassword,
   });
 }
