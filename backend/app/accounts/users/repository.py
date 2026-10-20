@@ -7,6 +7,7 @@ from sqlalchemy.orm import Session
 
 from app.accounts.users.models import Profile, User
 
+
 class UserRepository:
     """Data access only. Flushes but never commits."""
 
