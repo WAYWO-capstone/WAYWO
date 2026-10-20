@@ -7,7 +7,7 @@ from datetime import datetime
 from sqlalchemy import Column, DateTime, Enum, ForeignKey, String, Table, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
-from app.core.database import Base
+from app.core.base import Base
 from app.feed_items.feed_item.models import FeedItem
 from app.feed_items.feed_item.enums import FeedItemType
 from app.projects.project.enums import ProjectStatus
