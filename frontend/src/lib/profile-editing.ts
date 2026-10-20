@@ -1,6 +1,10 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import { updateProfile, uploadProfilePicture } from "@/lib/api";
+import {
+  updateEmail,
+  updateProfile,
+  uploadProfilePicture,
+} from "@/lib/api";
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
@@ -36,6 +40,20 @@ export function useUpdateProfilePicture() {
           queryKey: ["public-profile", saved.username.toLowerCase()],
         }),
       ]);
+    },
+  });
+}
+
+export function useUpdateEmail() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: updateEmail,
+    onSuccess: async () => {
+      // reload the account profile after the email changes
+      await queryClient.invalidateQueries({
+        queryKey: ["current-profile"],
+      });
     },
   });
 }
