@@ -8,6 +8,8 @@ from app.projects.project.enums import ProjectStatus
 from app.projects.project.exceptions import (
     CategoryNotFoundError,
     InvalidProjectStatusTransitionError,
+    ProjectNotFoundError,
+    ProjectNotOwnedError,
 )
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
@@ -485,3 +487,35 @@ class TestUnpublishProject:
         assert project.published_at is None
         assert project.completed_at is None
         repository.update.assert_called_once_with(project)
+
+
+class TestDeleteProject:
+    def test_deletes_owned_project(self, service, repository, author_id):
+        project = MagicMock(spec=Project, author_id=author_id)
+        repository.get.return_value = project
+        project_id = uuid.uuid4()
+
+        service.delete_project(project_id, author_id)
+
+        repository.get.assert_called_once_with(project_id)
+        repository.delete.assert_called_once_with(project)
+
+    def test_raises_when_project_not_found(self, service, repository, author_id):
+        repository.get.return_value = None
+        project_id = uuid.uuid4()
+
+        with pytest.raises(ProjectNotFoundError):
+            service.delete_project(project_id, author_id)
+
+        repository.delete.assert_not_called()
+
+    def test_rejects_deleting_another_users_project(
+        self, service, repository, author_id
+    ):
+        repository.get.return_value = MagicMock(spec=Project, author_id=uuid.uuid4())
+        project_id = uuid.uuid4()
+
+        with pytest.raises(ProjectNotOwnedError):
+            service.delete_project(project_id, author_id)
+
+        repository.delete.assert_not_called()

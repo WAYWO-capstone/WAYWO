@@ -1,10 +1,12 @@
 import uuid
 
-from sqlalchemy import select
+from sqlalchemy import delete, select
 from sqlalchemy.dialects.postgresql import insert
 from sqlalchemy.orm import Session
 
+from app.feed_items.feed_item.models import FeedItem
 from app.projects.project.models import Category, Project, Tag
+from app.projects.updates.models import Update
 
 
 class ProjectRepository:
@@ -39,3 +41,12 @@ class ProjectRepository:
     def update(self, project: Project) -> Project:
         self._session.flush()
         return project
+
+    def delete(self, project: Project) -> None:
+        update_ids = select(Update.id).where(Update.project_id == project.id)
+        self._session.execute(
+            delete(FeedItem).where(FeedItem.id.in_(update_ids)),
+            execution_options={"synchronize_session": "fetch"},
+        )
+        self._session.delete(project)
+        self._session.flush()
