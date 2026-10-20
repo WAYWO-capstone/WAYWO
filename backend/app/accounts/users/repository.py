@@ -32,6 +32,13 @@ class UserRepository:
         self._session.flush()
         return user
 
+    def update_email(self, user: User, email: str) -> User:
+        # undo this update if the database rejects the address
+        with self._session.begin_nested():
+            user.email = email
+            self._session.flush()
+        return user
+
     def get_profile(self, user_id: uuid.UUID) -> Profile | None:
         return self._session.get(Profile, user_id)
 
