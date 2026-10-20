@@ -39,6 +39,14 @@ def list_my_drafts(
     return service.list_private_drafts(current_user_id)
 
 
+@router.get("/mine/published", response_model=list[ProjectRead])
+def list_my_published_projects(
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    return service.list_published_by_author(current_user_id)
+
+
 @router.get("/{project_id}", response_model=ProjectDetailRead)
 def get_project(
     project_id: uuid.UUID,

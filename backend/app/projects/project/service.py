@@ -41,6 +41,9 @@ class ProjectService:
     def list_private_drafts(self, author_id: uuid.UUID) -> list[Project]:
         return self._repo.list_private_drafts(author_id)
 
+    def list_published_by_author(self, author_id: uuid.UUID) -> list[Project]:
+        return self._repo.list_published_by_author(author_id)
+
     def create_project(self, author_id: uuid.UUID, data: ProjectCreate) -> Project:
         category = self._repo.get_category(data.category_id)
         if category is None:

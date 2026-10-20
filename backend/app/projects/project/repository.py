@@ -36,6 +36,18 @@ class ProjectRepository:
         )
         return list(self._session.scalars(statement))
 
+    def list_published_by_author(self, author_id: uuid.UUID) -> list[Project]:
+        statement = (
+            select(Project)
+            .where(
+                Project.author_id == author_id,
+                Project.public.is_(True),
+                Project.status.in_((ProjectStatus.ACTIVE, ProjectStatus.COMPLETED)),
+            )
+            .order_by(Project.published_at.desc())
+        )
+        return list(self._session.scalars(statement))
+
     def get_with_author(self, project_id: uuid.UUID):
         statement = (
             select(Project, User.username, Profile.profile_picture_link)

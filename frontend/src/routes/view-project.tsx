@@ -1,7 +1,7 @@
 import { createFileRoute } from "@tanstack/react-router";
 import { useQuery } from "@tanstack/react-query";
 import { Bell, Bookmark, CircleAlert, LoaderCircle } from "lucide-react";
-import { getProject, type ProjectView } from "@/lib/api";
+import { ApiError, getProject, type ProjectView } from "@/lib/api";
 
 const previewProject: ProjectView = {
   id: "preview-project",
@@ -58,7 +58,16 @@ function ViewProjectPage() {
   }
 
   if (projectQuery.isError || !project) {
-    return <div role="alert" className="mx-auto flex w-full max-w-7xl items-center gap-2 px-6 py-16 text-destructive"><CircleAlert className="size-5" />Could not load this project. Check the link and try again.</div>;
+    const status = projectQuery.error instanceof ApiError ? projectQuery.error.status : undefined;
+    const message = status === 401
+      ? "Your session has expired. Log in again to view this project."
+      : status === 404
+        ? "This project was not found or you do not have access to it."
+        : status
+          ? `Could not load this project (server returned ${status}).`
+          : "Could not load this project. Check your connection and try again.";
+
+    return <div role="alert" className="mx-auto flex w-full max-w-7xl items-center gap-2 px-6 py-16 text-destructive"><CircleAlert className="size-5" />{message}</div>;
   }
 
   return (
