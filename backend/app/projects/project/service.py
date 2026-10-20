@@ -10,7 +10,12 @@ from app.projects.project.exceptions import (
 )
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.project.schemas import ProjectCreate, ProjectRead, ProjectStatusUpdate, ProjectUpdate
+from app.projects.project.schemas import (
+    ProjectCreate,
+    ProjectRead,
+    ProjectStatusUpdate,
+    ProjectUpdate,
+)
 
 
 class ProjectService:
