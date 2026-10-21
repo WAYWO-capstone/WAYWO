@@ -10,8 +10,11 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as LoginRouteImport } from './routes/login'
+import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RegisterRouteImport } from './routes/register'
+import { Route as ViewProjectRouteImport } from './routes/view-project'
 import { Route as ProfileIndexRouteImport } from './routes/profile.index'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
 
@@ -20,14 +23,29 @@ const IndexRoute = IndexRouteImport.update({
   path: '/',
   getParentRoute: () => rootRouteImport,
 } as any)
+const CreateProjectRoute = CreateProjectRouteImport.update({
+  id: '/create-project',
+  path: '/create-project',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const LoginRoute = LoginRouteImport.update({
   id: '/login',
   path: '/login',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProjectsRoute = ProjectsRouteImport.update({
+  id: '/projects',
+  path: '/projects',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ViewProjectRoute = ViewProjectRouteImport.update({
+  id: '/view-project',
+  path: '/view-project',
   getParentRoute: () => rootRouteImport,
 } as any)
 const ProfileIndexRoute = ProfileIndexRouteImport.update({
@@ -43,44 +61,75 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/create-project': typeof CreateProjectRoute
   '/login': typeof LoginRoute
+  '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
+  '/view-project': typeof ViewProjectRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/create-project': typeof CreateProjectRoute
   '/login': typeof LoginRoute
+  '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
+  '/view-project': typeof ViewProjectRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/profile': typeof ProfileIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/create-project': typeof CreateProjectRoute
   '/login': typeof LoginRoute
+  '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
+  '/view-project': typeof ViewProjectRoute
   '/profile/$username': typeof ProfileUsernameRoute
   '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/profile/$username' | '/profile/'
+  fullPaths:
+    | '/'
+    | '/create-project'
+    | '/login'
+    | '/projects'
+    | '/register'
+    | '/view-project'
+    | '/profile/$username'
+    | '/profile/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/profile/$username' | '/profile'
+  to:
+    | '/'
+    | '/create-project'
+    | '/login'
+    | '/projects'
+    | '/register'
+    | '/view-project'
+    | '/profile/$username'
+    | '/profile'
   id:
     | '__root__'
     | '/'
+    | '/create-project'
     | '/login'
+    | '/projects'
     | '/register'
+    | '/view-project'
     | '/profile/$username'
     | '/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  CreateProjectRoute: typeof CreateProjectRoute
   LoginRoute: typeof LoginRoute
+  ProjectsRoute: typeof ProjectsRoute
   RegisterRoute: typeof RegisterRoute
+  ViewProjectRoute: typeof ViewProjectRoute
   ProfileUsernameRoute: typeof ProfileUsernameRoute
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
@@ -94,6 +143,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof IndexRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/create-project': {
+      id: '/create-project'
+      path: '/create-project'
+      fullPath: '/create-project'
+      preLoaderRoute: typeof CreateProjectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/login': {
       id: '/login'
       path: '/login'
@@ -101,11 +157,25 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof LoginRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/projects': {
+      id: '/projects'
+      path: '/projects'
+      fullPath: '/projects'
+      preLoaderRoute: typeof ProjectsRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/register': {
       id: '/register'
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/view-project': {
+      id: '/view-project'
+      path: '/view-project'
+      fullPath: '/view-project'
+      preLoaderRoute: typeof ViewProjectRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/profile/': {
@@ -127,8 +197,11 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  CreateProjectRoute: CreateProjectRoute,
   LoginRoute: LoginRoute,
+  ProjectsRoute: ProjectsRoute,
   RegisterRoute: RegisterRoute,
+  ViewProjectRoute: ViewProjectRoute,
   ProfileUsernameRoute: ProfileUsernameRoute,
   ProfileIndexRoute: ProfileIndexRoute,
 }

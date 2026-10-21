@@ -8,8 +8,9 @@ from app.projects.project.enums import ProjectStatus
 from app.projects.project.exceptions import (
     CategoryNotFoundError,
     InvalidProjectStatusTransitionError,
+    ProjectNotFoundError,
 )
-from app.projects.project.models import Project
+from app.projects.project.models import Category, Project
 from app.projects.project.repository import ProjectRepository
 from app.projects.project.schemas import ProjectCreate, ProjectStatusUpdate, ProjectUpdate
 from app.projects.project.service import ProjectService
@@ -485,3 +486,80 @@ class TestUnpublishProject:
         assert project.published_at is None
         assert project.completed_at is None
         repository.update.assert_called_once_with(project)
+
+
+class TestGetProjectForView:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            id=uuid.uuid4(),
+            author_id=author_id,
+            title="Viewable project",
+            summary="A summary",
+            description="A description",
+            status=ProjectStatus.ACTIVE,
+            public=True,
+            category=Category(id=uuid.uuid4(), name="Crochet", description=""),
+            tags=[],
+            created_at=datetime.now(timezone.utc),
+        )
+
+    def test_public_project_is_visible_to_anonymous_viewers(
+        self, service, repository, project
+    ):
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        result = service.get_project_for_view(project.id, None)
+
+        assert result["id"] == project.id
+        assert result["is_owner"] is False
+
+    def test_private_draft_is_visible_to_its_owner(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        result = service.get_project_for_view(project.id, author_id)
+
+        assert result["id"] == project.id
+        assert result["is_owner"] is True
+
+    def test_private_draft_is_hidden_from_other_users(
+        self, service, repository, project
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        with pytest.raises(ProjectNotFoundError):
+            service.get_project_for_view(project.id, uuid.uuid4())
+
+    def test_private_draft_is_hidden_from_anonymous_viewers(
+        self, service, repository, project
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        with pytest.raises(ProjectNotFoundError):
+            service.get_project_for_view(project.id, None)
+
+    def test_missing_project_raises_not_found(self, service, repository):
+        repository.get_with_author.return_value = None
+
+        with pytest.raises(ProjectNotFoundError):
+            service.get_project_for_view(uuid.uuid4(), None)
+
+    def test_includes_author_details(self, service, repository, project):
+        repository.get_with_author.return_value = (
+            project, "anna", "https://example.invalid/anna.png"
+        )
+
+        result = service.get_project_for_view(project.id, None)
+
+        assert result["author"] == {
+            "username": "anna",
+            "profile_picture_link": "https://example.invalid/anna.png",
+        }
