@@ -10,7 +10,7 @@ from datetime import datetime
 from sqlalchemy import Boolean, DateTime, Enum, String, Text
 from sqlalchemy.orm import Mapped, mapped_column
 
-from app.core.database import Base
+from app.core.base import Base
 from app.feed_items.feed_item.enums import FeedItemType
 
 from app.core.common import utcnow
