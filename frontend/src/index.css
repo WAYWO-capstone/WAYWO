@@ -119,6 +119,14 @@
   --radius-4xl: calc(var(--radius) * 2.6);
 }
 
+/* Project update types: badge and timeline dot backgrounds (bg-update-*) */
+@theme {
+  --color-update-progress: #f3e4c9;
+  --color-update-decision: #c6d9ef;
+  --color-update-problem: #eeb7c1;
+  --color-update-solution: #c9e9b5;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);

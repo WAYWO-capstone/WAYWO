@@ -97,13 +97,26 @@ function tokenPayload(jwt: string): { sub?: unknown; exp?: unknown } | null {
   }
 }
 
-function isExpired(jwt: string): boolean {
+// marginMs treats a token that expires within that time as already expired.
+function isExpired(jwt: string, marginMs = 0): boolean {
   const payload = tokenPayload(jwt);
 
   return (
     payload === null ||
-    (typeof payload.exp === "number" && payload.exp * 1000 <= Date.now())
+    (typeof payload.exp === "number" && payload.exp * 1000 <= Date.now() + marginMs)
   );
+}
+
+// True when the access token is expired or about to be, so it should be renewed first.
+export function accessTokenExpiresSoon(tokens: AuthTokens): boolean {
+  return isExpired(tokens.accessToken, 30_000);
+}
+
+// Id of the signed-in user, read from the token, or null when signed out.
+export function getTokenUserId(): string | null {
+  const tokens = getTokens();
+  const sub = tokens ? tokenPayload(tokens.refreshToken)?.sub : null;
+  return typeof sub === "string" ? sub : null;
 }
 
 export function isAuthenticated(): boolean {

@@ -32,7 +32,7 @@ router = APIRouter(prefix="/auth", tags=["auth"])
 )
 def register(
     payload: RegisterRequest,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> UserResponse:
     """Create an account and return the user without the password."""
 
@@ -50,7 +50,7 @@ def register(
 @router.post("/login", response_model=TokenResponse)
 def login(
     payload: LoginRequest,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> TokenResponse:
     """Verify an email or username and password, then return tokens."""
 
@@ -67,7 +67,7 @@ def login(
 @router.post("/refresh", response_model=TokenResponse)
 def refresh(
     payload: RefreshRequest,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> TokenResponse:
     """Issue a new token pair from a refresh token."""
 
@@ -85,7 +85,7 @@ def refresh(
 def change_email(
     payload: EmailChangeRequest,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> UserResponse:
     # use the signed in account instead of taking a user id from the request
     service = AuthService(UserRepository(session), AuthRepository(session))
@@ -111,7 +111,7 @@ def change_email(
 def change_password(
     payload: PasswordChangeRequest,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> Response:
     # change the password for the signed in account
     service = AuthService(UserRepository(session), AuthRepository(session))
