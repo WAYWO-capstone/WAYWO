@@ -33,7 +33,8 @@ class ProjectService:
             raise ProjectNotFoundError(project_id)
 
         project, username, profile_picture_link = result
-        if not project.public and project.author_id != viewer_id:
+        is_owner = viewer_id is not None and project.author_id == viewer_id
+        if not project.public and not is_owner:
             raise ProjectNotFoundError(project_id)
 
         project_data = ProjectRead.model_validate(project).model_dump()
@@ -41,6 +42,7 @@ class ProjectService:
             "username": username or "Unknown creator",
             "profile_picture_link": profile_picture_link,
         }
+        project_data["is_owner"] = is_owner
         return project_data
 
     def list_private_drafts(self, author_id: uuid.UUID) -> list[Project]:

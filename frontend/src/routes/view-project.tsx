@@ -2,7 +2,6 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { ProjectDetail } from "@/components/projects/project-detail";
-import { useCurrentProfile } from "@/lib/auth";
 import {
   ApiError,
   getProject,
@@ -30,6 +29,7 @@ const previewProject: ProjectView = {
   published_at: "2026-05-13T12:00:00Z",
   completed_at: null,
   author: { username: "Anna Ji", profile_picture_link: null },
+  is_owner: false,
 };
 
 export const Route = createFileRoute("/view-project")({
@@ -48,7 +48,6 @@ function ViewProjectPage() {
     enabled: Boolean(projectId),
   });
   const project = projectId ? projectQuery.data : previewProject;
-  const profileQuery = useCurrentProfile();
   const statusMutation = useMutation({
     mutationFn: async (nextStatus: ProjectView["status"]) => {
       if (!projectId || !project) throw new Error("Project is not loaded");
@@ -71,9 +70,7 @@ function ViewProjectPage() {
       ]);
     },
   });
-  const isOwner = Boolean(
-    projectId && project && profileQuery.data?.username === project.author.username,
-  );
+  const isOwner = Boolean(projectId && project?.is_owner);
 
   if (projectId && projectQuery.isLoading) {
     return <div className="flex flex-1 items-center justify-center gap-2 py-20 text-muted-foreground"><LoaderCircle className="size-5 animate-spin" />Loading project...</div>;

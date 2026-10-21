@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import Depends, HTTPException, status
+from fastapi import Depends
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from sqlalchemy.orm import Session
 
@@ -31,12 +31,8 @@ def get_optional_current_user_id(
     auth = AuthService(UserRepository(session), AuthRepository(session))
     try:
         return auth.get_user_from_access_token(credentials.credentials).id
-    except (InvalidTokenError, ValueError) as exc:
-        raise HTTPException(
-            status_code=status.HTTP_401_UNAUTHORIZED,
-            detail="Invalid or expired access token",
-            headers={"WWW-Authenticate": "Bearer"},
-        ) from exc
+    except (InvalidTokenError, ValueError):
+        return None
 
 
 def get_project_service(session: Session = Depends(get_session)) -> ProjectService:

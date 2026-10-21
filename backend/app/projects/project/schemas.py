@@ -131,3 +131,4 @@ class ProjectAuthorRead(BaseModel):
 
 class ProjectDetailRead(ProjectRead):
     author: ProjectAuthorRead
+    is_owner: bool

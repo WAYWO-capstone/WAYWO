@@ -274,6 +274,7 @@ export interface ProjectView extends ProjectResult {
   published_at: string | null;
   completed_at: string | null;
   author: { username: string; profile_picture_link: string | null };
+  is_owner: boolean;
 }
 
 export interface DraftProject {
