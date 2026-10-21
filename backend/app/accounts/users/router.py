@@ -29,7 +29,7 @@ router = APIRouter(prefix="/users", tags=["users"])
 @router.get("/me", response_model=AccountProfileResponse)
 def get_my_profile(
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> AccountProfileResponse:
     """Return the logged-in user's profile, including their email."""
 
@@ -40,7 +40,7 @@ def get_my_profile(
 def update_my_profile(
     payload: ProfileUpdate,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> ProfileResponse:
     """Update the logged-in user's bio."""
 
@@ -51,7 +51,7 @@ def update_my_profile(
 def upload_my_profile_picture(
     file: UploadFile = File(...),
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     storage: ObjectStorage = Depends(get_object_storage),
 ) -> ProfileResponse:
     """Upload the logged-in user's profile picture."""
@@ -74,7 +74,7 @@ def upload_my_profile_picture(
 @router.delete("/me/picture", status_code=status.HTTP_204_NO_CONTENT)
 def delete_my_profile_picture(
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
     storage: ObjectStorage = Depends(get_object_storage),
 ) -> Response:
     """Delete the logged-in user's profile picture."""
@@ -95,7 +95,7 @@ def delete_my_profile_picture(
 @router.get("/{username}", response_model=ProfileResponse)
 def get_profile(
     username: str,
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> ProfileResponse:
     """Return a user's public profile."""
 

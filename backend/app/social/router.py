@@ -36,7 +36,7 @@ def _followed_user(username: str, session: Session) -> User:
 def get_following_status(
     username: str,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> FollowingStatusResponse:
     """Return whether the logged-in user follows this creator."""
 
@@ -55,7 +55,7 @@ def get_following_status(
 def follow_creator(
     username: str,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> CreatorFollowResponse:
     """Follow a creator. Requires a logged-in user."""
 
@@ -79,7 +79,7 @@ def follow_creator(
 def unfollow_creator(
     username: str,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> Response:
     """Unfollow a creator. Requires a logged-in user."""
 

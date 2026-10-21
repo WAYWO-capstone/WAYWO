@@ -1,7 +1,13 @@
 // Calls to the WAYWO backend API
 import wretch from "wretch";
 import { queryStringAddon } from "wretch/addons";
-import { getTokens, type AuthTokens } from "@/lib/token-store";
+import {
+  accessTokenExpiresSoon,
+  getSessionVersion,
+  getTokens,
+  renewTokens,
+  type AuthTokens,
+} from "@/lib/token-store";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
@@ -240,4 +246,220 @@ export async function updatePassword(
   });
 
   if (!response.ok) throw new ApiError(response.status);
+}
+
+export interface ProjectCategory {
+  id: string;
+  name: string;
+  description: string;
+}
+
+export interface ProjectInput {
+  title: string;
+  summary: string;
+  description: string;
+  category_id: string;
+  tags: string[];
+}
+
+export interface ProjectResult {
+  id: string;
+  title: string;
+  last_autosaved_at: string | null;
+}
+
+export interface ProjectView extends ProjectResult {
+  author_id: string;
+  summary: string;
+  description: string;
+  status: "DRAFT" | "ACTIVE" | "COMPLETED";
+  public: boolean;
+  category: ProjectCategory;
+  tags: { id: string; name: string }[];
+  created_at: string;
+  published_at: string | null;
+  completed_at: string | null;
+  author: ProjectAuthor;
+  is_owner: boolean;
+}
+
+export interface ProjectAuthor {
+  username: string;
+  profile_picture_link: string | null;
+}
+
+export type UpdateType = "PROGRESS" | "DECISION" | "PROBLEM" | "SOLUTION";
+
+export interface ProjectUpdate {
+  id: string;
+  project_id: string;
+  author_id: string;
+  title: string;
+  body: string;
+  type: UpdateType;
+  public: boolean;
+  created_at: string;
+  updated_at: string;
+  author: ProjectAuthor;
+}
+
+export interface UpdateHistoryPage {
+  items: ProjectUpdate[];
+  total: number;
+  limit: number;
+  offset: number;
+}
+
+export interface DraftProject {
+  id: string;
+  title: string;
+  summary: string;
+  status: "DRAFT";
+  category: ProjectCategory;
+  created_at: string;
+}
+
+export interface OwnedProject {
+  id: string;
+  title: string;
+  summary: string;
+  status: "DRAFT" | "ACTIVE" | "COMPLETED";
+  public: boolean;
+  category: ProjectCategory;
+  created_at: string;
+  published_at: string | null;
+}
+
+// Shared so requests failing at the same time renew the tokens only once.
+let renewing: Promise<void> | null = null;
+
+// Gets a new token pair with the refresh token. Access tokens last 30 minutes,
+// so long editing sessions would otherwise start failing with 401.
+function renewAccessToken(previous: AuthTokens): Promise<void> {
+  renewing ??= (async () => {
+    const version = getSessionVersion();
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: previous.refreshToken }),
+      });
+      if (!response.ok) return;
+      const data: TokenResponse = await response.json();
+      renewTokens({ accessToken: data.access_token, refreshToken: data.refresh_token }, previous, version);
+    } catch {
+      // The request below fails with 401 and reports it.
+    }
+  })().finally(() => {
+    renewing = null;
+  });
+  return renewing;
+}
+
+async function projectRequest<T>(path: string, init?: RequestInit, renewed = false): Promise<T> {
+  let tokens = getTokens();
+  if (tokens && accessTokenExpiresSoon(tokens)) {
+    await renewAccessToken(tokens);
+    tokens = getTokens();
+  }
+  const response = await fetch(`${API_URL}${path}`, {
+    ...init,
+    headers: {
+      "Content-Type": "application/json",
+      ...(tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : {}),
+      ...init?.headers,
+    },
+  });
+  // The token may have been revoked or expired early; renew it once and retry.
+  if (response.status === 401 && tokens && !renewed) {
+    await renewAccessToken(tokens);
+    if (getTokens()?.accessToken !== tokens.accessToken) return projectRequest<T>(path, init, true);
+  }
+  if (!response.ok) throw new ApiError(response.status);
+  if (response.status === 204) return undefined as T;
+  return response.json() as Promise<T>;
+}
+
+export function getProjectCategories() {
+  return projectRequest<ProjectCategory[]>("/projects/categories");
+}
+
+export function getProject(projectId: string) {
+  return projectRequest<ProjectView>(`/projects/${projectId}`);
+}
+
+export function getMyDrafts() {
+  return projectRequest<DraftProject[]>("/projects/mine/drafts");
+}
+
+export function getMyPublishedProjects() {
+  return projectRequest<OwnedProject[]>("/projects/mine/published");
+}
+
+export function createProject(data: ProjectInput, options?: { keepalive?: boolean }) {
+  return projectRequest<ProjectResult>("/projects", {
+    method: "POST",
+    body: JSON.stringify(data),
+    keepalive: options?.keepalive,
+  });
+}
+
+export function saveProjectDraft(projectId: string, data: ProjectInput) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/draft`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function updateProject(projectId: string, data: ProjectInput) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function autosaveProject(projectId: string, data: Partial<ProjectInput>, options?: { keepalive?: boolean }) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/autosave`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+    keepalive: options?.keepalive,
+  });
+}
+
+export function deleteProject(projectId: string) {
+  return projectRequest<void>(`/projects/${projectId}`, {
+    method: "DELETE",
+  });
+}
+
+export function publishProject(projectId: string) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/publish`, {
+    method: "POST",
+  });
+}  
+
+export function unpublishProject(projectId: string) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/unpublish`, {
+    method: "POST",
+  });
+}
+
+export function updateProjectStatus(
+  projectId: string,
+  status: ProjectView["status"],
+) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/status`, {
+    method: "PATCH",
+    body: JSON.stringify({ status }),
+  });
+}
+
+export const UPDATE_PAGE_SIZE = 20;
+
+export function getProjectHistory(projectId: string, offset = 0) {
+  const query = new URLSearchParams({
+    limit: String(UPDATE_PAGE_SIZE),
+    offset: String(offset),
+  });
+  return projectRequest<UpdateHistoryPage>(`/projects/${projectId}/history?${query}`);
 }
