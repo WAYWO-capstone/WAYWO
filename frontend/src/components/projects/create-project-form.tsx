@@ -9,7 +9,7 @@ import {
   saveProjectDraft,
   type ProjectInput,
 } from "@/lib/api";
-import { requestError, useProjectCategories } from "@/lib/project-form";
+import { requestError, useProjectCategories, useRestoreFocus } from "@/lib/project-form";
 
 export function CreateProjectForm() {
   const navigate = useNavigate();
@@ -17,6 +17,7 @@ export function CreateProjectForm() {
   const [projectData, setProjectData] = useState<ProjectInput>({ title: "", summary: "", description: "", category_id: "", tags: [] });
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
+  const rememberFocus = useRestoreFocus(saving !== null);
   const [draftId, setDraftId] = useState<string | null>(null);
   const [draftSaved, setDraftSaved] = useState(false);
 
@@ -30,6 +31,7 @@ export function CreateProjectForm() {
     }
     const intent = (event.submitter as HTMLButtonElement | null)?.value;
     const shouldPublish = intent === "publish";
+    rememberFocus();
     setSaving(shouldPublish ? "publish" : "draft");
     try {
       const project = draftId
@@ -58,6 +60,7 @@ export function CreateProjectForm() {
           value={projectData}
           onChange={setProjectData}
           categories={categories}
+          disabled={saving !== null}
           hint="Publish your project when you’re ready. You can mark it completed later from the project page."
         />
 

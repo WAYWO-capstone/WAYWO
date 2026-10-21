@@ -10,13 +10,15 @@ interface ProjectFormFieldsProps {
   onChange: (value: ProjectInput) => void;
   categories: ReturnType<typeof useProjectCategories>;
   hint: ReactNode;
+  // Locks every field while a save is in flight, so edits made meanwhile aren't lost.
+  disabled?: boolean;
 }
 
-export function ProjectFormFields({ value, onChange, categories, hint }: ProjectFormFieldsProps) {
+export function ProjectFormFields({ value, onChange, categories, hint, disabled = false }: ProjectFormFieldsProps) {
   const set = <K extends keyof ProjectInput>(field: K, next: ProjectInput[K]) => onChange({ ...value, [field]: next });
 
   return (
-    <div className="grid gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.92fr)] lg:gap-14">
+    <fieldset disabled={disabled} className="grid min-w-0 gap-8 lg:grid-cols-[minmax(0,1fr)_minmax(320px,0.92fr)] lg:gap-14">
       <div className="space-y-6">
         <div>
           <label htmlFor="project-title" className="mb-2 block text-sm font-semibold">Project title <span className="text-primary">*</span></label>
@@ -28,7 +30,7 @@ export function ProjectFormFields({ value, onChange, categories, hint }: Project
         </div>
         <div>
           <label htmlFor="project-description" className="mb-2 block text-sm font-semibold">Description <span className="text-primary">*</span></label>
-          <textarea id="project-description" required value={value.description} onChange={(event) => set("description", event.target.value)} placeholder="Describe your goals, process, and plans..." className="min-h-52 w-full resize-y rounded-xl border border-input bg-card px-4 py-3 text-sm outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25" />
+          <textarea id="project-description" required value={value.description} onChange={(event) => set("description", event.target.value)} placeholder="Describe your goals, process, and plans..." className="min-h-52 w-full resize-y rounded-xl border border-input bg-card px-4 py-3 text-sm outline-none transition focus-visible:border-ring focus-visible:ring-3 focus-visible:ring-ring/25 disabled:cursor-not-allowed disabled:opacity-50" />
         </div>
       </div>
 
@@ -43,6 +45,6 @@ export function ProjectFormFields({ value, onChange, categories, hint }: Project
         <TagInput tags={value.tags} onChange={(tags) => set("tags", tags)} />
         <p className="text-xs leading-5 text-muted-foreground">{hint}</p>
       </aside>
-    </div>
+    </fieldset>
   );
 }

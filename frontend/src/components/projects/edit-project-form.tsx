@@ -10,7 +10,7 @@ import {
   type ProjectInput,
   type ProjectView,
 } from "@/lib/api";
-import { requestError, useProjectCategories } from "@/lib/project-form";
+import { requestError, useProjectCategories, useRestoreFocus } from "@/lib/project-form";
 import { statusClasses, statusLabel } from "@/lib/project-status";
 
 const relativeTime = new Intl.RelativeTimeFormat(undefined, { numeric: "auto" });
@@ -45,6 +45,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"save" | "close" | null>(null);
+  const rememberFocus = useRestoreFocus(saving !== null);
   const hasChanges = JSON.stringify(projectData) !== JSON.stringify(savedData);
 
   useEffect(() => {
@@ -56,6 +57,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
     event.preventDefault();
     setError("");
     const shouldClose = (event.submitter as HTMLButtonElement | null)?.value === "close";
+    rememberFocus();
     setSaving(shouldClose ? "close" : "save");
     try {
       const result = isDraft
@@ -97,6 +99,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
           value={projectData}
           onChange={setProjectData}
           categories={categories}
+          disabled={saving !== null}
           hint={isDraft
             ? "This project is still a draft. Save your changes here, then publish when you’re ready from the project page."
             : "This project is published. Changes you save here are visible to everyone right away."}

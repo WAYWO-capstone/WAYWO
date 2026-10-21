@@ -39,7 +39,7 @@ export function TagInput({ tags, onChange }: TagInputProps) {
           {tags.map((tag) => (
             <li key={tag} className="flex items-center gap-1 rounded-full border px-2.5 py-1 text-xs">
               {tag}
-              <button type="button" aria-label={`Remove ${tag}`} onClick={() => onChange(tags.filter((item) => item !== tag))}>
+              <button type="button" aria-label={`Remove ${tag}`} className="disabled:cursor-not-allowed disabled:opacity-50" onClick={() => onChange(tags.filter((item) => item !== tag))}>
                 <X className="size-3" />
               </button>
             </li>
