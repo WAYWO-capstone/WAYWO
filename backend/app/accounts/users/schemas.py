@@ -18,7 +18,12 @@ class UserCreate(BaseModel):
     @field_validator("username", mode="before")
     @classmethod
     def normalize_username(cls, value: str) -> str:
-        return value.strip()
+        username = value.strip()
+        if "/" in username:
+            raise ValueError("Username cannot contain '/'")
+        if username.lower() == "me":
+            raise ValueError("Username cannot be 'me'")
+        return username
 
     @field_validator("email")
     @classmethod
@@ -35,3 +40,27 @@ class UserResponse(BaseModel):
     username: str
     email: str
     created_at: datetime
+
+
+class ProfileUpdate(BaseModel):
+    """Fields a user can change on their own profile."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    bio: str | None = Field(default=None, max_length=500)
+
+
+class ProfileResponse(BaseModel):
+    """Profile details returned by the API."""
+
+    model_config = ConfigDict(from_attributes=True)
+
+    username: str
+    bio: str | None
+    profile_picture_link: str | None
+
+
+class AccountProfileResponse(ProfileResponse):
+    """Signed-in profile, including the account email."""
+
+    email: str
