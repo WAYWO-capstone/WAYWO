@@ -1,6 +1,6 @@
 import uuid
 
-from fastapi import APIRouter, Depends, HTTPException, status
+from fastapi import APIRouter, Depends, HTTPException, Response, status
 
 from app.projects.project.dependencies import (
     get_current_user_id,
@@ -85,6 +85,21 @@ def update_project(
         raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
     except CategoryNotFoundError as exc:
         raise HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, str(exc)) from exc
+
+
+@router.delete("/{project_id}", status_code=status.HTTP_204_NO_CONTENT)
+def delete_project(
+    project_id: uuid.UUID,
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    try:
+        service.delete_project(project_id, current_user_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except ProjectNotOwnedError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
 
 
 @router.patch("/{project_id}/draft", response_model=ProjectRead)

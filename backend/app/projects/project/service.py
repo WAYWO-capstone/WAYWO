@@ -71,6 +71,15 @@ class ProjectService:
         )
         return self._repo.add(project)
 
+    def delete_project(self, project_id: uuid.UUID, author_id: uuid.UUID) -> None:
+        project = self._repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != author_id:
+            raise ProjectNotOwnedError(project_id)
+
+        self._repo.delete(project)
+
     def update_project(
         self, project_id: uuid.UUID, author_id: uuid.UUID, data: ProjectUpdate
     ) -> Project:
