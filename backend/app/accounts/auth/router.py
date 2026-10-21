@@ -111,7 +111,7 @@ def change_email(
 def change_password(
     payload: PasswordChangeRequest,
     current_user: User = Depends(get_current_user),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> Response:
     # change the password for the signed in account
     service = AuthService(UserRepository(session), AuthRepository(session))
