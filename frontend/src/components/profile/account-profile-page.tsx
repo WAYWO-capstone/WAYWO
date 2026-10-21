@@ -4,7 +4,6 @@ import {
   Bell,
   Bookmark,
   Folder,
-  Pencil,
   Settings,
   UserRound,
   UsersRound,
@@ -67,23 +66,6 @@ function SidebarItem({ label, icon: Icon }: { label: string; icon: LucideIcon })
   );
 }
 
-// editing is disabled until saving is connected
-function EditButton({ label, avatar = false }: { label: string; avatar?: boolean }) {
-  return (
-    <button
-      type="button"
-      disabled
-      aria-label={label}
-      title={`${label} — coming soon`}
-      className={avatar
-        ? "absolute right-0 bottom-0 flex size-8 cursor-default items-center justify-center rounded-full border-2 border-card bg-brand-garnet text-white"
-        : "flex size-8 shrink-0 cursor-default items-center justify-center rounded-full text-brand-mahogany"}
-    >
-      <Pencil aria-hidden="true" className="size-4" />
-    </button>
-  );
-}
-
 export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProps) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:w-[85%] sm:px-0 lg:py-16">
@@ -141,7 +123,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
               <label htmlFor="profile-name" className="mb-1.5 block text-sm font-semibold">Username</label>
               <div className="flex items-center gap-1">
                 <Input id="profile-name" value={profile.username} readOnly className={fieldClassName} />
-                <EditButton label="Edit username" />
+                
               </div>
             </div>
 
