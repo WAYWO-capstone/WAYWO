@@ -12,9 +12,10 @@ interface ProjectFormFieldsProps {
   hint: ReactNode;
   // Locks every field while a save is in flight, so edits made meanwhile aren't lost.
   disabled?: boolean;
+  pendingTag?: string;
 }
 
-export function ProjectFormFields({ value, onChange, categories, hint, disabled = false }: ProjectFormFieldsProps) {
+export function ProjectFormFields({ value, onChange, categories, hint, disabled = false, pendingTag }: ProjectFormFieldsProps) {
   const set = <K extends keyof ProjectInput>(field: K, next: ProjectInput[K]) => onChange({ ...value, [field]: next });
 
   return (
@@ -42,7 +43,7 @@ export function ProjectFormFields({ value, onChange, categories, hint, disabled 
         ) : (
           <CategorySelector categories={categories.data ?? []} value={value.category_id} onChange={(categoryId) => set("category_id", categoryId)} />
         )}
-        <TagInput tags={value.tags} onChange={(tags) => set("tags", tags)} />
+        <TagInput tags={value.tags} onChange={(tags) => set("tags", tags)} initialText={pendingTag} />
         <p className="text-xs leading-5 text-muted-foreground">{hint}</p>
       </aside>
     </fieldset>
