@@ -16,7 +16,7 @@ bearer_scheme = HTTPBearer()
 
 def get_current_user(
     credentials: HTTPAuthorizationCredentials = Depends(bearer_scheme),
-    session: Session = Depends(get_session),
+    session: Session = Depends(get_session, scope="function"),
 ) -> User:
     """Resolve the authenticated user from a bearer access token."""
 

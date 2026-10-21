@@ -9,7 +9,7 @@ interface ProjectDetailProps {
   isPreview: boolean;
   isOwner: boolean;
   isSavingStatus: boolean;
-  statusUpdateFailed: boolean;
+  statusError: string | null;
   onStatusChange: (status: ProjectView["status"]) => Promise<void>;
   onDeleted: () => Promise<void>;
 }
@@ -27,7 +27,7 @@ export function ProjectDetail({
   isPreview,
   isOwner,
   isSavingStatus,
-  statusUpdateFailed,
+  statusError,
   onStatusChange,
   onDeleted,
 }: ProjectDetailProps) {
@@ -58,7 +58,7 @@ export function ProjectDetail({
                 status={project.status}
                 isOwner={isOwner}
                 isSaving={isSavingStatus}
-                hasError={statusUpdateFailed}
+                error={statusError}
                 onChange={onStatusChange}
               />
             </div>
