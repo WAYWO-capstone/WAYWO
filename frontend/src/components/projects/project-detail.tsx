@@ -1,4 +1,5 @@
-import { Bell, Bookmark } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { Bell, Bookmark, Pencil } from "lucide-react";
 import { ProjectStatusControl } from "@/components/projects/project-status-control";
 import type { ProjectView } from "@/lib/api";
 
@@ -61,6 +62,11 @@ export function ProjectDetail({
           </div>
 
           <div className="flex items-center gap-3 sm:pr-2">
+            {isOwner && (
+              <Link to="/edit-project" search={{ projectId: project.id }} className="inline-flex h-11 items-center gap-2 rounded-md bg-primary px-4 text-sm font-semibold text-primary-foreground hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50">
+                <Pencil className="size-4" aria-hidden="true" />Edit project
+              </Link>
+            )}
             <button type="button" aria-label="Notifications" title="Notifications" className="flex size-11 items-center justify-center rounded-md border border-[#ead7c7] bg-[#fbf0e4] text-brand-mahogany hover:bg-[#f6e4d2]">
               <Bell className="size-5" aria-hidden="true" />
             </button>

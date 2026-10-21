@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { LoaderCircle } from "lucide-react";
 import type { ProjectView } from "@/lib/api";
+import { statusClasses, statusLabel } from "@/lib/project-status";
 
 interface ProjectStatusControlProps {
   status: ProjectView["status"];
@@ -8,18 +9,6 @@ interface ProjectStatusControlProps {
   isSaving: boolean;
   hasError: boolean;
   onChange: (status: ProjectView["status"]) => Promise<void>;
-}
-
-function statusLabel(status: ProjectView["status"]) {
-  if (status === "COMPLETED") return "Completed";
-  if (status === "DRAFT") return "Draft";
-  return "Active";
-}
-
-function statusClasses(status: ProjectView["status"]) {
-  if (status === "ACTIVE") return "bg-[#c9e9b9] text-[#173d18]";
-  if (status === "COMPLETED") return "bg-[#d9e8f1] text-[#173d3e]";
-  return "bg-[#f3e4c7] text-[#604a25]";
 }
 
 export function ProjectStatusControl({

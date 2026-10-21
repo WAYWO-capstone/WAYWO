@@ -341,6 +341,20 @@ export function saveProjectDraft(projectId: string, data: ProjectInput) {
   });
 }
 
+export function updateProject(projectId: string, data: ProjectInput) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export function autosaveProject(projectId: string, data: ProjectInput) {
+  return projectRequest<ProjectResult>(`/projects/${projectId}/autosave`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
 export function publishProject(projectId: string) {
   return projectRequest<ProjectResult>(`/projects/${projectId}/publish`, {
     method: "POST",

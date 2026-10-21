@@ -30,7 +30,7 @@ export function CategorySelector({ categories, value, onChange }: CategorySelect
               title={category.description || category.name}
               aria-pressed={selected}
               onClick={() => onChange(category.id)}
-              className="flex min-h-8 items-center gap-2 rounded-full bg-brand-garnet px-2.5 text-left text-xs font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
+              className="flex min-h-8 items-center gap-2 rounded-full bg-brand-garnet px-2.5 text-left text-xs font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring disabled:cursor-not-allowed disabled:opacity-50"
             >
               <span className={`size-3 shrink-0 rounded-full border-2 border-white ${selected ? "bg-blue-500" : "bg-white"}`} />
               <span className="truncate">{category.name}</span>
