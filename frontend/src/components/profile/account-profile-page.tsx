@@ -16,7 +16,11 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountProfile } from "@/lib/api";
 import {
-  BioEditor, EmailEditor, ProfilePictureEditor, } from "@/components/profile/profile-editors";
+  BioEditor,
+  EmailEditor,
+  PasswordEditor,
+  ProfilePictureEditor,
+} from "@/components/profile/profile-editors";
 
 
 interface AccountProfilePageProps {
@@ -145,16 +149,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
           </div>
 
           <BioEditor key={profile.username} bio={profile.bio} />
-{/* password changes will be connected later */}
-          <fieldset disabled title="Password changes — coming soon" className="mt-8 w-full max-w-52 space-y-3">
-            <legend className="mb-3 text-sm font-semibold">Change your password</legend>
-            <label htmlFor="profile-old-password" className="sr-only">Old Password</label>
-            <Input id="profile-old-password" type="password" placeholder="Old Password" autoComplete="current-password" className={fieldClassName} />
-            <label htmlFor="profile-new-password" className="sr-only">New Password</label>
-            <Input id="profile-new-password" type="password" placeholder="New Password" autoComplete="new-password" className={fieldClassName} />
-            <label htmlFor="profile-confirm-password" className="sr-only">Confirm New Password</label>
-            <Input id="profile-confirm-password" type="password" placeholder="Confirm New Password" autoComplete="new-password" className={fieldClassName} />
-          </fieldset>
+<PasswordEditor key={profile.username} />
 
           <div className="mt-12 flex justify-center md:mt-auto md:pt-12">
             <Button type="button" onClick={onLogout} className="h-10 min-w-32 rounded-lg px-6 font-semibold">
