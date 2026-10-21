@@ -279,8 +279,35 @@ export interface ProjectView extends ProjectResult {
   created_at: string;
   published_at: string | null;
   completed_at: string | null;
-  author: { username: string; profile_picture_link: string | null };
+  author: ProjectAuthor;
   is_owner: boolean;
+}
+
+export interface ProjectAuthor {
+  username: string;
+  profile_picture_link: string | null;
+}
+
+export type UpdateType = "PROGRESS" | "DECISION" | "PROBLEM" | "SOLUTION";
+
+export interface ProjectUpdate {
+  id: string;
+  project_id: string;
+  author_id: string;
+  title: string;
+  body: string;
+  type: UpdateType;
+  public: boolean;
+  created_at: string;
+  updated_at: string;
+  author: ProjectAuthor;
+}
+
+export interface UpdateHistoryPage {
+  items: ProjectUpdate[];
+  total: number;
+  limit: number;
+  offset: number;
 }
 
 export interface DraftProject {
@@ -425,4 +452,14 @@ export function updateProjectStatus(
     method: "PATCH",
     body: JSON.stringify({ status }),
   });
+}
+
+export const UPDATE_PAGE_SIZE = 20;
+
+export function getProjectHistory(projectId: string, offset = 0) {
+  const query = new URLSearchParams({
+    limit: String(UPDATE_PAGE_SIZE),
+    offset: String(offset),
+  });
+  return projectRequest<UpdateHistoryPage>(`/projects/${projectId}/history?${query}`);
 }

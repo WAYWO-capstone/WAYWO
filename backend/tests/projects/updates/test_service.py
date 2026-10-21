@@ -1,4 +1,6 @@
 import uuid
+from datetime import datetime, timezone
+from types import SimpleNamespace
 from unittest.mock import MagicMock
 
 import pytest
@@ -6,7 +8,7 @@ import pytest
 from app.projects.project.exceptions import ProjectNotFoundError
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.updates.models import Update
+from app.projects.updates.enums import UpdateType
 from app.projects.updates.repository import UpdateRepository
 from app.projects.updates.service import UpdateService
 
@@ -48,22 +50,62 @@ def make_project(project_id: uuid.UUID, *, public: bool, author_id: uuid.UUID):
     return project
 
 
+def make_update(project_id: uuid.UUID, title: str = "First cut"):
+    now = datetime(2026, 10, 1, tzinfo=timezone.utc)
+    return SimpleNamespace(
+        id=uuid.uuid4(),
+        project_id=project_id,
+        author_id=uuid.uuid4(),
+        title=title,
+        body="Cut the panels.",
+        type=UpdateType.PROGRESS,
+        public=True,
+        created_at=now,
+        updated_at=now,
+    )
+
+
 class TestListProjectUpdates:
-    def test_returns_updates_and_total_from_repository(
+    def test_returns_updates_with_their_author_and_total(
         self, service, repository, project_repository, project_id, viewer_id
     ):
         project_repository.get.return_value = make_project(
             project_id, public=True, author_id=uuid.uuid4()
         )
-        updates = [MagicMock(spec=Update), MagicMock(spec=Update)]
-        repository.list_for_project.return_value = (updates, 45)
+        first, second = make_update(project_id, "A"), make_update(project_id, "B")
+        repository.list_for_project.return_value = (
+            [(first, "anna", "https://pics/anna.png"), (second, "ben", None)],
+            45,
+        )
 
         result, total = service.list_project_updates(
             project_id, viewer_id, limit=2, offset=0
         )
 
-        assert result == updates
         assert total == 45
+        assert [item.id for item in result] == [first.id, second.id]
+        assert result[0].type == UpdateType.PROGRESS
+        assert result[0].author.username == "anna"
+        assert result[0].author.profile_picture_link == "https://pics/anna.png"
+        assert result[1].author.username == "ben"
+        assert result[1].author.profile_picture_link is None
+
+    def test_missing_author_falls_back_to_unknown_creator(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=True, author_id=uuid.uuid4()
+        )
+        repository.list_for_project.return_value = (
+            [(make_update(project_id), None, None)],
+            1,
+        )
+
+        result, _ = service.list_project_updates(
+            project_id, viewer_id, limit=20, offset=0
+        )
+
+        assert result[0].author.username == "Unknown creator"
 
     def test_passes_viewer_and_paging_to_repository(
         self, service, repository, project_repository, project_id, viewer_id
