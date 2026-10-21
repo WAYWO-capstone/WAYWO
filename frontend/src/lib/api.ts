@@ -1,7 +1,13 @@
 // Calls to the WAYWO backend API
 import wretch from "wretch";
 import { queryStringAddon } from "wretch/addons";
-import { getTokens, type AuthTokens } from "@/lib/token-store";
+import {
+  accessTokenExpiresSoon,
+  getSessionVersion,
+  getTokens,
+  renewTokens,
+  type AuthTokens,
+} from "@/lib/token-store";
 
 const API_URL = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
 
@@ -297,8 +303,38 @@ export interface OwnedProject {
   published_at: string | null;
 }
 
-async function projectRequest<T>(path: string, init?: RequestInit): Promise<T> {
-  const tokens = getTokens();
+// Shared so requests failing at the same time renew the tokens only once.
+let renewing: Promise<void> | null = null;
+
+// Gets a new token pair with the refresh token. Access tokens last 30 minutes,
+// so long editing sessions would otherwise start failing with 401.
+function renewAccessToken(previous: AuthTokens): Promise<void> {
+  renewing ??= (async () => {
+    const version = getSessionVersion();
+    try {
+      const response = await fetch(`${API_URL}/auth/refresh`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ refresh_token: previous.refreshToken }),
+      });
+      if (!response.ok) return;
+      const data: TokenResponse = await response.json();
+      renewTokens({ accessToken: data.access_token, refreshToken: data.refresh_token }, previous, version);
+    } catch {
+      // The request below fails with 401 and reports it.
+    }
+  })().finally(() => {
+    renewing = null;
+  });
+  return renewing;
+}
+
+async function projectRequest<T>(path: string, init?: RequestInit, renewed = false): Promise<T> {
+  let tokens = getTokens();
+  if (tokens && accessTokenExpiresSoon(tokens)) {
+    await renewAccessToken(tokens);
+    tokens = getTokens();
+  }
   const response = await fetch(`${API_URL}${path}`, {
     ...init,
     headers: {
@@ -307,6 +343,11 @@ async function projectRequest<T>(path: string, init?: RequestInit): Promise<T> {
       ...init?.headers,
     },
   });
+  // The token may have been revoked or expired early; renew it once and retry.
+  if (response.status === 401 && tokens && !renewed) {
+    await renewAccessToken(tokens);
+    if (getTokens()?.accessToken !== tokens.accessToken) return projectRequest<T>(path, init, true);
+  }
   if (!response.ok) throw new ApiError(response.status);
   if (response.status === 204) return undefined as T;
   return response.json() as Promise<T>;
@@ -350,7 +391,7 @@ export function updateProject(projectId: string, data: ProjectInput) {
   });
 }
 
-export function autosaveProject(projectId: string, data: ProjectInput, options?: { keepalive?: boolean }) {
+export function autosaveProject(projectId: string, data: Partial<ProjectInput>, options?: { keepalive?: boolean }) {
   return projectRequest<ProjectResult>(`/projects/${projectId}/autosave`, {
     method: "PATCH",
     body: JSON.stringify(data),

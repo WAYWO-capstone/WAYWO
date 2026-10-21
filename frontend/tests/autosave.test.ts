@@ -216,6 +216,90 @@ describe("AutosaveQueue", () => {
   });
 });
 
+describe("AutosaveQueue keeping work safe", () => {
+  test("keeps unsaved values in the backup until they're saved", async () => {
+    const { save, calls } = controlledSave();
+    const persist = vi.fn();
+    const autosave = queue(save, { persist });
+
+    autosave.update({ title: "Typed" });
+    expect(persist).toHaveBeenLastCalledWith({ title: "Typed" });
+    await vi.advanceTimersByTimeAsync(1000);
+    // Still in the backup while the request runs, in case the tab closes now.
+    expect(persist).toHaveBeenLastCalledWith({ title: "Typed" });
+
+    calls[0].resolve("2026-10-20T12:00:00Z");
+    await vi.advanceTimersByTimeAsync(0);
+    expect(persist).toHaveBeenLastCalledWith(null);
+  });
+
+  test("restored changes are saved once a page starts using the queue, not before", async () => {
+    const save = vi.fn<AutosaveOptions<Draft>["save"]>(async () => "2026-10-20T12:00:00Z");
+    const autosave = queue(save, { initial: { title: "Restored" }, saved: { title: "Server" } });
+    expect(autosave.hasUnsavedChanges).toBe(true);
+
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(save).not.toHaveBeenCalled();
+
+    autosave.reopen();
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(save).toHaveBeenCalledWith({ title: "Restored" }, {});
+  });
+
+  test("discard drops changes that weren't saved yet", async () => {
+    const save = vi.fn<AutosaveOptions<Draft>["save"]>(async () => "2026-10-20T12:00:00Z");
+    const persist = vi.fn();
+    const autosave = queue(save, { persist });
+
+    autosave.update({ title: "Never mind" });
+    autosave.discard();
+    expect(autosave.value).toEqual({ title: "" });
+    expect(persist).toHaveBeenLastCalledWith(null);
+    expect(await autosave.close()).toBe(true);
+    expect(save).not.toHaveBeenCalled();
+  });
+
+  test("a save already running when changes are discarded isn't followed by another", async () => {
+    const { save, calls } = controlledSave();
+    const autosave = queue(save);
+
+    autosave.update({ title: "Sent" });
+    await vi.advanceTimersByTimeAsync(1000);
+    autosave.update({ title: "Sent, then more" });
+    autosave.discard();
+
+    calls[0].resolve("2026-10-20T12:00:00Z");
+    await vi.advanceTimersByTimeAsync(5000);
+    expect(calls).toHaveLength(1);
+    expect(autosave.value).toEqual({ title: "Sent" });
+    expect(autosave.hasUnsavedChanges).toBe(false);
+  });
+
+  test("leaving the page saves right away and stops retrying", async () => {
+    const save = vi.fn<AutosaveOptions<Draft>["save"]>().mockRejectedValue(new TypeError("Failed to fetch"));
+    const autosave = queue(save, { shouldRetry: shouldRetryAutosave });
+
+    autosave.update({ title: "Leaving" });
+    expect(await autosave.close()).toBe(false);
+    expect(save).toHaveBeenCalledTimes(1);
+    expect(autosave.state).toMatchObject({ status: "error", retrying: false });
+
+    await vi.advanceTimersByTimeAsync(60_000);
+    expect(save).toHaveBeenCalledTimes(1);
+  });
+
+  test("says when a saved value still has empty required fields", async () => {
+    const save = vi.fn<AutosaveOptions<Draft>["save"]>(async () => "2026-10-20T12:00:00Z");
+    const autosave = queue(save, { isComplete: (value) => value.title !== "" , initial: { title: "Kept" }, saved: { title: "Kept" } });
+
+    autosave.update({ title: "" });
+    expect(autosave.state.status).toBe("pending");
+    await vi.advanceTimersByTimeAsync(1000);
+    expect(save).toHaveBeenCalledWith({ title: "" }, {});
+    expect(autosave.state.status).toBe("incomplete");
+  });
+});
+
 describe("autosaveLabel", () => {
   const now = new Date("2026-10-20T12:10:00Z").getTime();
   const state = (changes: Partial<AutosaveState>): AutosaveState => ({ status: "idle", lastSavedAt: null, isNew: false, error: null, retrying: false, ...changes });
@@ -237,7 +321,7 @@ describe("autosaveLabel", () => {
     expect(autosaveLabel(state({ status: "saving" }), now)).toBe("Saving...");
     expect(autosaveLabel(state({ status: "error", retrying: true }), now)).toBe("Couldn't save, retrying...");
     expect(autosaveLabel(state({ status: "error" }), now)).toBe("Couldn't save");
-    expect(autosaveLabel(state({ status: "incomplete" }), now)).toBe("Unsaved changes · fill in the required fields to save");
+    expect(autosaveLabel(state({ status: "incomplete" }), now)).toBe("Saved, except empty required fields");
   });
 });
 
