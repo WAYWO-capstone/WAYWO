@@ -10,12 +10,46 @@ from app.projects.project.exceptions import (
 )
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
-from app.projects.project.schemas import ProjectCreate, ProjectStatusUpdate, ProjectUpdate
+from app.projects.project.schemas import (
+    ProjectCreate,
+    ProjectRead,
+    ProjectStatusUpdate,
+    ProjectUpdate,
+)
 
 
 class ProjectService:
     def __init__(self, repository: ProjectRepository):
         self._repo = repository
+
+    def list_categories(self):
+        return self._repo.list_categories()
+
+    def get_project_for_view(
+        self, project_id: uuid.UUID, viewer_id: uuid.UUID | None = None
+    ):
+        result = self._repo.get_with_author(project_id)
+        if result is None:
+            raise ProjectNotFoundError(project_id)
+
+        project, username, profile_picture_link = result
+        is_owner = viewer_id is not None and project.author_id == viewer_id
+        if not project.public and not is_owner:
+            raise ProjectNotFoundError(project_id)
+
+        project_data = ProjectRead.model_validate(project).model_dump()
+        project_data["author"] = {
+            "username": username or "Unknown creator",
+            "profile_picture_link": profile_picture_link,
+        }
+        project_data["is_owner"] = is_owner
+        return project_data
+
+    def list_private_drafts(self, author_id: uuid.UUID) -> list[Project]:
+        return self._repo.list_private_drafts(author_id)
+
+    def list_published_by_author(self, author_id: uuid.UUID) -> list[Project]:
+        return self._repo.list_published_by_author(author_id)
 
     def create_project(self, author_id: uuid.UUID, data: ProjectCreate) -> Project:
         category = self._repo.get_category(data.category_id)
