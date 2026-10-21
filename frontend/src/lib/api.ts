@@ -193,6 +193,55 @@ export async function uploadProfilePicture(
   return response.json();
 }
 
+export interface EmailUpdate {
+  email: string;
+  current_password: string;
+}
+
+// update the email after checking the current password
+export async function updateEmail(
+  changes: EmailUpdate,
+): Promise<{ email: string }> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const response = await fetch(`${API_URL}/auth/email`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    body: JSON.stringify(changes),
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+
+  return response.json();
+}
+
+export interface PasswordUpdate {
+  current_password: string;
+  new_password: string;
+}
+
+export async function updatePassword(
+  changes: PasswordUpdate,
+): Promise<void> {
+  const tokens = getTokens();
+  if (!tokens) throw new ApiError(401);
+
+  const response = await fetch(`${API_URL}/auth/password`, {
+    method: "PATCH",
+    headers: {
+      "Content-Type": "application/json",
+      Authorization: `Bearer ${tokens.accessToken}`,
+    },
+    body: JSON.stringify(changes),
+  });
+
+  if (!response.ok) throw new ApiError(response.status);
+}
+
 export interface ProjectCategory {
   id: string;
   name: string;

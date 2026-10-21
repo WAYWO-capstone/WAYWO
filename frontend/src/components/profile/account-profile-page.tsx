@@ -4,7 +4,6 @@ import {
   Bell,
   Bookmark,
   Folder,
-  Pencil,
   Settings,
   UserRound,
   UsersRound,
@@ -15,7 +14,12 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountProfile } from "@/lib/api";
-import { BioEditor, ProfilePictureEditor, } from "@/components/profile/profile-editors"
+import {
+  BioEditor,
+  EmailEditor,
+  PasswordEditor,
+  ProfilePictureEditor,
+} from "@/components/profile/profile-editors";
 
 
 interface AccountProfilePageProps {
@@ -59,23 +63,6 @@ function SidebarItem({ label, icon: Icon }: { label: string; icon: LucideIcon })
         <span>{label}</span>
       </button>
     </li>
-  );
-}
-
-// editing is disabled until saving is connected
-function EditButton({ label, avatar = false }: { label: string; avatar?: boolean }) {
-  return (
-    <button
-      type="button"
-      disabled
-      aria-label={label}
-      title={`${label} — coming soon`}
-      className={avatar
-        ? "absolute right-0 bottom-0 flex size-8 cursor-default items-center justify-center rounded-full border-2 border-card bg-brand-garnet text-white"
-        : "flex size-8 shrink-0 cursor-default items-center justify-center rounded-full text-brand-mahogany"}
-    >
-      <Pencil aria-hidden="true" className="size-4" />
-    </button>
   );
 }
 
@@ -125,7 +112,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
             <p className="mt-1 text-sm sm:text-base">Your details, your style, your preferences.</p>
           </div>
 
-          <div className="mt-8 flex flex-wrap items-end gap-x-7 gap-y-6">
+                    <div className="mt-8 flex flex-wrap items-start gap-x-7 gap-y-6">
             <ProfilePictureEditor
   key={profile.username}
   username={profile.username}
@@ -136,30 +123,15 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
               <label htmlFor="profile-name" className="mb-1.5 block text-sm font-semibold">Username</label>
               <div className="flex items-center gap-1">
                 <Input id="profile-name" value={profile.username} readOnly className={fieldClassName} />
-                <EditButton label="Edit username" />
+                
               </div>
             </div>
 
-            <div className="min-w-0 flex-1 basis-48">
-              <label htmlFor="profile-email" className="mb-1.5 block text-sm font-semibold">Email</label>
-              <div className="flex items-center gap-1">
-                <Input id="profile-email" type="email" value={profile.email} readOnly className={fieldClassName} />
-                <EditButton label="Edit email" />
-              </div>
-            </div>
+                      <EmailEditor key={profile.username} email={profile.email} />
           </div>
 
           <BioEditor key={profile.username} bio={profile.bio} />
-{/* password changes will be connected later */}
-          <fieldset disabled title="Password changes — coming soon" className="mt-8 w-full max-w-52 space-y-3">
-            <legend className="mb-3 text-sm font-semibold">Change your password</legend>
-            <label htmlFor="profile-old-password" className="sr-only">Old Password</label>
-            <Input id="profile-old-password" type="password" placeholder="Old Password" autoComplete="current-password" className={fieldClassName} />
-            <label htmlFor="profile-new-password" className="sr-only">New Password</label>
-            <Input id="profile-new-password" type="password" placeholder="New Password" autoComplete="new-password" className={fieldClassName} />
-            <label htmlFor="profile-confirm-password" className="sr-only">Confirm New Password</label>
-            <Input id="profile-confirm-password" type="password" placeholder="Confirm New Password" autoComplete="new-password" className={fieldClassName} />
-          </fieldset>
+<PasswordEditor key={profile.username} />
 
           <div className="mt-12 flex justify-center md:mt-auto md:pt-12">
             <Button type="button" onClick={onLogout} className="h-10 min-w-32 rounded-lg px-6 font-semibold">

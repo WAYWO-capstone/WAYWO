@@ -66,5 +66,4 @@ class Project(FeedItem):
     category: Mapped[Category] = relationship(lazy="selectin")
     tags: Mapped[list[Tag]] = relationship(secondary=project_tags, lazy="selectin")
 
-    __mapper_args__ = {"polymorphic_identity": "project"}
     __mapper_args__ = {"polymorphic_identity": FeedItemType.PROJECT}
