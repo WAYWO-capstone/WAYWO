@@ -17,6 +17,7 @@ SessionLocal = sessionmaker(
     bind=engine,
 )
 
+
 def get_session() -> Iterator[Session]:
     with SessionLocal() as session:
         try:
