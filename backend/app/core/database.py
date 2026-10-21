@@ -18,6 +18,9 @@ SessionLocal = sessionmaker(
 )
 
 def get_session() -> Iterator[Session]:
+    # Depend on this with scope="function": by default FastAPI runs the code after
+    # 'yield' only once the response is sent, so a client's next request could
+    # read data that hasn't been committed yet.
     with SessionLocal() as session:
         try:
             yield session

@@ -11,6 +11,7 @@ import {
   type ProjectView,
 } from "@/lib/api";
 import { previewProject, previewUpdates } from "@/temp-mock-data";
+import { PartialStatusChangeError, statusChangeError, statusChangeSteps } from "@/lib/project-status";
 
 
 export const Route = createFileRoute("/view-project")({
@@ -33,16 +34,18 @@ function ViewProjectPage() {
   const statusMutation = useMutation({
     mutationFn: async (nextStatus: ProjectView["status"]) => {
       if (!projectId || !project) throw new Error("Project is not loaded");
-      if (nextStatus === project.status) return;
-      if (nextStatus === "DRAFT") {
-        await unpublishProject(projectId);
-      } else if (project.status === "DRAFT") {
-        await publishProject(projectId);
-        if (nextStatus === "COMPLETED") {
-          await updateProjectStatus(projectId, "COMPLETED");
+      let published = false;
+      try {
+        for (const step of statusChangeSteps(project.status, nextStatus)) {
+          if (step.type === "publish") {
+            await publishProject(projectId);
+            published = true;
+          } else if (step.type === "unpublish") await unpublishProject(projectId);
+          else await updateProjectStatus(projectId, step.status);
         }
-      } else {
-        await updateProjectStatus(projectId, nextStatus);
+      } catch (cause) {
+        if (published) throw new PartialStatusChangeError("Published, but the status was not updated", { cause });
+        throw cause;
       }
     },
     onSettled: async () => {
@@ -78,7 +81,7 @@ function ViewProjectPage() {
       previewUpdates={previewUpdates}
       isOwner={isOwner}
       isSavingStatus={statusMutation.isPending}
-      statusUpdateFailed={statusMutation.isError}
+      statusError={statusMutation.error ? statusChangeError(statusMutation.error) : null}
       onStatusChange={(status) => statusMutation.mutateAsync(status)}
       onDeleted={async () => {
         await navigate({ to: "/projects" });
