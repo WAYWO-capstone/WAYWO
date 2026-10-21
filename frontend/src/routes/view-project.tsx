@@ -1,5 +1,5 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { ProjectDetail } from "@/components/projects/project-detail";
 import {
@@ -42,6 +42,7 @@ export const Route = createFileRoute("/view-project")({
 function ViewProjectPage() {
   const { projectId } = Route.useSearch();
   const queryClient = useQueryClient();
+  const navigate = useNavigate();
   const projectQuery = useQuery({
     queryKey: ["project", projectId],
     queryFn: () => getProject(projectId!),
@@ -97,6 +98,11 @@ function ViewProjectPage() {
       isSavingStatus={statusMutation.isPending}
       statusUpdateFailed={statusMutation.isError}
       onStatusChange={(status) => statusMutation.mutateAsync(status)}
+      onDeleted={async () => {
+        await navigate({ to: "/projects" });
+        queryClient.removeQueries({ queryKey: ["project", projectId] });
+        await queryClient.invalidateQueries({ queryKey: ["my-projects"] });
+      }}
     />
   );
 }
