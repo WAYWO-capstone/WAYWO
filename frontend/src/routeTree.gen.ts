@@ -28,6 +28,8 @@ const LoginRoute = LoginRouteImport.update({
 const RegisterRoute = RegisterRouteImport.update({
   id: '/register',
   path: '/register',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ProfileIndexRoute = ProfileIndexRouteImport.update({
   id: '/profile/',
   path: '/profile/',
@@ -59,22 +61,20 @@ export interface FileRoutesById {
   '/login': typeof LoginRoute
   '/register': typeof RegisterRoute
   '/profile/$username': typeof ProfileUsernameRoute
-}
-export interface FileRouteTypes {
-  fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/register' | '/profile/$username'
-  fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/register' | '/profile/$username'
-  id: '__root__' | '/' | '/login' | '/register' | '/profile/$username'
-  '/profile/$username': typeof ProfileUsernameRoute
   '/profile/': typeof ProfileIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
-  fullPaths: '/' | '/login' | '/profile/$username' | '/profile/'
+  fullPaths: '/' | '/login' | '/register' | '/profile/$username' | '/profile/'
   fileRoutesByTo: FileRoutesByTo
-  to: '/' | '/login' | '/profile/$username' | '/profile'
-  id: '__root__' | '/' | '/login' | '/profile/$username' | '/profile/'
+  to: '/' | '/login' | '/register' | '/profile/$username' | '/profile'
+  id:
+    | '__root__'
+    | '/'
+    | '/login'
+    | '/register'
+    | '/profile/$username'
+    | '/profile/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -106,6 +106,8 @@ declare module '@tanstack/react-router' {
       path: '/register'
       fullPath: '/register'
       preLoaderRoute: typeof RegisterRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/profile/': {
       id: '/profile/'
       path: '/profile'
