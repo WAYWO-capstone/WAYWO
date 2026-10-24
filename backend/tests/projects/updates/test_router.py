@@ -74,6 +74,16 @@ def client(api: FastAPI, owner: User) -> Iterator[TestClient]:
         yield test_client
 
 
+@pytest.fixture
+def intruder_client(
+    api: FastAPI, make_user: Callable[[str], User]
+) -> Iterator[TestClient]:
+    """Test client authenticated as a user who does not own the project."""
+    authenticate_as(api, make_user("intruder"))
+    with TestClient(api) as test_client:
+        yield test_client
+
+
 # --------------------------------------------------------------------------
 # Data factories
 # --------------------------------------------------------------------------
@@ -205,16 +215,12 @@ def test_create_update_persists_to_database(
 
 
 def test_create_update_rejects_non_owner(
-    api: FastAPI,
-    client: TestClient,
+    intruder_client: TestClient,
     engine: Engine,
     project: Project,
     payload: dict[str, Any],
-    make_user: Callable[[str], User],
 ) -> None:
-    authenticate_as(api, make_user("intruder"))
-
-    response = post_update(client, project.id, payload)
+    response = post_update(intruder_client, project.id, payload)
 
     assert response.status_code == 403
     assert count_updates(engine) == 0
