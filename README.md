@@ -175,6 +175,25 @@ bun i
 ```bash
 bun dev
 ```
+
+## 3. API Types
+
+The frontend's API models (`frontend/src/lib/api-models.ts`) come from the backend's OpenAPI schema. After changing a backend schema or route, regenerate them and commit the result. CI fails if they are out of date.
+
+From the backend, with the virtual environment active:
+
+```bash
+python -m scripts.export_openapi
+```
+
+Then from the frontend:
+
+```bash
+bun run api:types
+```
+
+This updates `frontend/openapi.json` and `frontend/src/lib/api-schema.gen.ts`. Do not edit either file by hand.
+
 ---
 
 # Wiki
