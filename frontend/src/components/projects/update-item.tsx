@@ -1,5 +1,5 @@
 import { ChevronRight, Heart, MessageCircle } from "lucide-react";
-import type { ProjectUpdate } from "@/lib/api";
+import type { ProjectUpdate } from "@/api/models";
 import { updateTypeStyles } from "@/components/projects/update-types";
 
 function formatUpdateDate(value: string) {

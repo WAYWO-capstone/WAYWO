@@ -6,7 +6,7 @@ import { useState, type FormEvent } from "react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { safeRedirect, useLogin } from "@/lib/auth";
 import { isAuthenticated } from "@/lib/token-store";
 

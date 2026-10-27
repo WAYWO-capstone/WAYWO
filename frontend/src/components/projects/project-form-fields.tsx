@@ -2,7 +2,7 @@ import type { ReactNode } from "react";
 import { CategorySelector } from "@/components/projects/category-selector";
 import { TagInput } from "@/components/projects/tag-input";
 import { Input } from "@/components/ui/input";
-import type { ProjectInput } from "@/lib/api";
+import type { ProjectInput } from "@/api/models";
 import type { useProjectCategories } from "@/lib/project-form";
 
 interface ProjectFormFieldsProps {

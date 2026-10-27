@@ -1,11 +1,7 @@
 import { useMutation, useQueryClient } from "@tanstack/react-query";
 
-import {
-  updatePassword,
-  updateEmail,
-  updateProfile,
-  uploadProfilePicture,
-} from "@/lib/api";
+import { updateEmail, updatePassword } from "@/api/auth";
+import { updateProfile, uploadProfilePicture } from "@/api/users";
 
 export function useUpdateProfile() {
   const queryClient = useQueryClient();
