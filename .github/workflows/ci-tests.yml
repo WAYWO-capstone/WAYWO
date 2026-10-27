@@ -136,7 +136,19 @@ jobs:
 
       - name: Check generated files are committed
         run: |
-          if ! git diff --exit-code -- frontend/openapi.json frontend/src/api/schema.gen.ts; then
-            echo "::error::The API types are out of date. Run the export and 'bun run api:types' (see README, 'API types') and commit the result."
+          files="frontend/openapi.json frontend/src/api/schema.gen.ts"
+          if ! git diff --quiet -- $files; then
+            message="The backend API changed but the frontend API types were not regenerated. From frontend/, with the backend virtual environment active, run 'bun run api:sync' and commit frontend/openapi.json and frontend/src/api/schema.gen.ts. See README, section 3 'API Types'."
+            echo "::error title=API types out of date::$message"
+            {
+              echo "## API types out of date"
+              echo
+              echo "$message"
+              echo
+              echo '```'
+              git diff --stat -- $files
+              echo '```'
+            } >> "$GITHUB_STEP_SUMMARY"
+            git diff --stat -- $files
             exit 1
           fi
