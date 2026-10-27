@@ -1,6 +1,6 @@
 // Backend API models, taken from the types generated from the OpenAPI schema.
 // Regenerate them after changing a backend schema (see README, "API types").
-import type { components } from "@/lib/api-schema.gen";
+import type { components } from "@/api/schema.gen";
 
 type Schemas = components["schemas"];
 
