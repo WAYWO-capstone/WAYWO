@@ -1,19 +1,16 @@
 // /follows: following and unfollowing creators.
-import { request } from "@/api/client";
-import type { CreatorFollow, FollowingStatus } from "@/api/models";
+import { api, unwrap } from "@/api/client";
 
-function followPath(username: string) {
-  return `/follows/${encodeURIComponent(username)}`;
-}
+const followParams = (username: string) => ({ path: { username } });
 
 export function getFollowingStatus(username: string) {
-  return request<FollowingStatus>(followPath(username));
+  return unwrap(api.GET("/follows/{username}", { params: followParams(username) }));
 }
 
 export function followCreator(username: string) {
-  return request<CreatorFollow>(followPath(username), { method: "POST" });
+  return unwrap(api.POST("/follows/{username}", { params: followParams(username) }));
 }
 
 export function unfollowCreator(username: string) {
-  return request<void>(followPath(username), { method: "DELETE" });
+  return unwrap(api.DELETE("/follows/{username}", { params: followParams(username) }));
 }

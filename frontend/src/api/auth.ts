@@ -1,39 +1,27 @@
 // /auth: sign-in, registration and account credentials.
-import { request, toAuthTokens } from "@/api/client";
-import type {
-  EmailUpdate,
-  PasswordUpdate,
-  RegistrationInput,
-  TokenResponse,
-  UserResponse,
-} from "@/api/models";
+import { api, publicApi, toAuthTokens, unwrap } from "@/api/client";
+import type { EmailUpdate, PasswordUpdate, RegistrationInput } from "@/api/models";
 import type { AuthTokens } from "@/lib/token-store";
 
 export async function login(
   identifier: string,
   password: string,
 ): Promise<AuthTokens> {
-  const data = await request<TokenResponse>("/auth/login", {
-    method: "POST",
-    json: { login: identifier, password },
-    auth: false,
-  });
+  const data = await unwrap(
+    publicApi.POST("/auth/login", { body: { login: identifier, password } }),
+  );
   return toAuthTokens(data);
 }
 
 export function register(input: RegistrationInput) {
-  return request<UserResponse>("/auth/register", {
-    method: "POST",
-    json: input,
-    auth: false,
-  });
+  return unwrap(publicApi.POST("/auth/register", { body: input }));
 }
 
 // Updates the email after checking the current password.
 export function updateEmail(changes: EmailUpdate) {
-  return request<UserResponse>("/auth/email", { method: "PATCH", json: changes });
+  return unwrap(api.PATCH("/auth/email", { body: changes }));
 }
 
-export function updatePassword(changes: PasswordUpdate) {
-  return request<void>("/auth/password", { method: "PATCH", json: changes });
+export async function updatePassword(changes: PasswordUpdate): Promise<void> {
+  await unwrap(api.PATCH("/auth/password", { body: changes }));
 }

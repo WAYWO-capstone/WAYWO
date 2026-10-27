@@ -1,15 +1,22 @@
 // Project updates: the history timeline on a project.
-import { ApiError, request } from "@/api/client";
-import type { ProjectUpdate, UpdateHistoryPage, UpdateType } from "@/api/models";
+import { api, ApiError, unwrap } from "@/api/client";
+import type { UpdateType } from "@/api/models";
 
 export const UPDATE_PAGE_SIZE = 20;
 
+const updatePath = (projectId: string, updateId: string) => ({
+  path: { project_id: projectId, update_id: updateId },
+});
+
 export function getProjectHistory(projectId: string, offset = 0) {
-  const query = new URLSearchParams({
-    limit: String(UPDATE_PAGE_SIZE),
-    offset: String(offset),
-  });
-  return request<UpdateHistoryPage>(`/projects/${projectId}/updates?${query}`);
+  return unwrap(
+    api.GET("/projects/{project_id}/updates", {
+      params: {
+        path: { project_id: projectId },
+        query: { limit: UPDATE_PAGE_SIZE, offset },
+      },
+    }),
+  );
 }
 
 // The API has no endpoint for reading one update yet, so look through the
@@ -32,14 +39,18 @@ export interface ProjectUpdateChanges {
 }
 
 export function updateProjectUpdate(projectId: string, updateId: string, changes: ProjectUpdateChanges) {
-  return request<ProjectUpdate>(`/projects/${projectId}/updates/${updateId}`, {
-    method: "PATCH",
-    body: JSON.stringify(changes),
-  });
+  return unwrap(
+    api.PATCH("/projects/{project_id}/updates/{update_id}", {
+      params: updatePath(projectId, updateId),
+      body: changes,
+    }),
+  );
 }
 
 export function deleteProjectUpdate(projectId: string, updateId: string) {
-  return request<void>(`/projects/${projectId}/updates/${updateId}`, {
-    method: "DELETE",
-  });
+  return unwrap(
+    api.DELETE("/projects/{project_id}/updates/{update_id}", {
+      params: updatePath(projectId, updateId),
+    }),
+  );
 }

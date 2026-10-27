@@ -1,5 +1,8 @@
-// Shared request helper for the WAYWO backend. Every API call goes through `request`.
+// Typed clients for the WAYWO backend. Paths, parameters, bodies and responses
+// are checked against the generated OpenAPI types (`schema.gen.ts`).
+import createClient from "openapi-fetch";
 import type { TokenResponse } from "@/api/models";
+import type { paths } from "@/api/schema.gen";
 import {
   accessTokenExpiresSoon,
   getSessionVersion,
@@ -8,7 +11,11 @@ import {
   type AuthTokens,
 } from "@/lib/token-store";
 
-const API_URL = (import.meta.env.VITE_API_URL ?? "/api").replace(/\/+$/, "");
+// openapi-fetch builds a Request, which needs a full URL outside the browser.
+const API_URL = new URL(
+  import.meta.env.VITE_API_URL ?? "/api",
+  globalThis.location?.origin ?? "http://localhost",
+).href.replace(/\/+$/, "");
 
 export class ApiError extends Error {
   readonly status: number;
@@ -24,26 +31,41 @@ export class ApiError extends Error {
 }
 
 // Uses the backend's `detail` as the message when the error body has one.
-async function toApiError(response: Response): Promise<ApiError> {
-  try {
-    const payload: unknown = await response.json();
-    if (
-      typeof payload === "object" &&
-      payload !== null &&
-      "detail" in payload &&
-      typeof payload.detail === "string"
-    ) {
-      return new ApiError(response.status, payload.detail);
-    }
-  } catch {
-    // Not a JSON error body.
+function toApiError(status: number, body: unknown): ApiError {
+  if (
+    typeof body === "object" &&
+    body !== null &&
+    "detail" in body &&
+    typeof body.detail === "string"
+  ) {
+    return new ApiError(status, body.detail);
   }
-  return new ApiError(response.status);
+  return new ApiError(status);
+}
+
+interface ApiResult<T> {
+  data?: T;
+  error?: unknown;
+  response: Response;
+}
+
+// Returns the response data, or throws an ApiError when the request failed.
+export async function unwrap<T>(pending: Promise<ApiResult<T>>): Promise<T> {
+  const { data, error, response } = await pending;
+  if (!response.ok) throw toApiError(response.status, error);
+  return data as T;
 }
 
 export function toAuthTokens(data: TokenResponse): AuthTokens {
   return { accessToken: data.access_token, refreshToken: data.refresh_token };
 }
+
+// Requests sent without the access token. `fetch` is looked up on each call
+// so tests can replace it.
+export const publicApi = createClient<paths>({
+  baseUrl: API_URL,
+  fetch: (request) => fetch(request),
+});
 
 // Shared so requests failing at the same time renew the tokens only once.
 let renewing: Promise<void> | null = null;
@@ -54,14 +76,10 @@ function renewAccessToken(previous: AuthTokens): Promise<void> {
   renewing ??= (async () => {
     const version = getSessionVersion();
     try {
-      const response = await fetch(`${API_URL}/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refresh_token: previous.refreshToken }),
+      const { data } = await publicApi.POST("/auth/refresh", {
+        body: { refresh_token: previous.refreshToken },
       });
-      if (!response.ok) return;
-      const data: TokenResponse = await response.json();
-      renewTokens(toAuthTokens(data), previous, version);
+      if (data) renewTokens(toAuthTokens(data), previous, version);
     } catch {
       // The request that needed the token fails with 401 and reports it.
     }
@@ -71,45 +89,33 @@ function renewAccessToken(previous: AuthTokens): Promise<void> {
   return renewing;
 }
 
-export interface RequestOptions extends RequestInit {
-  // Sent as the JSON body.
-  json?: unknown;
-  // Send the access token when signed in. Defaults to true.
-  auth?: boolean;
-}
+// Sends the request with the access token, renewing it when it expires soon
+// or the backend rejects it.
+async function authFetch(request: Request): Promise<Response> {
+  // Read the body once so the request can be sent again after a renewal.
+  const body = request.body ? await request.arrayBuffer() : undefined;
+  const send = (tokens: AuthTokens | null) => {
+    const attempt = new Request(request, { body });
+    if (tokens) attempt.headers.set("Authorization", `Bearer ${tokens.accessToken}`);
+    return fetch(attempt);
+  };
 
-export async function request<T>(
-  path: string,
-  options: RequestOptions = {},
-  renewed = false,
-): Promise<T> {
-  const { json, auth = true, headers, ...init } = options;
-
-  let tokens = auth ? getTokens() : null;
+  let tokens = getTokens();
   if (tokens && accessTokenExpiresSoon(tokens)) {
     await renewAccessToken(tokens);
     tokens = getTokens();
   }
 
-  const response = await fetch(`${API_URL}${path}`, {
-    ...init,
-    body: json === undefined ? init.body : JSON.stringify(json),
-    headers: {
-      ...(json === undefined ? {} : { "Content-Type": "application/json" }),
-      ...(tokens ? { Authorization: `Bearer ${tokens.accessToken}` } : {}),
-      ...headers,
-    },
-  });
+  const response = await send(tokens);
 
   // The token may have been revoked or expired early; renew it once and retry.
-  if (response.status === 401 && tokens && !renewed) {
+  if (response.status === 401 && tokens) {
     await renewAccessToken(tokens);
-    if (getTokens()?.accessToken !== tokens.accessToken) {
-      return request<T>(path, options, true);
-    }
+    const renewed = getTokens();
+    if (renewed && renewed.accessToken !== tokens.accessToken) return send(renewed);
   }
-
-  if (!response.ok) throw await toApiError(response);
-  if (response.status === 204) return undefined as T;
-  return response.json() as Promise<T>;
+  return response;
 }
+
+// Requests sent as the signed-in user, when there is one.
+export const api = createClient<paths>({ baseUrl: API_URL, fetch: authFetch });
