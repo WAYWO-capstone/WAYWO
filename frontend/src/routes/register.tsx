@@ -14,7 +14,7 @@ import { useEffect, useState, type SubmitEvent } from "react";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { safeRedirect, useRegister } from "@/lib/auth";
 import { isAuthenticated } from "@/lib/token-store";
 import { isValidEmail } from "@/lib/utils/string-utils";

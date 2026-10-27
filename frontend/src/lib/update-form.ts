@@ -1,4 +1,6 @@
-import { ApiError, type ProjectUpdate, type ProjectUpdateChanges, type UpdateType } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import type { ProjectUpdate, UpdateType } from "@/api/models";
+import type { ProjectUpdateChanges } from "@/api/updates";
 
 export interface UpdateFormValues {
   title: string;

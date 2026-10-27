@@ -1,6 +1,6 @@
 import { Info } from "lucide-react";
 import { useState } from "react";
-import type { ProjectCategory } from "@/lib/api";
+import type { ProjectCategory } from "@/api/models";
 import { Input } from "@/components/ui/input";
 
 interface CategorySelectorProps {

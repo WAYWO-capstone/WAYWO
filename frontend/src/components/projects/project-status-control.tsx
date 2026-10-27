@@ -1,6 +1,6 @@
 import { useState } from "react";
 import { LoaderCircle } from "lucide-react";
-import type { ProjectView } from "@/lib/api";
+import type { ProjectView } from "@/api/models";
 import { statusClasses, statusLabel } from "@/lib/project-status";
 
 interface ProjectStatusControlProps {

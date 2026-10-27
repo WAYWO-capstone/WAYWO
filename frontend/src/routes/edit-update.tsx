@@ -2,7 +2,9 @@ import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { EditUpdateForm } from "@/components/projects/edit-update-form";
-import { ApiError, getProject, getProjectUpdate } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import { getProject } from "@/api/projects";
+import { getProjectUpdate } from "@/api/updates";
 import { isAuthenticated } from "@/lib/token-store";
 
 export const Route = createFileRoute("/edit-update")({
