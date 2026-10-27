@@ -13,7 +13,7 @@ import {
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { AccountProfile } from "@/lib/api";
+import type { AccountProfile } from "@/api/models";
 import {
   BioEditor,
   EmailEditor,

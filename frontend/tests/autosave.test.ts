@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { ApiError, type ProjectInput } from "../src/lib/api";
+import { ApiError } from "../src/api/client";
+import type { ProjectInput } from "../src/api/models";
 import { AutosaveQueue, type AutosaveOptions, type AutosaveState } from "../src/lib/autosave";
 import { autosaveLabel, hasRequiredFields, shouldRetryAutosave } from "../src/lib/project-autosave";
 

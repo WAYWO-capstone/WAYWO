@@ -1,4 +1,4 @@
-import type { UpdateType } from "@/lib/api";
+import type { UpdateType } from "@/api/models";
 
 // Badge for update type (colors in index.css).
 export const updateTypeStyles: Record<UpdateType, { label: string; className: string }> = {

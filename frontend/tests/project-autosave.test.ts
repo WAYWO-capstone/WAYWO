@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { autosaveProject, type ProjectInput } from "../src/lib/api";
+import { autosaveProject } from "../src/api/projects";
+import type { ProjectInput } from "../src/api/models";
 import { readDraftBackup, restorableDraftBackup, writeDraftBackup } from "../src/lib/draft-backup";
 import { createProjectAutosave, savableFields } from "../src/lib/project-autosave";
 import { clearTokens, getTokens, saveTokens } from "../src/lib/token-store";

@@ -3,7 +3,7 @@ import { Bell, Bookmark, Pencil } from "lucide-react";
 import { DeleteProjectDialog } from "@/components/projects/delete-project-dialog";
 import { ProjectStatusControl } from "@/components/projects/project-status-control";
 import { UpdateHistory } from "@/components/projects/update-history";
-import type { ProjectUpdate, ProjectView } from "@/lib/api";
+import type { ProjectUpdate, ProjectView } from "@/api/models";
 
 interface ProjectDetailProps {
   project: ProjectView;

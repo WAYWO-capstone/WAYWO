@@ -1,6 +1,6 @@
 // TEMPORARY mock data shown on /view-project when no projectId in the URL.
 // Delete this file when we have real data
-import type { ProjectUpdate, ProjectView } from "@/lib/api";
+import type { ProjectUpdate, ProjectView } from "@/api/models";
 
 export const previewProject: ProjectView = {
   id: "preview-project",

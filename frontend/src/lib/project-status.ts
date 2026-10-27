@@ -1,4 +1,5 @@
-import { ApiError, type ProjectView } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import type { ProjectView } from "@/api/models";
 
 export function statusLabel(status: ProjectView["status"]) {
   if (status === "COMPLETED") return "Completed";
