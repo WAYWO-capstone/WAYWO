@@ -1,13 +1,15 @@
 // Project updates: the history timeline on a project.
-import { request } from "@/api/client";
-import type { UpdateHistoryPage } from "@/api/models";
+import { api, unwrap } from "@/api/client";
 
 export const UPDATE_PAGE_SIZE = 20;
 
 export function getProjectHistory(projectId: string, offset = 0) {
-  const query = new URLSearchParams({
-    limit: String(UPDATE_PAGE_SIZE),
-    offset: String(offset),
-  });
-  return request<UpdateHistoryPage>(`/projects/${projectId}/history?${query}`);
+  return unwrap(
+    api.GET("/projects/{project_id}/history", {
+      params: {
+        path: { project_id: projectId },
+        query: { limit: UPDATE_PAGE_SIZE, offset },
+      },
+    }),
+  );
 }

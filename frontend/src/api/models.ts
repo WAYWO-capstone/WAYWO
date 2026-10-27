@@ -15,6 +15,7 @@ export type PasswordUpdate = Schemas["PasswordChangeRequest"];
 export type PublicProfile = Schemas["ProfileResponse"];
 export type AccountProfile = Schemas["AccountProfileResponse"];
 export type ProfileUpdate = Schemas["ProfileUpdate"];
+export type ProfilePictureUpload = Schemas["Body_upload_my_profile_picture_users_me_picture_post"];
 
 // Follows
 export type FollowingStatus = Schemas["FollowingStatusResponse"];
