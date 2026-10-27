@@ -3,7 +3,7 @@ import { CircleAlert, LoaderCircle } from "lucide-react";
 
 import { AccountProfilePage } from "@/components/profile/account-profile-page";
 import { Button } from "@/components/ui/button";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { useCurrentProfile, useLogout } from "@/lib/auth";
 import { isAuthenticated } from "@/lib/token-store";
 

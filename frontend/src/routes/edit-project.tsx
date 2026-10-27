@@ -3,7 +3,8 @@ import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { EditProjectForm } from "@/components/projects/edit-project-form";
 import { useCurrentProfile } from "@/lib/auth";
-import { ApiError, getProject } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import { getProject } from "@/api/projects";
 import { isAuthenticated } from "@/lib/token-store";
 
 export const Route = createFileRoute("/edit-project")({

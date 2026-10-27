@@ -3,7 +3,7 @@ import { CircleAlert, LoaderCircle } from "lucide-react";
 import { FollowButton } from "@/components/profile/follow-button";
 import { ProfilePageFrame, PublicProfilePage } from "@/components/profile/public-profile-page";
 import { Button } from "@/components/ui/button";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { usePublicProfile } from "@/lib/profiles";
 
 export const Route = createFileRoute("/profile/$username")({

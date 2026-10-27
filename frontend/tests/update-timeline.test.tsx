@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, test } from "vitest";
 import { UpdateTimeline } from "@/components/projects/update-item";
 import { updateTypeStyles } from "@/components/projects/update-types";
-import type { ProjectUpdate } from "@/lib/api";
+import type { ProjectUpdate } from "@/api/models";
 
 function makeUpdate(overrides: Partial<ProjectUpdate> = {}): ProjectUpdate {
   return {

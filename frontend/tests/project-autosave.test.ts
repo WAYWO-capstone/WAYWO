@@ -1,5 +1,6 @@
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
-import { autosaveProject, type ProjectInput } from "../src/lib/api";
+import { autosaveProject } from "../src/api/projects";
+import type { ProjectInput } from "../src/api/models";
 import { readDraftBackup, restorableDraftBackup, writeDraftBackup } from "../src/lib/draft-backup";
 import { createProjectAutosave, savableFields } from "../src/lib/project-autosave";
 import { clearTokens, getTokens, saveTokens } from "../src/lib/token-store";
@@ -46,8 +47,10 @@ afterEach(() => {
   vi.unstubAllGlobals();
 });
 
-const requestUrls = () => fetchMock.mock.calls.map(([url]) => String(url));
-const authHeader = (call: number) => (fetchMock.mock.calls[call][1]?.headers as Record<string, string> | undefined)?.Authorization;
+// The API client sends a Request object; these read the parts the tests check.
+const sentRequest = (call: number) => fetchMock.mock.calls[call][0] as Request;
+const requestUrls = () => fetchMock.mock.calls.map((_, call) => new URL(sentRequest(call).url).pathname);
+const authHeader = (call: number) => sentRequest(call).headers.get("Authorization");
 
 describe("project requests renew the session", () => {
   test("an expired access token is renewed before the request", async () => {
@@ -90,7 +93,7 @@ describe("project requests renew the session", () => {
   test("requests failing at the same time renew the token once", async () => {
     signIn("user-1", -60);
     const fresh = jwt("user-1", 1800, "fresh");
-    fetchMock.mockImplementation(async (url) => String(url).endsWith("/auth/refresh")
+    fetchMock.mockImplementation(async (input) => (input as Request).url.endsWith("/auth/refresh")
       ? json({ access_token: fresh, refresh_token: jwt("user-1", 86400, "fresh-refresh") })
       : json(saved));
 
@@ -117,7 +120,7 @@ describe("createProjectAutosave", () => {
     autosave.update({ ...project, summary: "", description: "Rewritten" });
     expect(await autosave.flush()).toBe(true);
 
-    expect(JSON.parse(String(fetchMock.mock.calls[0][1]?.body))).toEqual({ title: "Quilt", category_id: "c1", description: "Rewritten", tags: [] });
+    expect(await sentRequest(0).json()).toEqual({ title: "Quilt", category_id: "c1", description: "Rewritten", tags: [] });
     expect(autosave.state.status).toBe("incomplete");
   });
 

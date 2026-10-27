@@ -1,5 +1,5 @@
 import { describe, expect, test } from "vitest";
-import { ApiError } from "../src/lib/api";
+import { ApiError } from "../src/api/client";
 import {
   PartialStatusChangeError,
   statusChangeError,
