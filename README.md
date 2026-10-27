@@ -194,6 +194,8 @@ bun run api:types
 
 This updates `frontend/openapi.json` and `frontend/src/api/schema.gen.ts`. Do not edit either file by hand.
 
+API calls in `frontend/src/api/` use [openapi-fetch](https://openapi-ts.dev/openapi-fetch/) with these types, so a renamed route, wrong method, missing parameter or invalid body is a TypeScript error after regenerating.
+
 ---
 
 # Wiki
