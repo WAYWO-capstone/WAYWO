@@ -192,7 +192,7 @@ def test_create_update_returns_created_update(
     assert body["title"] == payload["title"]
     assert body["body"] == payload["body"]
     assert body["type"] == payload["type"]
-    assert body["public"] is True
+    assert body["public"] is False
     assert body["author"]["username"] == "owner"
 
 
@@ -212,6 +212,7 @@ def test_create_update_persists_to_database(
     assert saved.project_id == project.id
     assert saved.title == payload["title"]
     assert saved.body == payload["body"]
+    assert saved.public is False
 
 
 def test_create_update_rejects_non_owner(

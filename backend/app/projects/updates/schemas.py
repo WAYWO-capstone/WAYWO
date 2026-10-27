@@ -11,7 +11,7 @@ class UpdateCreate(BaseModel):
     title: str = Field(min_length=1, max_length=200)
     body: str
     type: UpdateType = UpdateType.PROGRESS
-    public: bool = False
+    public: bool | None = None
 
     @field_validator("title")
     @classmethod

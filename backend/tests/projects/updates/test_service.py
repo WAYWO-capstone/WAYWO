@@ -71,7 +71,7 @@ class TestCreateProjectUpdate:
         self, service, repository, project_repository, project_id, viewer_id
     ):
         project_repository.get.return_value = make_project(
-            project_id, public=False, author_id=viewer_id
+            project_id, public=True, author_id=viewer_id
         )
         update = make_update(project_id)
         repository.add.return_value = (update, "anna", "https://pics/anna.png")
@@ -97,6 +97,44 @@ class TestCreateProjectUpdate:
         assert result.id == update.id
         assert result.author.username == "anna"
         assert result.author.profile_picture_link == "https://pics/anna.png"
+
+    def test_private_project_cannot_have_public_update(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=False, author_id=viewer_id
+        )
+        update = make_update(project_id)
+        repository.add.return_value = (update, "anna", None)
+
+        service.create_project_update(
+            project_id,
+            viewer_id,
+            UpdateCreate(
+                title="First cut",
+                body="Cut the panels.",
+                public=True,
+            ),
+        )
+
+        assert repository.add.call_args.args[0].public is False
+
+    def test_omitted_visibility_inherits_project_visibility(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=True, author_id=viewer_id
+        )
+        update = make_update(project_id)
+        repository.add.return_value = (update, "anna", None)
+
+        service.create_project_update(
+            project_id,
+            viewer_id,
+            UpdateCreate(title="First cut", body="Cut the panels."),
+        )
+
+        assert repository.add.call_args.args[0].public is True
 
     def test_rejects_update_by_non_owner(
         self, service, repository, project_repository, project_id, viewer_id

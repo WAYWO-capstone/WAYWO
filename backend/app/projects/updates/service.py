@@ -35,7 +35,7 @@ class UpdateService:
             title=data.title,
             body=data.body,
             update_type=data.type,
-            public=data.public,
+            public=project.public and data.public is not False,
         )
         row = self._repo.add(update)
         return self._to_read(row)

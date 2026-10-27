@@ -35,7 +35,7 @@ def create_project_update(
         ) from exc
 
 
-@router.get("/{project_id}/history", response_model=UpdateHistoryPage)
+@router.get("/{project_id}/updates", response_model=UpdateHistoryPage)
 def get_project_history(
     project_id: uuid.UUID,
     user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
