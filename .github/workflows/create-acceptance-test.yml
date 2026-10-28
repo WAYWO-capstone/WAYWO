@@ -75,6 +75,7 @@ jobs:
           echo "parent_number=$PARENT_NUMBER" >> "$GITHUB_OUTPUT"
           echo "parent_title=$PARENT_TITLE" >> "$GITHUB_OUTPUT"
 
+
       # ---------------------------------------------------------
       # 2. get the epic number and the user story number
       # ---------------------------------------------------------

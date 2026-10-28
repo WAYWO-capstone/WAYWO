@@ -1,1 +1,0 @@
-"""Data access for notifications."""

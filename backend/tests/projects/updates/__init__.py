@@ -1,1 +1,0 @@
-"""Project update submodule tests."""

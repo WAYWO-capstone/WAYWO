@@ -1,1 +1,0 @@
-"""Feed items module tests."""

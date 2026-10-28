@@ -1,1 +1,0 @@
-"""Feed item submodule tests."""
