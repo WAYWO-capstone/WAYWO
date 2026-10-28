@@ -1,0 +1,112 @@
+@startuml
+title System Architecture
+skinparam shadowing false
+skinparam defaultTextAlignment center
+skinparam ArrowColor #888780
+skinparam nodesep 12
+skinparam ranksep 12
+skinparam padding 2
+skinparam rectangle {
+  RoundCorner 20
+}
+skinparam rectangle<<frontend>> {
+  BackgroundColor #F1EFE8
+  BorderColor #5F5E5A
+  FontColor #444441
+}
+skinparam rectangle<<backend>> {
+  BackgroundColor #EEEDFE
+  BorderColor #534AB7
+  FontColor #3C3489
+}
+skinparam rectangle<<feature>> {
+  BackgroundColor #E1F5EE
+  BorderColor #0F6E56
+  FontColor #04503C
+}
+skinparam rectangle<<core>> {
+  BackgroundColor #F6F5FF
+  BorderColor #534AB7
+  FontColor #3C3489
+}
+skinparam rectangle<<sub>> {
+  BackgroundColor #E1F5EE
+  BorderColor #0F6E56
+  FontColor #04503C
+}
+skinparam rectangle<<base>> {
+  BackgroundColor #F1EFE8
+  BorderColor #5F5E5A
+  FontColor #444441
+}
+skinparam rectangle<<datastore>> {
+  BackgroundColor #FAFAF8
+  BorderColor #888780
+  FontColor #2C2C2A
+}
+
+rectangle "**React + TypeScript app**" as Frontend <<frontend>>
+
+rectangle "**FastAPI backend (modular monolith)**" as Backend <<backend>> {
+  ' Tier 5
+  rectangle "**Explore**\nSearch, ranking" as Explore <<feature>>
+  rectangle "**Feed**\nfeed_entries" as Feed <<feature>>
+  rectangle "**Notifications**\nNotification" as Notifications <<feature>>
+
+  ' Tier 4
+  rectangle "**Knowledge**" as Knowledge <<feature>>
+  rectangle "**Moderation**\nReport, takedowns" as Moderation <<feature>>
+
+  ' Tier 3
+  rectangle "**Social**\nFollow, Bookmark, Folder" as Social <<feature>>
+
+  ' Tier 2
+  rectangle "**Projects**" as Projects <<core>> {
+    rectangle "**Project**\nProject" as ProjectSub <<sub>>
+    rectangle "**Updates**\nUpdate" as Updates <<sub>>
+    rectangle "**Tutorials**\nTutorial" as Tutorials <<sub>>
+  }
+
+  ' Tier 1b
+  rectangle "**FeedItems**" as FeedItems <<core>> {
+    rectangle "**FeedItem**\nShared logic (abstract base)" as FeedItem <<sub>>
+    rectangle "**Comments**\nComment" as Comments <<sub>>
+  }
+
+  ' Tier 1a
+  rectangle "**Accounts**\nUser, Profile" as Accounts <<base>>
+  rectangle "**Media**\nFileAsset, uploads" as Media <<base>>
+}
+
+rectangle "**PostgreSQL**\nCore data, search" as DB <<datastore>>
+
+' ---------- Row layout ----------
+Explore -[hidden]right- Feed
+Feed -[hidden]right- Notifications
+Knowledge -[hidden]right- Moderation
+ProjectSub -[hidden]right- Updates
+Updates -[hidden]right- Tutorials
+FeedItem -[hidden]right- Comments
+Accounts -[hidden]right- Media
+
+' ---------- Tier ordering ----------
+Explore -[hidden]down- Knowledge
+Feed -[hidden]down- Moderation
+Knowledge -[hidden]down- Social
+Moderation -[hidden]down- Social
+Social -[hidden]down- Updates
+ProjectSub -[hidden]down- FeedItem
+Tutorials -[hidden]down- Comments
+FeedItem -[hidden]down- Accounts
+Comments -[hidden]down- Media
+
+' ---------- Pin frontend above and database below the backend ----------
+Frontend -[hidden]down- Explore
+Frontend -[hidden]down- Feed
+Accounts -[hidden]down- DB
+Media -[hidden]down- DB
+
+' ---------- Visible layer connections ----------
+Frontend -down-> Backend
+Backend -down-> DB
+@enduml

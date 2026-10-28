@@ -1,0 +1,596 @@
+import uuid
+from datetime import datetime, timezone
+from unittest.mock import MagicMock
+
+import pytest
+
+from app.projects.project.enums import ProjectStatus
+from app.projects.project.exceptions import (
+    CategoryNotFoundError,
+    InvalidProjectStatusTransitionError,
+    ProjectNotFoundError,
+    ProjectNotOwnedError,
+)
+from app.projects.project.models import Category, Project
+from app.projects.project.repository import ProjectRepository
+from app.projects.project.schemas import ProjectCreate, ProjectStatusUpdate, ProjectUpdate
+from app.projects.project.service import ProjectService
+
+
+@pytest.fixture
+def repository() -> MagicMock:
+    repo = MagicMock(spec=ProjectRepository)
+    # By default, the repository persists and returns whatever it is given.
+    repo.add.side_effect = lambda project: project
+    return repo
+
+
+@pytest.fixture
+def service(repository: MagicMock) -> ProjectService:
+    return ProjectService(repository)
+
+
+@pytest.fixture
+def author_id() -> uuid.UUID:
+    return uuid.uuid4()
+
+
+@pytest.fixture
+def project_data() -> ProjectCreate:
+    return ProjectCreate(
+        title="My Project",
+        summary="A short summary",
+        description="A much longer description of the project.",
+        category_id=uuid.uuid4(),
+        tags=["python", "fastapi"],
+    )
+
+
+class TestCreateProject:
+    def test_returns_project_with_provided_fields(
+        self, service, repository, author_id, project_data
+    ):
+        category = MagicMock(name="category")
+        tags = [MagicMock(name="tag1"), MagicMock(name="tag2")]
+        repository.get_category.return_value = category
+        repository.get_or_create_tags.return_value = tags
+
+        project = service.create_project(author_id, project_data)
+
+        assert isinstance(project, Project)
+        assert project.author_id == author_id
+        assert project.title == project_data.title
+        assert project.summary == project_data.summary
+        assert project.description == project_data.description
+        assert project.category is category
+        assert project.tags == tags
+
+    def test_new_project_is_private_draft(
+        self, service, repository, author_id, project_data
+    ):
+        repository.get_category.return_value = MagicMock()
+        repository.get_or_create_tags.return_value = []
+
+        project = service.create_project(author_id, project_data)
+
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+
+    def test_looks_up_category_by_id(
+        self, service, repository, author_id, project_data
+    ):
+        repository.get_category.return_value = MagicMock()
+        repository.get_or_create_tags.return_value = []
+
+        service.create_project(author_id, project_data)
+
+        repository.get_category.assert_called_once_with(project_data.category_id)
+
+    def test_gets_or_creates_tags_from_data(
+        self, service, repository, author_id, project_data
+    ):
+        repository.get_category.return_value = MagicMock()
+        repository.get_or_create_tags.return_value = []
+
+        service.create_project(author_id, project_data)
+
+        repository.get_or_create_tags.assert_called_once_with(project_data.tags)
+
+    def test_persists_project_and_returns_repository_result(
+        self, service, repository, author_id, project_data
+    ):
+        repository.get_category.return_value = MagicMock()
+        repository.get_or_create_tags.return_value = []
+        persisted = MagicMock(name="persisted_project")
+        repository.add.side_effect = None
+        repository.add.return_value = persisted
+
+        result = service.create_project(author_id, project_data)
+
+        repository.add.assert_called_once()
+        added = repository.add.call_args.args[0]
+        assert isinstance(added, Project)
+        assert added.author_id == author_id
+        assert result is persisted
+
+    def test_raises_when_category_not_found(
+        self, service, repository, author_id, project_data
+    ):
+        repository.get_category.return_value = None
+
+        with pytest.raises(CategoryNotFoundError):
+            service.create_project(author_id, project_data)
+
+    def test_does_not_create_tags_or_persist_when_category_missing(
+        self, service, repository, author_id, project_data
+    ):
+        repository.get_category.return_value = None
+
+        with pytest.raises(CategoryNotFoundError):
+            service.create_project(author_id, project_data)
+
+        repository.get_or_create_tags.assert_not_called()
+        repository.add.assert_not_called()
+
+    def test_handles_empty_tags(self, service, repository, author_id, project_data):
+        project_data.tags = []
+        repository.get_category.return_value = MagicMock()
+        repository.get_or_create_tags.return_value = []
+
+        project = service.create_project(author_id, project_data)
+
+        repository.get_or_create_tags.assert_called_once_with([])
+        assert project.tags == []
+
+
+class TestUpdateProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Original title",
+            summary="Original summary",
+            description="Original description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_updates_owned_project_fields(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        data = ProjectUpdate(
+            title="Updated title",
+            summary="Updated summary",
+            description="Updated description",
+        )
+
+        result = service.update_project(project.id, author_id, data)
+
+        assert result is project
+        assert project.title == "Updated title"
+        assert project.summary == "Updated summary"
+        assert project.description == "Updated description"
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_missing_project(self, service, repository, author_id):
+        project_id = uuid.uuid4()
+        repository.get.return_value = None
+
+        with pytest.raises(Exception, match="does not exist"):
+            service.update_project(project_id, author_id, ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+
+    def test_rejects_project_owned_by_another_user(
+        self, service, repository, project
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(Exception, match="does not own"):
+            service.update_project(project.id, uuid.uuid4(), ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+    def test_validates_replacement_category(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+        repository.get_category.return_value = None
+        category_id = uuid.uuid4()
+
+        with pytest.raises(CategoryNotFoundError):
+            service.update_project(
+                project.id, author_id, ProjectUpdate(category_id=category_id)
+            )
+
+        repository.update.assert_not_called()
+
+
+class TestSaveDraft:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Draft title",
+            summary="Draft summary",
+            description="Draft description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_saves_owned_private_draft_without_publishing(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        data = ProjectUpdate(
+            title="Updated draft title",
+            description="Updated draft description",
+        )
+
+        result = service.save_draft(project.id, author_id, data)
+
+        assert result is project
+        assert project.title == "Updated draft title"
+        assert project.description == "Updated draft description"
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_saving_published_project_as_draft(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(
+            InvalidProjectStatusTransitionError,
+            match="private draft",
+        ):
+            service.save_draft(project.id, author_id, ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+    def test_rejects_saving_draft_owned_by_another_user(
+        self, service, repository, project
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(Exception, match="does not own"):
+            service.save_draft(project.id, uuid.uuid4(), ProjectUpdate(title="New"))
+
+        repository.update.assert_not_called()
+
+
+class TestAutosaveProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Draft title",
+            summary="Draft summary",
+            description="Draft description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_autosaves_private_draft_and_sets_timestamp(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.autosave_project(
+            project.id,
+            author_id,
+            ProjectUpdate(title="Autosaved title"),
+        )
+
+        assert result is project
+        assert project.title == "Autosaved title"
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        assert project.last_autosaved_at is not None
+        assert project.last_autosaved_at.tzinfo is not None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_autosaving_published_project(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(
+            InvalidProjectStatusTransitionError,
+            match="private draft",
+        ):
+            service.autosave_project(
+                project.id,
+                author_id,
+                ProjectUpdate(title="Should fail"),
+            )
+
+        repository.update.assert_not_called()
+
+
+class TestUpdateStatus:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Original title",
+            summary="Original summary",
+            description="Original description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_sets_active_status_and_clears_completed_at(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.COMPLETED
+        project.completed_at = datetime.now(timezone.utc)
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        project.public = True
+
+        result = service.update_status(
+            project.id,
+            author_id,
+            ProjectStatusUpdate(status=ProjectStatus.ACTIVE),
+        )
+
+        assert result is project
+        assert project.status == ProjectStatus.ACTIVE
+        assert project.completed_at is None
+        repository.update.assert_called_once_with(project)
+
+    def test_sets_completed_status_and_timestamp(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+        project.public = True
+
+        result = service.update_status(
+            project.id,
+            author_id,
+            ProjectStatusUpdate(status=ProjectStatus.COMPLETED),
+        )
+
+        assert result is project
+        assert project.status == ProjectStatus.COMPLETED
+        assert project.completed_at is not None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_status_reset_to_draft(self):
+        with pytest.raises(ValueError, match="ACTIVE or COMPLETED"):
+            ProjectStatusUpdate(status=ProjectStatus.DRAFT)
+
+    def test_rejects_status_change_for_another_user(
+        self, service, repository, project
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(Exception, match="does not own"):
+            service.update_status(
+                project.id,
+                uuid.uuid4(),
+                ProjectStatusUpdate(status=ProjectStatus.ACTIVE),
+            )
+
+        repository.update.assert_not_called()
+
+    def test_rejects_status_change_before_publishing(
+        self, service, repository, project, author_id
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="published"):
+            service.update_status(
+                project.id,
+                author_id,
+                ProjectStatusUpdate(status=ProjectStatus.COMPLETED),
+            )
+
+        repository.update.assert_not_called()
+
+
+class TestPublishProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Draft project",
+            summary="A draft summary",
+            description="A draft description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_publishes_draft_as_active_and_public(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.publish_project(project.id, author_id)
+
+        assert result is project
+        assert project.status == ProjectStatus.ACTIVE
+        assert project.public is True
+        assert project.published_at is not None
+        assert project.completed_at is None
+        repository.update.assert_called_once_with(project)
+
+    def test_rejects_publishing_an_already_published_project(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="already published"):
+            service.publish_project(project.id, author_id)
+
+        repository.update.assert_not_called()
+
+
+class TestUnpublishProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Published project",
+            summary="A published summary",
+            description="A published description",
+            category_id=uuid.uuid4(),
+        )
+
+    def test_unpublishes_active_project_as_private_draft(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ACTIVE
+        project.public = True
+        project.published_at = datetime.now(timezone.utc)
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.unpublish_project(project.id, author_id)
+
+        assert result is project
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        assert project.published_at is None
+        repository.update.assert_called_once_with(project)
+
+    def test_unpublishes_completed_project_as_private_draft(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.COMPLETED
+        project.public = True
+        project.completed_at = datetime.now(timezone.utc)
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.unpublish_project(project.id, author_id)
+
+        assert result is project
+        assert project.status == ProjectStatus.DRAFT
+        assert project.public is False
+        assert project.published_at is None
+        assert project.completed_at is None
+        repository.update.assert_called_once_with(project)
+
+
+class TestDeleteProject:
+    def test_deletes_owned_project(self, service, repository, author_id):
+        project = MagicMock(spec=Project, author_id=author_id)
+        repository.get.return_value = project
+        project_id = uuid.uuid4()
+
+        service.delete_project(project_id, author_id)
+
+        repository.get.assert_called_once_with(project_id)
+        repository.delete.assert_called_once_with(project)
+
+    def test_raises_when_project_not_found(self, service, repository, author_id):
+        repository.get.return_value = None
+        project_id = uuid.uuid4()
+
+        with pytest.raises(ProjectNotFoundError):
+            service.delete_project(project_id, author_id)
+
+        repository.delete.assert_not_called()
+
+    def test_rejects_deleting_another_users_project(
+        self, service, repository, author_id
+    ):
+        repository.get.return_value = MagicMock(spec=Project, author_id=uuid.uuid4())
+        project_id = uuid.uuid4()
+
+        with pytest.raises(ProjectNotOwnedError):
+            service.delete_project(project_id, author_id)
+
+        repository.delete.assert_not_called()
+class TestGetProjectForView:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            id=uuid.uuid4(),
+            author_id=author_id,
+            title="Viewable project",
+            summary="A summary",
+            description="A description",
+            status=ProjectStatus.ACTIVE,
+            public=True,
+            category=Category(id=uuid.uuid4(), name="Crochet", description=""),
+            tags=[],
+            created_at=datetime.now(timezone.utc),
+        )
+
+    def test_public_project_is_visible_to_anonymous_viewers(
+        self, service, repository, project
+    ):
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        result = service.get_project_for_view(project.id, None)
+
+        assert result["id"] == project.id
+        assert result["is_owner"] is False
+
+    def test_private_draft_is_visible_to_its_owner(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        result = service.get_project_for_view(project.id, author_id)
+
+        assert result["id"] == project.id
+        assert result["is_owner"] is True
+
+    def test_private_draft_is_hidden_from_other_users(
+        self, service, repository, project
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        with pytest.raises(ProjectNotFoundError):
+            service.get_project_for_view(project.id, uuid.uuid4())
+
+    def test_private_draft_is_hidden_from_anonymous_viewers(
+        self, service, repository, project
+    ):
+        project.status = ProjectStatus.DRAFT
+        project.public = False
+        repository.get_with_author.return_value = (project, "anna", None)
+
+        with pytest.raises(ProjectNotFoundError):
+            service.get_project_for_view(project.id, None)
+
+    def test_missing_project_raises_not_found(self, service, repository):
+        repository.get_with_author.return_value = None
+
+        with pytest.raises(ProjectNotFoundError):
+            service.get_project_for_view(uuid.uuid4(), None)
+
+    def test_includes_author_details(self, service, repository, project):
+        repository.get_with_author.return_value = (
+            project, "anna", "https://example.invalid/anna.png"
+        )
+
+        result = service.get_project_for_view(project.id, None)
+
+        assert result["author"] == {
+            "username": "anna",
+            "profile_picture_link": "https://example.invalid/anna.png",
+        }
