@@ -463,3 +463,34 @@ export function getProjectHistory(projectId: string, offset = 0) {
   });
   return projectRequest<UpdateHistoryPage>(`/projects/${projectId}/history?${query}`);
 }
+
+export interface FollowingStatus {
+  is_following: boolean;
+}
+
+export interface CreatorFollow {
+  follower_id: string;
+  followed_id: string;
+  followed_at: string;
+  notifications_enabled: boolean;
+}
+
+function followPath(username: string) {
+  return `/follows/${encodeURIComponent(username)}`;
+}
+
+export function getFollowingStatus(username: string) {
+  return projectRequest<FollowingStatus>(followPath(username));
+}
+
+export function followCreator(username: string) {
+  return projectRequest<CreatorFollow>(followPath(username), { 
+    method: "POST" 
+  });
+}
+
+export function unfollowCreator(username: string) {
+  return projectRequest<void>(followPath(username), { 
+    method: "DELETE" 
+  });
+}
