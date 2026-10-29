@@ -5,11 +5,12 @@ from unittest.mock import MagicMock
 
 import pytest
 
-from app.projects.project.exceptions import ProjectNotFoundError
+from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
 from app.projects.updates.enums import UpdateType
 from app.projects.updates.repository import UpdateRepository
+from app.projects.updates.schemas import UpdateCreate
 from app.projects.updates.service import UpdateService
 
 
@@ -58,11 +59,112 @@ def make_update(project_id: uuid.UUID, title: str = "First cut"):
         author_id=uuid.uuid4(),
         title=title,
         body="Cut the panels.",
-        type=UpdateType.PROGRESS,
+        update_type=UpdateType.PROGRESS,
         public=True,
         created_at=now,
         updated_at=now,
     )
+
+
+class TestCreateProjectUpdate:
+    def test_creates_update_for_project_owner(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=True, author_id=viewer_id
+        )
+        update = make_update(project_id)
+        repository.add.return_value = (update, "anna", "https://pics/anna.png")
+
+        result = service.create_project_update(
+            project_id,
+            viewer_id,
+            UpdateCreate(
+                title="First cut",
+                body="Cut the panels.",
+                type=UpdateType.DECISION,
+                public=True,
+            ),
+        )
+
+        created = repository.add.call_args.args[0]
+        assert created.project_id == project_id
+        assert created.author_id == viewer_id
+        assert created.title == "First cut"
+        assert created.body == "Cut the panels."
+        assert created.update_type == UpdateType.DECISION
+        assert created.public is True
+        assert result.id == update.id
+        assert result.author.username == "anna"
+        assert result.author.profile_picture_link == "https://pics/anna.png"
+
+    def test_private_project_cannot_have_public_update(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=False, author_id=viewer_id
+        )
+        update = make_update(project_id)
+        repository.add.return_value = (update, "anna", None)
+
+        service.create_project_update(
+            project_id,
+            viewer_id,
+            UpdateCreate(
+                title="First cut",
+                body="Cut the panels.",
+                public=True,
+            ),
+        )
+
+        assert repository.add.call_args.args[0].public is False
+
+    def test_omitted_visibility_inherits_project_visibility(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=True, author_id=viewer_id
+        )
+        update = make_update(project_id)
+        repository.add.return_value = (update, "anna", None)
+
+        service.create_project_update(
+            project_id,
+            viewer_id,
+            UpdateCreate(title="First cut", body="Cut the panels."),
+        )
+
+        assert repository.add.call_args.args[0].public is True
+
+    def test_rejects_update_by_non_owner(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = make_project(
+            project_id, public=True, author_id=uuid.uuid4()
+        )
+
+        with pytest.raises(ProjectNotOwnedError):
+            service.create_project_update(
+                project_id,
+                viewer_id,
+                UpdateCreate(title="First cut", body="Cut the panels."),
+            )
+
+        repository.add.assert_not_called()
+
+    def test_rejects_update_for_missing_project(
+        self, service, repository, project_repository, project_id, viewer_id
+    ):
+        project_repository.get.return_value = None
+
+        with pytest.raises(ProjectNotFoundError):
+            service.create_project_update(
+                project_id,
+                viewer_id,
+                UpdateCreate(title="First cut", body="Cut the panels."),
+            )
+
+        repository.add.assert_not_called()
 
 
 class TestListProjectUpdates:

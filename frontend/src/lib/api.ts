@@ -461,7 +461,7 @@ export function getProjectHistory(projectId: string, offset = 0) {
     limit: String(UPDATE_PAGE_SIZE),
     offset: String(offset),
   });
-  return projectRequest<UpdateHistoryPage>(`/projects/${projectId}/history?${query}`);
+  return projectRequest<UpdateHistoryPage>(`/projects/${projectId}/updates?${query}`);
 }
 
 export interface FollowingStatus {
