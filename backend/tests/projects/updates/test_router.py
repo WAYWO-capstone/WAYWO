@@ -166,6 +166,25 @@ def post_update(
     return client.post(f"/projects/{project_id}/updates", json=payload)
 
 
+def update_update(
+    client: TestClient,
+    project_id: uuid.UUID | str,
+    update_id: uuid.UUID | str,
+    payload: dict[str, Any],
+):
+    return client.patch(
+        f"/projects/{project_id}/updates/{update_id}", json=payload
+    )
+
+
+def delete_update(
+    client: TestClient,
+    project_id: uuid.UUID | str,
+    update_id: uuid.UUID | str,
+):
+    return client.delete(f"/projects/{project_id}/updates/{update_id}")
+
+
 def count_updates(engine: Engine) -> int:
     # A brand-new session, so we read what was actually committed.
     with Session(engine) as session:
@@ -277,3 +296,88 @@ def test_create_update_rejects_invalid_payload(
 
     assert response.status_code == 422
     assert count_updates(engine) == 0
+
+
+def test_owner_can_edit_update(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = update_update(
+        client,
+        project.id,
+        created["id"],
+        {"title": "Updated milestone", "body": "The frame is painted."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Updated milestone"
+    assert response.json()["body"] == "The frame is painted."
+
+
+def test_non_owner_cannot_edit_or_delete_update(
+    client: TestClient,
+    api: FastAPI,
+    make_user: Callable[[str], User],
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+    authenticate_as(api, make_user("intruder"))
+
+    edit_response = update_update(
+        client, project.id, created["id"], {"title": "Hijacked"}
+    )
+    delete_response = delete_update(client, project.id, created["id"])
+
+    assert edit_response.status_code == 403
+    assert delete_response.status_code == 403
+    assert count_updates(engine) == 1
+
+
+def test_owner_can_delete_update(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = delete_update(client, project.id, created["id"])
+
+    assert response.status_code == 204
+    assert count_updates(engine) == 0
+
+
+@pytest.mark.parametrize(
+    "method",
+    ["edit", "delete"],
+)
+def test_update_actions_return_404_for_unknown_update(
+    client: TestClient,
+    project: Project,
+    method: str,
+) -> None:
+    if method == "edit":
+        response = update_update(
+            client, project.id, uuid.uuid4(), {"title": "Missing"}
+        )
+    else:
+        response = delete_update(client, project.id, uuid.uuid4())
+
+    assert response.status_code == 404
+
+
+def test_edit_update_rejects_empty_payload(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = update_update(client, project.id, created["id"], {})
+
+    assert response.status_code == 422

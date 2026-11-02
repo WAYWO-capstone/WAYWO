@@ -9,8 +9,9 @@ from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwne
 from app.projects.project.models import Project
 from app.projects.project.repository import ProjectRepository
 from app.projects.updates.enums import UpdateType
+from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate
+from app.projects.updates.schemas import UpdateCreate, UpdateUpdate
 from app.projects.updates.service import UpdateService
 
 
@@ -165,6 +166,74 @@ class TestCreateProjectUpdate:
             )
 
         repository.add.assert_not_called()
+
+
+class TestEditAndDeleteProjectUpdate:
+    def test_owner_can_edit_update(
+        self, service, repository, project_id, viewer_id
+    ):
+        update = make_update(project_id)
+        update.author_id = viewer_id
+        repository.get.return_value = update
+        repository.update.return_value = (update, "anna", None)
+
+        result = service.update_project_update(
+            project_id,
+            update.id,
+            viewer_id,
+            UpdateUpdate(title="Updated title", body="Updated body"),
+        )
+
+        assert update.title == "Updated title"
+        assert update.body == "Updated body"
+        repository.update.assert_called_once_with(update)
+        assert result.title == "Updated title"
+
+    def test_non_owner_cannot_edit_or_delete_update(
+        self, service, repository, project_id, viewer_id
+    ):
+        update = make_update(project_id)
+        repository.get.return_value = update
+
+        with pytest.raises(UpdateNotOwnedError):
+            service.update_project_update(
+                project_id,
+                update.id,
+                viewer_id,
+                UpdateUpdate(title="Hijacked"),
+            )
+        with pytest.raises(UpdateNotOwnedError):
+            service.delete_project_update(project_id, update.id, viewer_id)
+
+        repository.update.assert_not_called()
+        repository.delete.assert_not_called()
+
+    def test_missing_update_cannot_be_edited_or_deleted(
+        self, service, repository, project_id, viewer_id
+    ):
+        update_id = uuid.uuid4()
+        repository.get.return_value = None
+
+        with pytest.raises(UpdateNotFoundError):
+            service.update_project_update(
+                project_id,
+                update_id,
+                viewer_id,
+                UpdateUpdate(title="Missing"),
+            )
+        with pytest.raises(UpdateNotFoundError):
+            service.delete_project_update(project_id, update_id, viewer_id)
+
+    def test_owner_can_delete_update(
+        self, service, repository, project_id, viewer_id
+    ):
+        update = make_update(project_id)
+        update.author_id = viewer_id
+        repository.get.return_value = update
+
+        service.delete_project_update(project_id, update.id, viewer_id)
+
+        repository.delete.assert_called_once_with(update)
 
 
 class TestListProjectUpdates:
