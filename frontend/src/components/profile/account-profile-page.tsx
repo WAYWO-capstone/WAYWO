@@ -14,12 +14,10 @@ import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import type { AccountProfile } from "@/lib/api";
-import {
-  BioEditor,
-  EmailEditor,
-  PasswordEditor,
-  ProfilePictureEditor,
-} from "@/components/profile/profile-editors";
+import { BioEditor } from "@/components/profile/bio-editor";
+import { EmailEditor } from "@/components/profile/email-editor";
+import { PasswordEditor } from "@/components/profile/password-editor";
+import { ProfilePictureEditor } from "@/components/profile/profile-picture-editor";
 
 
 interface AccountProfilePageProps {
