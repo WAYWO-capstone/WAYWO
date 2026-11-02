@@ -6,7 +6,7 @@ from app.projects.project.schemas import ProjectAuthorRead
 from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate, UpdateRead, UpdateUpdate
+from app.projects.updates.schemas import UpdateCreate, UpdateEdit, UpdateRead
 
 
 class UpdateService:
@@ -41,12 +41,12 @@ class UpdateService:
         row = self._repo.add(update)
         return self._to_read(row)
 
-    def update_project_update(
+    def edit_project_update(
         self,
         project_id: uuid.UUID,
         update_id: uuid.UUID,
         author_id: uuid.UUID,
-        data: UpdateUpdate,
+        data: UpdateEdit,
     ) -> UpdateRead:
         update = self._get_owned_update(project_id, update_id, author_id)
         for field, value in data.model_dump(exclude_unset=True).items():

@@ -22,7 +22,7 @@ class UpdateCreate(BaseModel):
         return value
 
 
-class UpdateUpdate(BaseModel):
+class UpdateEdit(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     body: str | None = None
     type: UpdateType | None = None
@@ -39,7 +39,7 @@ class UpdateUpdate(BaseModel):
         return value
 
     @model_validator(mode="after")
-    def require_update_field(self) -> "UpdateUpdate":
+    def require_update_field(self) -> "UpdateEdit":
         if not self.model_fields_set:
             raise ValueError("at least one update field must be provided")
         return self

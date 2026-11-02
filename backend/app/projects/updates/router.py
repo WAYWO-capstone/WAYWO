@@ -9,9 +9,9 @@ from app.projects.updates.dependencies import get_update_service
 from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.schemas import (
     UpdateCreate,
+    UpdateEdit,
     UpdateHistoryPage,
     UpdateRead,
-    UpdateUpdate,
 )
 from app.projects.updates.service import UpdateService
 
@@ -67,15 +67,15 @@ def get_project_history(
     "/{project_id}/updates/{update_id}",
     response_model=UpdateRead,
 )
-def update_project_update(
+def edit_project_update(
     project_id: uuid.UUID,
     update_id: uuid.UUID,
-    payload: UpdateUpdate,
+    payload: UpdateEdit,
     user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     service: Annotated[UpdateService, Depends(get_update_service)],
 ) -> UpdateRead:
     try:
-        return service.update_project_update(project_id, update_id, user_id, payload)
+        return service.edit_project_update(project_id, update_id, user_id, payload)
     except UpdateNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Update not found") from exc
     except UpdateNotOwnedError as exc:

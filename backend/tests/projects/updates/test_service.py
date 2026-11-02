@@ -11,7 +11,7 @@ from app.projects.project.repository import ProjectRepository
 from app.projects.updates.enums import UpdateType
 from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate, UpdateUpdate
+from app.projects.updates.schemas import UpdateCreate, UpdateEdit
 from app.projects.updates.service import UpdateService
 
 
@@ -177,11 +177,11 @@ class TestEditAndDeleteProjectUpdate:
         repository.get.return_value = update
         repository.update.return_value = (update, "anna", None)
 
-        result = service.update_project_update(
+        result = service.edit_project_update(
             project_id,
             update.id,
             viewer_id,
-            UpdateUpdate(title="Updated title", body="Updated body"),
+            UpdateEdit(title="Updated title", body="Updated body"),
         )
 
         assert update.title == "Updated title"
@@ -196,11 +196,11 @@ class TestEditAndDeleteProjectUpdate:
         repository.get.return_value = update
 
         with pytest.raises(UpdateNotOwnedError):
-            service.update_project_update(
+            service.edit_project_update(
                 project_id,
                 update.id,
                 viewer_id,
-                UpdateUpdate(title="Hijacked"),
+                UpdateEdit(title="Hijacked"),
             )
         with pytest.raises(UpdateNotOwnedError):
             service.delete_project_update(project_id, update.id, viewer_id)
@@ -215,11 +215,11 @@ class TestEditAndDeleteProjectUpdate:
         repository.get.return_value = None
 
         with pytest.raises(UpdateNotFoundError):
-            service.update_project_update(
+            service.edit_project_update(
                 project_id,
                 update_id,
                 viewer_id,
-                UpdateUpdate(title="Missing"),
+                UpdateEdit(title="Missing"),
             )
         with pytest.raises(UpdateNotFoundError):
             service.delete_project_update(project_id, update_id, viewer_id)
