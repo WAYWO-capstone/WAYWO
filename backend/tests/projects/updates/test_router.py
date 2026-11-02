@@ -155,6 +155,17 @@ def payload() -> dict[str, Any]:
     }
 
 
+@pytest.fixture
+def created_update(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    response = post_update(client, project.id, payload)
+    assert response.status_code == 201
+    return response.json()
+
+
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
@@ -318,20 +329,17 @@ def test_owner_can_edit_update(
 
 
 def test_non_owner_cannot_edit_or_delete_update(
-    client: TestClient,
-    api: FastAPI,
-    make_user: Callable[[str], User],
+    created_update: dict[str, Any],
+    intruder_client: TestClient,
     engine: Engine,
     project: Project,
-    payload: dict[str, Any],
 ) -> None:
-    created = post_update(client, project.id, payload).json()
-    authenticate_as(api, make_user("intruder"))
-
     edit_response = update_update(
-        client, project.id, created["id"], {"title": "Hijacked"}
+        intruder_client, project.id, created_update["id"], {"title": "Hijacked"}
     )
-    delete_response = delete_update(client, project.id, created["id"])
+    delete_response = delete_update(
+        intruder_client, project.id, created_update["id"]
+    )
 
     assert edit_response.status_code == 403
     assert delete_response.status_code == 403
