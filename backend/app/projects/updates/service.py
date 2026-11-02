@@ -3,9 +3,10 @@ import uuid
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
 from app.projects.project.schemas import ProjectAuthorRead
+from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate, UpdateRead
+from app.projects.updates.schemas import UpdateCreate, UpdateRead, UpdateUpdate
 
 
 class UpdateService:
@@ -40,6 +41,27 @@ class UpdateService:
         row = self._repo.add(update)
         return self._to_read(row)
 
+    def update_project_update(
+        self,
+        project_id: uuid.UUID,
+        update_id: uuid.UUID,
+        author_id: uuid.UUID,
+        data: UpdateUpdate,
+    ) -> UpdateRead:
+        update = self._get_owned_update(project_id, update_id, author_id)
+        for field, value in data.model_dump(exclude_unset=True).items():
+            setattr(update, "update_type" if field == "type" else field, value)
+        return self._to_read(self._repo.update(update))
+
+    def delete_project_update(
+        self,
+        project_id: uuid.UUID,
+        update_id: uuid.UUID,
+        author_id: uuid.UUID,
+    ) -> None:
+        update = self._get_owned_update(project_id, update_id, author_id)
+        self._repo.delete(update)
+
     def list_project_updates(
         self,
         project_id: uuid.UUID,
@@ -64,6 +86,19 @@ class UpdateService:
         )
         items = [self._to_read(row) for row in rows]
         return items, total
+
+    def _get_owned_update(
+        self,
+        project_id: uuid.UUID,
+        update_id: uuid.UUID,
+        author_id: uuid.UUID,
+    ) -> Update:
+        update = self._repo.get(update_id)
+        if update is None or update.project_id != project_id:
+            raise UpdateNotFoundError(update_id)
+        if update.author_id != author_id:
+            raise UpdateNotOwnedError(update_id)
+        return update
 
     @staticmethod
     def _to_read(row: tuple[Update, str | None, str | None]) -> UpdateRead:

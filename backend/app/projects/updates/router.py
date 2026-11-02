@@ -1,12 +1,18 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, status
+from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.updates.dependencies import get_update_service
-from app.projects.updates.schemas import UpdateCreate, UpdateHistoryPage, UpdateRead
+from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
+from app.projects.updates.schemas import (
+    UpdateCreate,
+    UpdateHistoryPage,
+    UpdateRead,
+    UpdateUpdate,
+)
 from app.projects.updates.service import UpdateService
 
 router = APIRouter(tags=["project updates"])
@@ -55,3 +61,45 @@ def get_project_history(
     return UpdateHistoryPage(
         items=updates, total=total, limit=limit, offset=offset
     )
+
+
+@router.patch(
+    "/{project_id}/updates/{update_id}",
+    response_model=UpdateRead,
+)
+def update_project_update(
+    project_id: uuid.UUID,
+    update_id: uuid.UUID,
+    payload: UpdateUpdate,
+    user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    service: Annotated[UpdateService, Depends(get_update_service)],
+) -> UpdateRead:
+    try:
+        return service.update_project_update(project_id, update_id, user_id, payload)
+    except UpdateNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Update not found") from exc
+    except UpdateNotOwnedError as exc:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "You do not own this update"
+        ) from exc
+
+
+@router.delete(
+    "/{project_id}/updates/{update_id}",
+    status_code=status.HTTP_204_NO_CONTENT,
+)
+def delete_project_update(
+    project_id: uuid.UUID,
+    update_id: uuid.UUID,
+    user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    service: Annotated[UpdateService, Depends(get_update_service)],
+) -> Response:
+    try:
+        service.delete_project_update(project_id, update_id, user_id)
+    except UpdateNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Update not found") from exc
+    except UpdateNotOwnedError as exc:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "You do not own this update"
+        ) from exc
+    return Response(status_code=status.HTTP_204_NO_CONTENT)
