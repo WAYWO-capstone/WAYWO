@@ -134,7 +134,7 @@ export function EditUpdateForm({ project, update }: EditUpdateFormProps) {
                 <Calendar className="absolute top-1/2 right-3 size-4 -translate-y-1/2 text-muted-foreground" aria-hidden="true" />
               </div>
               <p id="update-date-hint" className="mt-2 text-xs leading-5 text-muted-foreground">
-                This date determines where the update appears in your project timeline. It can’t be changed yet.
+                This date determines where the update appears in your project timeline.
               </p>
             </div>
           </aside>
