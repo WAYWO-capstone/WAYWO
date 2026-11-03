@@ -1,6 +1,7 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
 import { CircleAlert, LoaderCircle } from "lucide-react";
-import { getProjectHistory, type ProjectUpdate } from "@/lib/api";
+import { getProjectHistory } from "@/api/updates";
+import type { ProjectUpdate } from "@/api/models";
 import { UpdateTimeline } from "@/components/projects/update-item";
 
 interface UpdateHistoryProps {

@@ -1,7 +1,7 @@
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { ChevronRight, Heart, MessageCircle } from "lucide-react";
-import type { ProjectUpdate } from "@/lib/api";
+import type { ProjectUpdate } from "@/api/models";
 import { DeleteUpdateDialog } from "@/components/projects/delete-update-dialog";
 import { updateTypeStyles } from "@/components/projects/update-types";
 import { buttonVariants } from "@/components/ui/button";

@@ -1,6 +1,7 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
-import { ApiError, followCreator, getFollowingStatus, unfollowCreator } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import { followCreator, getFollowingStatus, unfollowCreator } from "@/api/follows";
 import { getSessionKey, subscribe } from "@/lib/token-store";
 
 export function followingStatusKey(sessionKey: number | null, username: string) {

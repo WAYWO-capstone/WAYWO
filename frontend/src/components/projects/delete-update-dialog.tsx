@@ -10,7 +10,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog";
-import { deleteProjectUpdate, type ProjectUpdate } from "@/lib/api";
+import type { ProjectUpdate } from "@/api/models";
+import { deleteProjectUpdate } from "@/api/updates";
 import { updateRequestError } from "@/lib/update-form";
 
 export function DeleteUpdateDialog({ update }: { update: Pick<ProjectUpdate, "id" | "project_id" | "title"> }) {

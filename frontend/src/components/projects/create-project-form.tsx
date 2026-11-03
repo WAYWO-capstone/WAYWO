@@ -5,11 +5,8 @@ import { useEffect, useRef, useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
-import {
-  getProject,
-  publishProject,
-  type ProjectInput,
-} from "@/lib/api";
+import { getProject, publishProject } from "@/api/projects";
+import type { ProjectInput } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
 import {

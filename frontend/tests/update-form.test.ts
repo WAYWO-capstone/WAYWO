@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
-import { ApiError, getProjectUpdate } from "../src/lib/api";
+import { ApiError } from "../src/api/client";
+import { getProjectUpdate } from "../src/api/updates";
 import { hasRequiredUpdateFields, updateChanges, updateRequestError, wasEdited } from "../src/lib/update-form";
 
 const saved = { title: "Base finished", body: "Finished the base.", type: "PROGRESS" as const };
@@ -46,8 +47,8 @@ describe("getProjectUpdate", () => {
   afterEach(() => vi.unstubAllGlobals());
 
   function stubHistory(ids: string[]) {
-    const fetchMock = vi.fn(async (url: string) => {
-      const offset = Number(new URL(url, "http://test").searchParams.get("offset"));
+    const fetchMock = vi.fn(async (request: Request) => {
+      const offset = Number(new URL(request.url).searchParams.get("offset"));
       const items = ids.slice(offset, offset + 20).map((id) => ({ id }));
       return new Response(JSON.stringify({ items, total: ids.length, limit: 20, offset }));
     });

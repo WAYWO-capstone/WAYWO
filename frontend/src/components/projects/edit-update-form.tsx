@@ -5,7 +5,8 @@ import { useState, type SubmitEvent } from "react";
 import { updateTypeStyles } from "@/components/projects/update-types";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { updateProjectUpdate, type ProjectUpdate, type ProjectView, type UpdateType } from "@/lib/api";
+import type { ProjectUpdate, ProjectView, UpdateType } from "@/api/models";
+import { updateProjectUpdate } from "@/api/updates";
 import { useRestoreFocus } from "@/lib/project-form";
 import { statusClasses, statusLabel } from "@/lib/project-status";
 import {

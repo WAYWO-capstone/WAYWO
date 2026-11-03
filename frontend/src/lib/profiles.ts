@@ -1,5 +1,5 @@
 import { queryOptions, useQuery } from "@tanstack/react-query";
-import { getPublicProfile } from "@/lib/api";
+import { getPublicProfile } from "@/api/users";
 
 export function publicProfileOptions(username: string) {
   return queryOptions({

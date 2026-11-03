@@ -1,6 +1,6 @@
 // Keeps unsaved project changes in the browser so they survive a closed tab,
 // a failed save or an expired session.
-import type { ProjectInput } from "@/lib/api";
+import type { ProjectInput } from "@/api/models";
 import { getTokenUserId } from "@/lib/token-store";
 
 export interface DraftBackup {
