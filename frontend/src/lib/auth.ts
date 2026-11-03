@@ -4,7 +4,9 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { useSyncExternalStore } from "react";
 
-import { login, register, getCurrentProfile } from "@/lib/api";
+import { login, register } from "@/api/auth";
+import { getCurrentProfile } from "@/api/users";
+import type { RegistrationInput } from "@/api/models";
 
 import {
   clearTokens,
@@ -18,12 +20,6 @@ interface LoginInput {
   identifier: string;
   password: string;
   remember: boolean;
-}
-
-export interface RegistrationInput {
-  username: string;
-  email: string;
-  password: string;
 }
 
 export function useIsAuthenticated() {

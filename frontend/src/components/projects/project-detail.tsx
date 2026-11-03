@@ -3,7 +3,7 @@ import { Bell, Bookmark, Pencil } from "lucide-react";
 import { DeleteProjectDialog } from "@/components/projects/delete-project-dialog";
 import { ProjectStatusControl } from "@/components/projects/project-status-control";
 import { UpdateHistory } from "@/components/projects/update-history";
-import type { ProjectUpdate, ProjectView } from "@/lib/api";
+import type { ProjectUpdate, ProjectView } from "@/api/models";
 
 interface ProjectDetailProps {
   project: ProjectView;
@@ -109,7 +109,7 @@ export function ProjectDetail({
           ) : <p className="mt-2 text-sm text-muted-foreground">No tags</p>}
         </aside>
 
-        <UpdateHistory projectId={isPreview ? undefined : project.id} previewUpdates={previewUpdates} />
+        <UpdateHistory projectId={isPreview ? undefined : project.id} previewUpdates={previewUpdates} canManage={isOwner} />
 
         <aside aria-labelledby="resources-heading" className="min-h-[320px] rounded-lg border border-border bg-white p-4">
           <h2 id="resources-heading" className="text-lg font-bold text-brand-mahogany">Resources</h2>

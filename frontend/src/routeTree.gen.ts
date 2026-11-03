@@ -12,6 +12,7 @@ import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as EditProjectRouteImport } from './routes/edit-project'
+import { Route as EditUpdateRouteImport } from './routes/edit-update'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -32,6 +33,11 @@ const CreateProjectRoute = CreateProjectRouteImport.update({
 const EditProjectRoute = EditProjectRouteImport.update({
   id: '/edit-project',
   path: '/edit-project',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const EditUpdateRoute = EditUpdateRouteImport.update({
+  id: '/edit-update',
+  path: '/edit-update',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -69,6 +75,7 @@ export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
+  '/edit-update': typeof EditUpdateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
@@ -80,6 +87,7 @@ export interface FileRoutesByTo {
   '/': typeof IndexRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
+  '/edit-update': typeof EditUpdateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
@@ -92,6 +100,7 @@ export interface FileRoutesById {
   '/': typeof IndexRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
+  '/edit-update': typeof EditUpdateRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
@@ -105,6 +114,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create-project'
     | '/edit-project'
+    | '/edit-update'
     | '/login'
     | '/projects'
     | '/register'
@@ -116,6 +126,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create-project'
     | '/edit-project'
+    | '/edit-update'
     | '/login'
     | '/projects'
     | '/register'
@@ -127,6 +138,7 @@ export interface FileRouteTypes {
     | '/'
     | '/create-project'
     | '/edit-project'
+    | '/edit-update'
     | '/login'
     | '/projects'
     | '/register'
@@ -139,6 +151,7 @@ export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
   CreateProjectRoute: typeof CreateProjectRoute
   EditProjectRoute: typeof EditProjectRoute
+  EditUpdateRoute: typeof EditUpdateRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
   RegisterRoute: typeof RegisterRoute
@@ -168,6 +181,13 @@ declare module '@tanstack/react-router' {
       path: '/edit-project'
       fullPath: '/edit-project'
       preLoaderRoute: typeof EditProjectRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/edit-update': {
+      id: '/edit-update'
+      path: '/edit-update'
+      fullPath: '/edit-update'
+      preLoaderRoute: typeof EditUpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -219,6 +239,7 @@ const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
   CreateProjectRoute: CreateProjectRoute,
   EditProjectRoute: EditProjectRoute,
+  EditUpdateRoute: EditUpdateRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,
   RegisterRoute: RegisterRoute,
