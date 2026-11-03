@@ -7,9 +7,10 @@ interface UpdateHistoryProps {
   // When there is no projectId (sample preview), these updates are shown instead.
   projectId?: string;
   previewUpdates?: ProjectUpdate[];
+  canManage?: boolean;
 }
 
-export function UpdateHistory({ projectId, previewUpdates = [] }: UpdateHistoryProps) {
+export function UpdateHistory({ projectId, previewUpdates = [], canManage = false }: UpdateHistoryProps) {
   const historyQuery = useInfiniteQuery({
     queryKey: ["project-history", projectId],
     queryFn: ({ pageParam }) => getProjectHistory(projectId!, pageParam),
@@ -41,7 +42,7 @@ export function UpdateHistory({ projectId, previewUpdates = [] }: UpdateHistoryP
         ) : updates.length === 0 ? (
           <p className="py-10 text-sm text-muted-foreground">No updates yet.</p>
         ) : (
-          <UpdateTimeline updates={updates} />
+          <UpdateTimeline updates={updates} canManage={canManage} />
         )}
         {historyQuery.hasNextPage && (
           <button
