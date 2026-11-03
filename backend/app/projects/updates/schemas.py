@@ -28,11 +28,16 @@ class UpdateEdit(BaseModel):
     type: UpdateType | None = None
     public: bool | None = None
 
+    @field_validator("title", "body", "type", "public")
+    @classmethod
+    def must_not_be_null(cls, value: object) -> object:
+        if value is None:
+            raise ValueError("must not be null")
+        return value
+
     @field_validator("title")
     @classmethod
-    def title_must_not_be_blank(cls, value: str | None) -> str | None:
-        if value is None:
-            return value
+    def title_must_not_be_blank(cls, value: str) -> str:
         value = value.strip()
         if not value:
             raise ValueError("title must not be blank")
