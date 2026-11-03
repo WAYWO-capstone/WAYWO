@@ -1,16 +1,18 @@
+import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
 import { ChevronRight, Heart, MessageCircle } from "lucide-react";
-import type { ProjectUpdate } from "@/lib/api";
+import type { ProjectUpdate } from "@/api/models";
+import { DeleteUpdateDialog } from "@/components/projects/delete-update-dialog";
 import { updateTypeStyles } from "@/components/projects/update-types";
+import { buttonVariants } from "@/components/ui/button";
+import { formatUpdateDate, wasEdited } from "@/lib/update-form";
 
-function formatUpdateDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+interface UpdateItemProps {
+  update: ProjectUpdate;
+  canManage?: boolean;
 }
 
-export function UpdateItem({ update }: { update: ProjectUpdate }) {
+export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
   const type = updateTypeStyles[update.type];
 
   return (
@@ -61,18 +63,38 @@ export function UpdateItem({ update }: { update: ProjectUpdate }) {
             <ChevronRight className="-ml-1 size-4" aria-hidden="true" />
           </span>
         </div>
+
+        <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-2.5">
+          <div className="text-xs leading-5 text-brand-mahogany">
+            <p>Posted on {formatUpdateDate(update.created_at)}</p>
+            {wasEdited(update) && <p>Edited {formatUpdateDate(update.updated_at)}</p>}
+          </div>
+          {canManage && (
+            <div className="flex items-center gap-2">
+              <DeleteUpdateDialog update={update} />
+              <Link
+                to="/edit-update"
+                search={{ projectId: update.project_id, updateId: update.id }}
+                aria-label={`Edit ${update.title}`}
+                className={cn(buttonVariants({ variant: "outline", className: "h-8 border-brand-rust/60 px-4 font-semibold" }))}
+              >
+                Edit
+              </Link>
+            </div>
+          )}
+        </div>
       </article>
     </li>
   );
 }
 
-export function UpdateTimeline({ updates }: { updates: ProjectUpdate[] }) {
+export function UpdateTimeline({ updates, canManage = false }: { updates: ProjectUpdate[]; canManage?: boolean }) {
   return (
     <div className="relative">
       <span aria-hidden="true" className="absolute top-3 bottom-0 left-[11px] w-px -translate-x-1/2 bg-brand-rust" />
       <ol className="relative">
         {updates.map((update) => (
-          <UpdateItem key={update.id} update={update} />
+          <UpdateItem key={update.id} update={update} canManage={canManage} />
         ))}
       </ol>
     </div>

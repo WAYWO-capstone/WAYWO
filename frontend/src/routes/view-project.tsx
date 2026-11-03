@@ -2,14 +2,14 @@ import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { ProjectDetail } from "@/components/projects/project-detail";
+import { ApiError } from "@/api/client";
 import {
-  ApiError,
   getProject,
   publishProject,
   unpublishProject,
   updateProjectStatus,
-  type ProjectView,
-} from "@/lib/api";
+} from "@/api/projects";
+import type { ProjectView } from "@/api/models";
 import { previewProject, previewUpdates } from "@/temp-mock-data";
 import { PartialStatusChangeError, statusChangeError, statusChangeSteps } from "@/lib/project-status";
 

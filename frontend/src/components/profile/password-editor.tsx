@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { PasswordInput } from "@/components/ui/password-input";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { useUpdatePassword } from "@/lib/profile-editing";
 
 const passwordFields = [

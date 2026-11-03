@@ -3,7 +3,7 @@ import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { useUpdateEmail } from "@/lib/profile-editing";
 
 export function EmailEditor({ email }: { email: string }) {

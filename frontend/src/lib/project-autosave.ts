@@ -1,6 +1,8 @@
 // Autosave for project drafts, shared by the create and edit pages.
 import type { QueryClient } from "@tanstack/react-query";
-import { ApiError, autosaveProject, createProject, getMyDrafts, type ProjectInput } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import { autosaveProject, createProject, getMyDrafts } from "@/api/projects";
+import type { ProjectInput } from "@/api/models";
 import { AutosaveQueue, type AutosaveState } from "@/lib/autosave";
 import { writeDraftBackup } from "@/lib/draft-backup";
 import { requestError } from "@/lib/project-form";

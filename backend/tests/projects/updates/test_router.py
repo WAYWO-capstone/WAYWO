@@ -155,6 +155,17 @@ def payload() -> dict[str, Any]:
     }
 
 
+@pytest.fixture
+def created_update(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> dict[str, Any]:
+    response = post_update(client, project.id, payload)
+    assert response.status_code == 201
+    return response.json()
+
+
 # --------------------------------------------------------------------------
 # Helpers
 # --------------------------------------------------------------------------
@@ -164,6 +175,25 @@ def post_update(
     client: TestClient, project_id: uuid.UUID | str, payload: dict[str, Any]
 ):
     return client.post(f"/projects/{project_id}/updates", json=payload)
+
+
+def update_update(
+    client: TestClient,
+    project_id: uuid.UUID | str,
+    update_id: uuid.UUID | str,
+    payload: dict[str, Any],
+):
+    return client.patch(
+        f"/projects/{project_id}/updates/{update_id}", json=payload
+    )
+
+
+def delete_update(
+    client: TestClient,
+    project_id: uuid.UUID | str,
+    update_id: uuid.UUID | str,
+):
+    return client.delete(f"/projects/{project_id}/updates/{update_id}")
 
 
 def count_updates(engine: Engine) -> int:
@@ -277,3 +307,85 @@ def test_create_update_rejects_invalid_payload(
 
     assert response.status_code == 422
     assert count_updates(engine) == 0
+
+
+def test_owner_can_edit_update(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = update_update(
+        client,
+        project.id,
+        created["id"],
+        {"title": "Updated milestone", "body": "The frame is painted."},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Updated milestone"
+    assert response.json()["body"] == "The frame is painted."
+
+
+def test_non_owner_cannot_edit_or_delete_update(
+    created_update: dict[str, Any],
+    intruder_client: TestClient,
+    engine: Engine,
+    project: Project,
+) -> None:
+    edit_response = update_update(
+        intruder_client, project.id, created_update["id"], {"title": "Hijacked"}
+    )
+    delete_response = delete_update(
+        intruder_client, project.id, created_update["id"]
+    )
+
+    assert edit_response.status_code == 403
+    assert delete_response.status_code == 403
+    assert count_updates(engine) == 1
+
+
+def test_owner_can_delete_update(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = delete_update(client, project.id, created["id"])
+
+    assert response.status_code == 204
+    assert count_updates(engine) == 0
+
+
+@pytest.mark.parametrize(
+    "method",
+    ["edit", "delete"],
+)
+def test_update_actions_return_404_for_unknown_update(
+    client: TestClient,
+    project: Project,
+    method: str,
+) -> None:
+    if method == "edit":
+        response = update_update(
+            client, project.id, uuid.uuid4(), {"title": "Missing"}
+        )
+    else:
+        response = delete_update(client, project.id, uuid.uuid4())
+
+    assert response.status_code == 404
+
+
+def test_edit_update_rejects_empty_payload(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = update_update(client, project.id, created["id"], {})
+
+    assert response.status_code == 422

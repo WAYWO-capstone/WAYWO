@@ -2,7 +2,7 @@ import { LoaderCircle, Pencil } from "lucide-react";
 import { useRef, useState, type ChangeEvent } from "react";
 
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { useUpdateProfilePicture } from "@/lib/profile-editing";
 
 export function ProfilePictureEditor({

@@ -2,7 +2,7 @@ import { Pencil } from "lucide-react";
 import { useEffect, useRef, useState, type FormEvent } from "react";
 
 import { Button } from "@/components/ui/button";
-import { ApiError } from "@/lib/api";
+import { ApiError } from "@/api/client";
 import { useUpdateProfile } from "@/lib/profile-editing";
 
 export function BioEditor({ bio }: { bio: string | null }) {

@@ -1,0 +1,6 @@
+# Normalize line endings to LF in the repository.
+* text=auto
+
+# Generated from the backend OpenAPI schema (bun run api:sync). Collapsed in PR diffs.
+frontend/openapi.json           linguist-generated=true
+frontend/src/api/schema.gen.ts  linguist-generated=true
