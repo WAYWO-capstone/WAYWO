@@ -1,5 +1,6 @@
 import uuid
 
+from app.core.common import utcnow
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
 from app.projects.project.schemas import ProjectAuthorRead
@@ -51,6 +52,7 @@ class UpdateService:
         update = self._get_owned_update(project_id, update_id, author_id)
         for field, value in data.model_dump(exclude_unset=True).items():
             setattr(update, "update_type" if field == "type" else field, value)
+        update.updated_at = utcnow()
         return self._to_read(self._repo.update(update))
 
     def delete_project_update(
