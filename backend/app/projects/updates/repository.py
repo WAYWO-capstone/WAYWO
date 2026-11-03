@@ -26,6 +26,23 @@ class UpdateRepository:
         ).one()
         return cast(UpdateRow, row)
 
+    def get(self, update_id: uuid.UUID) -> Update | None:
+        return self._session.get(Update, update_id)
+
+    def update(self, update: Update) -> UpdateRow:
+        self._session.flush()
+        row = self._session.execute(
+            select(Update, User.username, Profile.profile_picture_link)
+            .outerjoin(User, User.id == Update.author_id)
+            .outerjoin(Profile, Profile.user_id == User.id)
+            .where(Update.id == update.id)
+        ).one()
+        return cast(UpdateRow, row)
+
+    def delete(self, update: Update) -> None:
+        self._session.delete(update)
+        self._session.flush()
+
     def list_for_project(
         self,
         project_id: uuid.UUID,
