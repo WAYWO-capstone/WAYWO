@@ -6,7 +6,7 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { EditUpdateForm } from "@/components/projects/edit-update-form";
 import { UpdateHistory } from "@/components/projects/update-history";
 import { UpdateTimeline } from "@/components/projects/update-item";
-import type { ProjectUpdate } from "@/lib/api";
+import type { ProjectUpdate } from "@/api/models";
 
 const navigate = vi.hoisted(() => vi.fn());
 
@@ -40,10 +40,16 @@ function json(body: unknown, status = 200) {
 }
 
 // The requests that change data, as [method, path, parsed body].
-function writes(fetchMock: ReturnType<typeof vi.fn>) {
-  return fetchMock.mock.calls
-    .filter(([, init]) => init?.method && init.method !== "GET")
-    .map(([url, init]) => [init.method, url, init.body ? JSON.parse(init.body) : undefined]);
+async function writes(fetchMock: ReturnType<typeof vi.fn>) {
+  const sent = fetchMock.mock.calls
+    .map(([request]) => request as Request)
+    .filter((request) => request.method !== "GET");
+  return Promise.all(
+    sent.map(async (request) => {
+      const text = await request.clone().text();
+      return [request.method, new URL(request.url).pathname, text ? JSON.parse(text) : undefined];
+    }),
+  );
 }
 
 function renderWithQueries(ui: ReactNode) {
@@ -106,14 +112,14 @@ describe("deleting an update", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Cancel" }));
 
     await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
-    expect(writes(fetchMock)).toEqual([]);
+    expect(await writes(fetchMock)).toEqual([]);
     expect(screen.getByText("Base finished")).toBeTruthy();
   });
 
   test("confirming deletes the update and removes it from the history", async () => {
     let items = [makeUpdate()];
-    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) => {
-      if (init?.method === "DELETE") {
+    fetchMock.mockImplementation(async (request: Request) => {
+      if (request.method === "DELETE") {
         items = [];
         return new Response(null, { status: 204 });
       }
@@ -124,12 +130,12 @@ describe("deleting an update", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Delete update" }));
 
     await screen.findByText("No updates yet.");
-    expect(writes(fetchMock)).toEqual([["DELETE", "/api/projects/p1/updates/u1", undefined]]);
+    expect(await writes(fetchMock)).toEqual([["DELETE", "/api/projects/p1/updates/u1", undefined]]);
   });
 
   test("keeps the update and explains when the server refuses", async () => {
-    fetchMock.mockImplementation(async (_url: string, init?: RequestInit) =>
-      init?.method === "DELETE" ? json({ detail: "You do not own this update" }, 403) : historyResponse([makeUpdate()]),
+    fetchMock.mockImplementation(async (request: Request) =>
+      request.method === "DELETE" ? json({ detail: "You do not own this update" }, 403) : historyResponse([makeUpdate()]),
     );
 
     const dialog = await openDialog();
@@ -163,7 +169,7 @@ describe("editing an update", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
     await screen.findByRole("status");
-    expect(writes(fetchMock)).toEqual([["PATCH", "/api/projects/p1/updates/u1", { title: "New title", type: "DECISION" }]]);
+    expect(await writes(fetchMock)).toEqual([["PATCH", "/api/projects/p1/updates/u1", { title: "New title", type: "DECISION" }]]);
     expect((screen.getByLabelText(/Update title/) as HTMLInputElement).value).toBe("New title");
     expect(navigate).not.toHaveBeenCalled();
   });
@@ -176,7 +182,7 @@ describe("editing an update", () => {
     fireEvent.click(screen.getByRole("button", { name: "Save & close" }));
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/view-project", search: { projectId: "p1" } }));
-    expect(writes(fetchMock)).toEqual([["PATCH", "/api/projects/p1/updates/u1", { body: "More detail." }]]);
+    expect(await writes(fetchMock)).toEqual([["PATCH", "/api/projects/p1/updates/u1", { body: "More detail." }]]);
   });
 
   test("does not send blank required fields", () => {
