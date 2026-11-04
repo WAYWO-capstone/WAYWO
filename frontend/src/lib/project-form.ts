@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { useCallback, useEffect, useRef } from "react";
-import { ApiError, getProjectCategories } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import { getProjectCategories } from "@/api/projects";
 
 export function requestError(error: Error) {
   if (error instanceof ApiError && error.status === 401) return "Your session has expired. Please log in again.";

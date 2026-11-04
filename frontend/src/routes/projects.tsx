@@ -3,7 +3,8 @@ import { createFileRoute, Link } from "@tanstack/react-router";
 import { CircleAlert, FolderOpen, Globe2, LoaderCircle, Plus } from "lucide-react";
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
-import { ApiError, getMyDrafts, getMyPublishedProjects } from "@/lib/api";
+import { ApiError } from "@/api/client";
+import { getMyDrafts, getMyPublishedProjects } from "@/api/projects";
 
 export const Route = createFileRoute("/projects")({
   component: ProjectsPage,

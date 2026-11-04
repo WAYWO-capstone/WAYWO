@@ -11,7 +11,8 @@ import {
   DialogTrigger,
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
-import { deleteProject, type ProjectView } from "@/lib/api";
+import { deleteProject } from "@/api/projects";
+import type { ProjectView } from "@/api/models";
 import { requestError } from "@/lib/project-form";
 
 interface DeleteProjectDialogProps {

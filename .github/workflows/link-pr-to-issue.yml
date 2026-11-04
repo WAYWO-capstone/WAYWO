@@ -1,0 +1,72 @@
+name: Link PR to Issue
+
+# When a PR is opened from a branch like "task/123-some-name",
+# link it to issue #123 and copy the issue's labels, milestone and assignees.
+
+on:
+  pull_request:
+    types: [opened, reopened]
+
+permissions:
+  pull-requests: write
+  issues: write
+
+jobs:
+  link-issue:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Link PR and copy issue metadata
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          BRANCH: ${{ github.event.pull_request.head.ref }}
+        run: |
+          # Get the issue number from the branch name: <prefix>/<number>-<name> or <number>-<name>
+          ISSUE_NUMBER=$(echo "$BRANCH" | sed -nE 's#^([^/]+/)?([0-9]+)-.*#\2#p')
+
+          if [ -z "$ISSUE_NUMBER" ]; then
+            echo "Branch '$BRANCH' has no issue number, skipping."
+            exit 0
+          fi
+
+          if ! ISSUE=$(gh api "repos/$REPO/issues/$ISSUE_NUMBER" 2>/dev/null); then
+            echo "Issue #$ISSUE_NUMBER not found, skipping."
+            exit 0
+          fi
+
+          # Skip if the number points at a PR instead of an issue
+          if [ "$(echo "$ISSUE" | jq -r '.pull_request != null')" = "true" ]; then
+            echo "#$ISSUE_NUMBER is a pull request, skipping."
+            exit 0
+          fi
+
+          # Add "Closes #N" 
+          BODY=$(gh api "repos/$REPO/pulls/$PR_NUMBER" --jq '.body // ""')
+          if ! echo "$BODY" | grep -qiE "(close[sd]?|fix(e[sd])?|resolve[sd]?) #$ISSUE_NUMBER\b"; then
+            NEW_BODY=$(printf '%s\n\nCloses #%s' "$BODY" "$ISSUE_NUMBER")
+            gh api -X PATCH "repos/$REPO/pulls/$PR_NUMBER" -f body="$NEW_BODY" > /dev/null
+            echo "Added 'Closes #$ISSUE_NUMBER' to PR body."
+          fi
+
+          # labels
+          LABELS=$(echo "$ISSUE" | jq -r '[.labels[].name] | join(",")')
+          if [ -n "$LABELS" ]; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-label "$LABELS"
+            echo "Copied labels: $LABELS"
+          fi
+
+          # milestone
+          MILESTONE=$(echo "$ISSUE" | jq -r '.milestone.title // empty')
+          if [ -n "$MILESTONE" ]; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --milestone "$MILESTONE"
+            echo "Copied milestone: $MILESTONE"
+          fi
+
+          # Copy assignees
+          ASSIGNEES=$(echo "$ISSUE" | jq -r '[.assignees[].login] | join(",")')
+          if [ -n "$ASSIGNEES" ]; then
+            gh pr edit "$PR_NUMBER" --repo "$REPO" --add-assignee "$ASSIGNEES"
+            echo "Copied assignees: $ASSIGNEES"
+          fi
