@@ -5,12 +5,10 @@ import { Input } from "@/components/ui/input";
 interface TagInputProps {
   tags: string[];
   onChange: (tags: string[]) => void;
-  // Text typed but not added yet, carried over from the create page.
-  initialText?: string;
 }
 
-export function TagInput({ tags, onChange, initialText = "" }: TagInputProps) {
-  const [value, setValue] = useState(initialText);
+export function TagInput({ tags, onChange }: TagInputProps) {
+  const [value, setValue] = useState("");
   function addTag() {
     const next = value.trim().toLowerCase();
     if (next && !tags.includes(next) && tags.length < 10) onChange([...tags, next]);
