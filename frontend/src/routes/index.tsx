@@ -1,21 +1,8 @@
-import { Button } from "@/components/ui/button";
-import { createFileRoute } from "@tanstack/react-router";
-import { useState } from "react";
+import { createFileRoute, redirect } from "@tanstack/react-router";
 
+// The home page lives at /home, so send visitors of / there.
 export const Route = createFileRoute("/")({
-  component: RouteComponent,
+  beforeLoad: () => {
+    throw redirect({ to: "/home", replace: true });
+  },
 });
-
-function RouteComponent() {
-  const [count, setCount] = useState<number>(0);
-
-  return (
-    <div>
-      Hello index route!
-      <Button onClick={() => setCount((prev) => prev + 1)}>
-        Test button - increment
-      </Button>
-      <span>{count}</span>
-    </div>
-  );
-}
