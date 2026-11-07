@@ -1,6 +1,6 @@
 /**
  * Top navigation bar shown on every page
- * Holds the logo; explore, projects and community links; search; Log in and Sign up buttons,
+ * Holds the logo; home, my projects and explore links; search; Log in and Sign up buttons,
  */
 
 import { Link, useRouterState } from "@tanstack/react-router";
@@ -13,10 +13,11 @@ import { Input } from "@/components/ui/input";
 import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
+// Explore has no page of its own yet, so it uses the home route for now.
 const NAV_ITEMS = [
+  { label: "Home", to: "/" },
+  { label: "My Projects", to: "/projects" },
   { label: "Explore", to: "/" },
-  { label: "Projects", to: "/projects" },
-  { label: "Community", to: "/" },
 ] as const;
 
 const authButtonClass =
