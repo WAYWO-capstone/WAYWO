@@ -1,7 +1,7 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { useNavigate } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
-import { useEffect, useRef, useState, type SubmitEvent } from "react";
+import { useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
@@ -27,9 +27,6 @@ export function CreateProjectForm() {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const rememberFocus = useRestoreFocus(saving !== null);
-  const [createdId, setCreatedId] = useState<string | null>(null);
-  // Set while publishing runs, so creating the draft doesn't send user to edit page.
-  const publishing = useRef(false);
   const [{ autosave, draft, restored }] = useState(() => {
     const draft = { id: null as string | null };
     // A project started earlier that never got saved (closed tab, expired session).
@@ -40,7 +37,6 @@ export function CreateProjectForm() {
       restored: backup?.value,
       onCreate: (projectId) => {
         draft.id = projectId;
-        setCreatedId(projectId);
       },
       onSave: (projectId) => markProjectSaved(queryClient, projectId),
     });
@@ -50,26 +46,6 @@ export function CreateProjectForm() {
   const [showRestored, setShowRestored] = useState(restored);
   const autosaveState = useAutosave(autosave);
   const autosaveFailure = autosaveState?.status === "error" && autosaveState.error ? autosaveError(autosaveState.error) : "";
-
-  // Once the first autosave has created the draft, keep editing it on the edit page.
-  useEffect(() => {
-    if (!createdId || publishing.current) return;
-    let cancelled = false;
-    void (async () => {
-      try {
-        // Loaded first so the edit page opens without a loading screen.
-        await queryClient.fetchQuery({ queryKey: ["project", createdId], queryFn: () => getProject(createdId) });
-      } catch {
-        // The edit page loads it itself.
-      }
-      if (cancelled || publishing.current) return;
-      handOffProjectAutosave(createdId, autosave);
-      await navigate({ to: "/edit-project", search: { projectId: createdId }, replace: true });
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [autosave, createdId, navigate, queryClient]);
 
   function change(next: ProjectInput) {
     setProjectData(next);
@@ -102,18 +78,26 @@ export function CreateProjectForm() {
       return;
     }
     const shouldPublish = (event.submitter as HTMLButtonElement | null)?.value === "publish";
-    publishing.current = shouldPublish;
     rememberFocus();
     setSaving(shouldPublish ? "publish" : "draft");
     try {
-      // Saving the draft opens it on the edit page.
-      if (!(await autosave.flush()) || !shouldPublish || !draft.id) return;
-      await publishProject(draft.id);
-      await navigate({ to: "/view-project", search: { projectId: draft.id } });
+      if (!(await autosave.flush())) return;
+      const projectId = draft.id;
+      if (!projectId) return;
+      if (!shouldPublish) {
+        try {
+          await queryClient.fetchQuery({ queryKey: ["project", projectId], queryFn: () => getProject(projectId) });
+        } catch {
+        }
+        handOffProjectAutosave(projectId, autosave);
+        await navigate({ to: "/edit-project", search: { projectId } });
+        return;
+      }
+      await publishProject(projectId);
+      await navigate({ to: "/view-project", search: { projectId } });
     } catch (cause) {
       setError(requestError(cause instanceof Error ? cause : new Error("Request failed")));
     } finally {
-      publishing.current = false;
       setSaving(null);
     }
   }
