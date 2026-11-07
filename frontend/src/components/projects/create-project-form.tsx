@@ -5,14 +5,13 @@ import { useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
-import { getProject, publishProject } from "@/api/projects";
+import { publishProject } from "@/api/projects";
 import type { ProjectInput } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
 import {
   autosaveError,
   createProjectAutosave,
-  handOffProjectAutosave,
   hasRequiredFields,
   markProjectSaved,
 } from "@/lib/project-autosave";
@@ -85,12 +84,7 @@ export function CreateProjectForm() {
       const projectId = draft.id;
       if (!projectId) return;
       if (!shouldPublish) {
-        try {
-          await queryClient.fetchQuery({ queryKey: ["project", projectId], queryFn: () => getProject(projectId) });
-        } catch {
-        }
-        handOffProjectAutosave(projectId, autosave);
-        await navigate({ to: "/edit-project", search: { projectId } });
+        await navigate({ to: "/projects" });
         return;
       }
       await publishProject(projectId);
