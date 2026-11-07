@@ -128,32 +128,3 @@ export function createProjectAutosave({ projectId, initial, restored, lastSavedA
     },
   });
 }
-
-interface Handoff {
-  queue: AutosaveQueue<ProjectInput>;
-  focus: { id: string; start: number | null; end: number | null } | null;
-  // A tag typed but not added yet.
-  pendingTag: string;
-}
-
-// The create page moves to the edit page once its draft exists.
-// The edit page takes over the same queue so saves stay in order and nothing typed is lost.
-const handoffs = new Map<string, Handoff>();
-
-export function handOffProjectAutosave(projectId: string, queue: AutosaveQueue<ProjectInput>) {
-  const active = document.activeElement;
-  const focus = active instanceof HTMLInputElement || active instanceof HTMLTextAreaElement
-    ? { id: active.id, start: active.selectionStart, end: active.selectionEnd }
-    : null;
-  const tagInput = document.getElementById("project-tags");
-  const pendingTag = tagInput instanceof HTMLInputElement ? tagInput.value : "";
-  handoffs.set(projectId, { queue, focus: focus?.id ? focus : null, pendingTag });
-}
-
-export function getHandedOffAutosave(projectId: string) {
-  return handoffs.get(projectId);
-}
-
-export function releaseHandedOffAutosave(projectId: string) {
-  handoffs.delete(projectId);
-}
