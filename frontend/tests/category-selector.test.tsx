@@ -15,15 +15,16 @@ describe("CategorySelector", () => {
   test("shows all categories in the dropdown and filters them as the user searches", () => {
     render(<CategorySelector categories={categories} value="woodworking" onChange={vi.fn()} />);
 
-    expect(screen.getByRole("button", { name: "Remove Woodworking category" })).toBeTruthy();
     const search = screen.getByRole("combobox", { name: "Search categories" });
+    expect((search as HTMLInputElement).value).toBe("Woodworking");
     expect(search.className).toContain("text-sm");
     expect(search.className).not.toContain("text-base");
     fireEvent.focus(search);
 
+    expect((search as HTMLInputElement).value).toBe("");
     expect(screen.getAllByRole("option")).toHaveLength(2);
     expect(screen.getByRole("option", { name: "Electronics" })).toBeTruthy();
-    expect(screen.getByRole("option", { name: "Woodworking" })).toBeTruthy();
+    expect(screen.getByRole("option", { name: "Woodworking" }).getAttribute("aria-selected")).toBe("true");
 
     fireEvent.change(search, { target: { value: "elect" } });
 
@@ -35,17 +36,16 @@ describe("CategorySelector", () => {
     expect(screen.getByText("No matching categories.")).toBeTruthy();
   });
 
-  test("removes the selected category when its chip is clicked", () => {
+  test("changes the selected category from the dropdown", () => {
     const onChange = vi.fn();
-    const { rerender } = render(
+    render(
       <CategorySelector categories={categories} value="woodworking" onChange={onChange} />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Remove Woodworking category" }));
+    fireEvent.focus(screen.getByRole("combobox", { name: "Search categories" }));
+    fireEvent.click(screen.getByRole("option", { name: "Electronics" }));
 
-    expect(onChange).toHaveBeenCalledWith("");
-    rerender(<CategorySelector categories={categories} value="" onChange={onChange} />);
-    expect(screen.queryByRole("button", { name: "Remove Woodworking category" })).toBeNull();
+    expect(onChange).toHaveBeenCalledWith("electronics");
   });
 
   test("selects a search result and clears the search", () => {
@@ -62,9 +62,8 @@ describe("CategorySelector", () => {
     expect(onChange).toHaveBeenCalledWith("woodworking");
     expect((search as HTMLInputElement).value).toBe("");
     expect(search.getAttribute("aria-expanded")).toBe("false");
-    rerender(
-      <CategorySelector categories={categories} value="woodworking" onChange={onChange} />,
-    );
-    expect(screen.getByRole("button", { name: "Remove Woodworking category" })).toBeTruthy();
+    rerender(<CategorySelector categories={categories} value="woodworking" onChange={onChange} />);
+    expect((search as HTMLInputElement).value).toBe("Woodworking");
+    expect(screen.queryByRole("button", { name: "Remove Woodworking category" })).toBeNull();
   });
 });

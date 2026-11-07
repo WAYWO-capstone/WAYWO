@@ -1,4 +1,3 @@
-import { X } from "lucide-react";
 import { useState } from "react";
 import type { ProjectCategory } from "@/api/models";
 import {
@@ -30,25 +29,10 @@ export function CategorySelector({
       <label id="category-label" className="mb-2 block text-sm font-semibold">
         Category <span className="text-primary">*</span>
       </label>
-      {selectedCategory && (
-        <div className="mb-2">
-          <button
-            type="button"
-            title={selectedCategory.description || selectedCategory.name}
-            aria-label={`Remove ${selectedCategory.name} category`}
-            onClick={() => onChange("")}
-            className="flex min-h-8 items-center gap-2 rounded-full bg-brand-garnet px-2.5 text-left text-xs font-semibold text-white focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring"
-          >
-            <span className="size-3 shrink-0 rounded-full border-2 border-white bg-blue-500" />
-            <span className="truncate">{selectedCategory.name}</span>
-            <X className="ml-auto size-3.5 shrink-0" aria-hidden="true" />
-          </button>
-        </div>
-      )}
       <Combobox
         items={categories}
         value={selectedCategory ?? null}
-        inputValue={search}
+        inputValue={isOpen ? search : selectedCategory?.name ?? search}
         open={isOpen}
         modal={false}
         onOpenChange={setIsOpen}
@@ -69,7 +53,10 @@ export function CategorySelector({
         <ComboboxInput
           aria-label="Search categories"
           placeholder="Search categories"
-          onFocus={() => setIsOpen(true)}
+          onFocus={() => {
+            setSearch("");
+            setIsOpen(true);
+          }}
         />
         <ComboboxContent>
           <ComboboxEmpty>No matching categories.</ComboboxEmpty>
