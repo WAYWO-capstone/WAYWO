@@ -13,11 +13,10 @@ import { Input } from "@/components/ui/input";
 import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
-// Explore has no page of its own yet, so it uses the home route for now.
 const NAV_ITEMS = [
-  { label: "Home", to: "/" },
+  { label: "Home", to: "/home" },
   { label: "My Projects", to: "/projects" },
-  { label: "Explore", to: "/" },
+  { label: "Explore", to: "/explore" },
 ] as const;
 
 const authButtonClass =
@@ -36,7 +35,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-22 max-w-7xl items-center gap-6 px-4 sm:px-8">
-        <Link to="/" className="shrink-0">
+        <Link to="/home" className="shrink-0">
           <img src={logo} alt="WAYWO home" className="h-24 w-auto" />
         </Link>
 
@@ -48,7 +47,7 @@ export function SiteHeader() {
               aria-current={pathname === item.to ? "page" : undefined}
               className={cn(
                 "text-lg font-semibold hover:text-brand-rust",
-                pathname === item.to && item.to === "/projects" && "text-brand-rust",
+                pathname === item.to && "text-brand-rust",
               )}
             >
               {item.label}
