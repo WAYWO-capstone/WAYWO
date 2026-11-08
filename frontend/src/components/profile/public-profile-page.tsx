@@ -1,5 +1,3 @@
-import { Link } from "@tanstack/react-router";
-import { ArrowLeft } from "lucide-react";
 import type { ReactNode } from "react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { ProfileProjects, type ProfileProject } from "@/components/profile/profile-projects";
@@ -24,14 +22,6 @@ interface PublicProfilePageProps {
 export function ProfilePageFrame({ children }: { children: ReactNode }) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 pt-6 pb-14 sm:w-[85%] sm:px-0 sm:pt-7">
-      {/* Community uses the home route for now. */}
-      <Link
-        to="/"
-        className="mb-3 inline-flex min-h-8 items-center gap-2 text-sm hover:text-brand-rust focus-visible:rounded focus-visible:outline-2 focus-visible:outline-ring"
-      >
-        <ArrowLeft aria-hidden="true" className="size-4" />
-        Back to community
-      </Link>
       {children}
     </div>
   );
