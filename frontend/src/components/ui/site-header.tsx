@@ -1,6 +1,6 @@
 /**
  * Top navigation bar shown on every page
- * Holds the logo; explore, projects and community links; search; Log in and Sign up buttons,
+ * Holds the logo; home, my projects and explore links; search; Log in and Sign up buttons,
  */
 
 import { Link, useRouterState } from "@tanstack/react-router";
@@ -14,9 +14,9 @@ import { useIsAuthenticated, useLogout } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
-  { label: "Explore", to: "/" },
-  { label: "Projects", to: "/projects" },
-  { label: "Community", to: "/" },
+  { label: "Home", to: "/home" },
+  { label: "My Projects", to: "/projects" },
+  { label: "Explore", to: "/explore" },
 ] as const;
 
 const authButtonClass =
@@ -35,7 +35,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="mx-auto flex h-22 max-w-7xl items-center gap-6 px-4 sm:px-8">
-        <Link to="/" className="shrink-0">
+        <Link to="/home" className="shrink-0">
           <img src={logo} alt="WAYWO home" className="h-24 w-auto" />
         </Link>
 
@@ -47,7 +47,7 @@ export function SiteHeader() {
               aria-current={pathname === item.to ? "page" : undefined}
               className={cn(
                 "text-lg font-semibold hover:text-brand-rust",
-                pathname === item.to && item.to === "/projects" && "text-brand-rust",
+                pathname === item.to && "text-brand-rust",
               )}
             >
               {item.label}
