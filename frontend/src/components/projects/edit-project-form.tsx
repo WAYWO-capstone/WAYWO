@@ -13,10 +13,8 @@ import {
   autosaveError,
   createProjectAutosave,
   formatSavedAt,
-  getHandedOffAutosave,
   hasRequiredFields,
   markProjectSaved,
-  releaseHandedOffAutosave,
 } from "@/lib/project-autosave";
 import { requestError, useProjectCategories, useRestoreFocus } from "@/lib/project-form";
 import { statusClasses, statusLabel } from "@/lib/project-status";
@@ -36,13 +34,10 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   const queryClient = useQueryClient();
   const categories = useProjectCategories();
   const isDraft = project.status === "DRAFT" && !project.public;
-  // Set when the create page just made this draft and is handing over its autosave.
-  const [handoff] = useState(() => getHandedOffAutosave(project.id));
   // Only private drafts can be autosaved
   // published projects are saved by hand
   const [{ autosave, restored }] = useState(() => {
     if (!isDraft) return { autosave: null, restored: false };
-    if (handoff) return { autosave: handoff.queue, restored: false };
     const initial = toProjectInput(project);
     // Changes that didn't reach the server last time (closed tab, expired session).
     const backup = restorableDraftBackup(project.id, initial, project.last_autosaved_at);
@@ -76,17 +71,6 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
   }, []);
-
-  // Put the cursor back where it was on the create page.
-  useEffect(() => {
-    const focus = handoff?.focus;
-    const element = focus ? document.getElementById(focus.id) : null;
-    if (focus && (element instanceof HTMLInputElement || element instanceof HTMLTextAreaElement)) {
-      element.focus();
-      element.setSelectionRange(focus.start, focus.end);
-    }
-    return () => releaseHandedOffAutosave(project.id);
-  }, [handoff, project.id]);
 
   function change(next: ProjectInput) {
     setProjectData(next);
@@ -162,7 +146,6 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
           onChange={change}
           categories={categories}
           disabled={saving !== null}
-          pendingTag={handoff?.pendingTag}
           hint={isDraft
             ? "This draft saves automatically as you edit it. Publish it when you’re ready from the project page."
             : "This project is published. Changes you save here are visible to everyone right away."}
