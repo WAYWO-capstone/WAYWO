@@ -700,6 +700,18 @@
             "title": "Body",
             "type": "string"
           },
+          "problem_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Id"
+          },
           "public": {
             "anyOf": [
               {
@@ -741,6 +753,18 @@
               }
             ],
             "title": "Body"
+          },
+          "problem_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Id"
           },
           "public": {
             "anyOf": [
@@ -835,6 +859,18 @@
             "title": "Id",
             "type": "string"
           },
+          "problem_id": {
+            "anyOf": [
+              {
+                "format": "uuid",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Problem Id"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -860,6 +896,7 @@
         "required": [
           "id",
           "project_id",
+          "problem_id",
           "author_id",
           "title",
           "body",

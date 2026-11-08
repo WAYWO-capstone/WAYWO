@@ -1,7 +1,7 @@
 """add problem links to updates
 
 Revision ID: 6f3a5b7c9d10
-Revises: 0359a3be4a26
+Revises: b3ea848880d4
 """
 
 from typing import Sequence, Union
@@ -11,7 +11,7 @@ import sqlalchemy as sa
 
 
 revision: str = "6f3a5b7c9d10"
-down_revision: Union[str, Sequence[str], None] = "0359a3be4a26"
+down_revision: Union[str, Sequence[str], None] = "b3ea848880d4"
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 

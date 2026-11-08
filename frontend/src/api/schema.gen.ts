@@ -714,6 +714,8 @@ export interface components {
         UpdateCreate: {
             /** Body */
             body: string;
+            /** Problem Id */
+            problem_id?: string | null;
             /** Public */
             public?: boolean | null;
             /** Title */
@@ -725,6 +727,8 @@ export interface components {
         UpdateEdit: {
             /** Body */
             body?: string | null;
+            /** Problem Id */
+            problem_id?: string | null;
             /** Public */
             public?: boolean | null;
             /** Title */
@@ -762,6 +766,8 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Problem Id */
+            problem_id: string | null;
             /**
              * Project Id
              * Format: uuid
