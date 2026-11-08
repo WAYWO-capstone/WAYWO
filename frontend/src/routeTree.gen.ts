@@ -13,6 +13,8 @@ import { Route as IndexRouteImport } from './routes/index'
 import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as EditProjectRouteImport } from './routes/edit-project'
 import { Route as EditUpdateRouteImport } from './routes/edit-update'
+import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RegisterRouteImport } from './routes/register'
@@ -38,6 +40,16 @@ const EditProjectRoute = EditProjectRouteImport.update({
 const EditUpdateRoute = EditUpdateRouteImport.update({
   id: '/edit-update',
   path: '/edit-update',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -76,6 +88,8 @@ export interface FileRoutesByFullPath {
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
+  '/explore': typeof ExploreRoute
+  '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
@@ -88,6 +102,8 @@ export interface FileRoutesByTo {
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
+  '/explore': typeof ExploreRoute
+  '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
@@ -101,6 +117,8 @@ export interface FileRoutesById {
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
+  '/explore': typeof ExploreRoute
+  '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
@@ -115,6 +133,8 @@ export interface FileRouteTypes {
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
+    | '/explore'
+    | '/home'
     | '/login'
     | '/projects'
     | '/register'
@@ -127,6 +147,8 @@ export interface FileRouteTypes {
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
+    | '/explore'
+    | '/home'
     | '/login'
     | '/projects'
     | '/register'
@@ -139,6 +161,8 @@ export interface FileRouteTypes {
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
+    | '/explore'
+    | '/home'
     | '/login'
     | '/projects'
     | '/register'
@@ -152,6 +176,8 @@ export interface RootRouteChildren {
   CreateProjectRoute: typeof CreateProjectRoute
   EditProjectRoute: typeof EditProjectRoute
   EditUpdateRoute: typeof EditUpdateRoute
+  ExploreRoute: typeof ExploreRoute
+  HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
   RegisterRoute: typeof RegisterRoute
@@ -188,6 +214,20 @@ declare module '@tanstack/react-router' {
       path: '/edit-update'
       fullPath: '/edit-update'
       preLoaderRoute: typeof EditUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -240,6 +280,8 @@ const rootRouteChildren: RootRouteChildren = {
   CreateProjectRoute: CreateProjectRoute,
   EditProjectRoute: EditProjectRoute,
   EditUpdateRoute: EditUpdateRoute,
+  ExploreRoute: ExploreRoute,
+  HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,
   RegisterRoute: RegisterRoute,
