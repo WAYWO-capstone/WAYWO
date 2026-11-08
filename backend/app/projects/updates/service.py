@@ -4,7 +4,14 @@ from app.core.common import utcnow
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
 from app.projects.project.schemas import ProjectAuthorRead
-from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
+from app.projects.updates.enums import UpdateType
+from app.projects.updates.exceptions import (
+    InvalidProblemLinkError,
+    ProblemLinkRequiredError,
+    ProblemNotFoundError,
+    UpdateNotFoundError,
+    UpdateNotOwnedError,
+)
 from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
 from app.projects.updates.schemas import UpdateCreate, UpdateEdit, UpdateRead
@@ -30,6 +37,9 @@ class UpdateService:
             raise ProjectNotFoundError(project_id)
         if project.author_id != author_id:
             raise ProjectNotOwnedError(project_id)
+        problem = self._validate_problem_link(
+            project_id, data.type, data.problem_id
+        )
 
         update = Update(
             project_id=project_id,
@@ -38,6 +48,7 @@ class UpdateService:
             body=data.body,
             update_type=data.type,
             public=project.public and data.public is not False,
+            problem_id=problem.id if problem is not None else None,
         )
         row = self._repo.add(update)
         return self._to_read(row)
@@ -50,8 +61,15 @@ class UpdateService:
         data: UpdateEdit,
     ) -> UpdateRead:
         update = self._get_owned_update(project_id, update_id, author_id)
-        for field, value in data.model_dump(exclude_unset=True).items():
+        values = data.model_dump(exclude_unset=True)
+        update_type = values.get("type", update.update_type)
+        problem_id = values.get("problem_id", getattr(update, "problem_id", None))
+        if update_type is not UpdateType.SOLUTION and "problem_id" not in values:
+            problem_id = None
+        problem = self._validate_problem_link(project_id, update_type, problem_id)
+        for field, value in values.items():
             setattr(update, "update_type" if field == "type" else field, value)
+        update.problem_id = problem.id if problem is not None else None
         update.updated_at = utcnow()
         return self._to_read(self._repo.update(update))
 
@@ -102,12 +120,32 @@ class UpdateService:
             raise UpdateNotOwnedError(update_id)
         return update
 
+    def _validate_problem_link(
+        self,
+        project_id: uuid.UUID,
+        update_type: UpdateType,
+        problem_id: uuid.UUID | None,
+    ) -> Update | None:
+        if update_type is not UpdateType.SOLUTION:
+            if problem_id is not None:
+                raise InvalidProblemLinkError(problem_id)
+            return None
+        if problem_id is None:
+            raise ProblemLinkRequiredError
+        problem = self._repo.get(problem_id)
+        if problem is None or problem.project_id != project_id:
+            raise ProblemNotFoundError(problem_id)
+        if problem.update_type is not UpdateType.PROBLEM:
+            raise InvalidProblemLinkError(problem_id)
+        return problem
+
     @staticmethod
     def _to_read(row: tuple[Update, str | None, str | None]) -> UpdateRead:
         update, username, profile_picture_link = row
         return UpdateRead(
             id=update.id,
             project_id=update.project_id,
+            problem_id=getattr(update, "problem_id", None),
             author_id=update.author_id,
             title=update.title,
             body=update.body,

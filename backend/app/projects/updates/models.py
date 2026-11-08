@@ -2,7 +2,7 @@ import uuid
 from datetime import datetime
 
 from sqlalchemy import DateTime, Enum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.common import utcnow
 from app.feed_items.feed_item.enums import FeedItemType
@@ -21,6 +21,9 @@ class Update(FeedItem):
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), index=True
     )
+    problem_id: Mapped[uuid.UUID | None] = mapped_column(
+        ForeignKey("updates.id", ondelete="SET NULL"), index=True, default=None
+    )
     update_type: Mapped[UpdateType] = mapped_column(
         "type",
         Enum(
@@ -34,6 +37,17 @@ class Update(FeedItem):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    problem: Mapped["Update | None"] = relationship(
+        remote_side="Update.id",
+        foreign_keys="Update.problem_id",
+        back_populates="solutions",
+    )
+    solutions: Mapped[list["Update"]] = relationship(
+        foreign_keys="Update.problem_id",
+        back_populates="problem",
+        cascade="save-update",
     )
 
     __mapper_args__ = {"polymorphic_identity": FeedItemType.UPDATE}

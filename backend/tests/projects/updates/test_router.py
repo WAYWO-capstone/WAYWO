@@ -245,6 +245,60 @@ def test_create_update_persists_to_database(
     assert saved.public is False
 
 
+def test_solution_update_links_to_a_problem(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    problem_response = post_update(
+        client,
+        project.id,
+        {**payload, "title": "Blocked by a missing part", "type": "PROBLEM"},
+    )
+    assert problem_response.status_code == 201
+    problem_id = problem_response.json()["id"]
+
+    solution_response = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "title": "Use a replacement part",
+            "type": "SOLUTION",
+            "problem_id": problem_id,
+        },
+    )
+
+    assert solution_response.status_code == 201
+    assert solution_response.json()["problem_id"] == problem_id
+    with Session(engine) as session:
+        saved = session.get(Update, uuid.UUID(solution_response.json()["id"]))
+    assert saved is not None
+    assert saved.problem_id == uuid.UUID(problem_id)
+
+
+def test_solution_update_rejects_a_non_problem_link(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    progress_response = post_update(client, project.id, payload)
+    assert progress_response.status_code == 201
+
+    response = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "type": "SOLUTION",
+            "problem_id": progress_response.json()["id"],
+        },
+    )
+
+    assert response.status_code == 422
+
+
 def test_create_update_rejects_non_owner(
     intruder_client: TestClient,
     engine: Engine,

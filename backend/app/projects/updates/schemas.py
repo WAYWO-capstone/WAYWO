@@ -12,6 +12,7 @@ class UpdateCreate(BaseModel):
     body: str
     type: UpdateType = UpdateType.PROGRESS
     public: bool | None = None
+    problem_id: uuid.UUID | None = None
 
     @field_validator("title")
     @classmethod
@@ -21,14 +22,23 @@ class UpdateCreate(BaseModel):
             raise ValueError("title must not be blank")
         return value
 
+    @model_validator(mode="after")
+    def validate_problem_link(self) -> "UpdateCreate":
+        if self.type is not UpdateType.SOLUTION and self.problem_id is not None:
+            raise ValueError("only solution updates may reference a problem")
+        if self.type is UpdateType.SOLUTION and self.problem_id is None:
+            raise ValueError("solution updates must reference a problem")
+        return self
+
 
 class UpdateEdit(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     body: str | None = None
     type: UpdateType | None = None
     public: bool | None = None
+    problem_id: uuid.UUID | None = None
 
-    @field_validator("title", "body", "type", "public")
+    @field_validator("title", "body", "type", "public", "problem_id")
     @classmethod
     def must_not_be_null(cls, value: object) -> object:
         if value is None:
@@ -55,6 +65,7 @@ class UpdateRead(BaseModel):
 
     id: uuid.UUID
     project_id: uuid.UUID
+    problem_id: uuid.UUID | None
     author_id: uuid.UUID
     title: str
     body: str
