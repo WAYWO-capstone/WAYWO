@@ -24,14 +24,14 @@ const NAV_ITEMS = [
 
 /**
  * Where the header switches layout.
- * Logged in, there are no Log in / Sign up buttons, so the tabs fit from 768px
+ * Logged in, there are no Log in / Sign up buttons, so the tabs fit from 640px
  * as long as search stays a button until 1024px.
  * Logged out, the buttons take that space, so the tabs wait until 1024px.
  */
 const BREAKPOINTS = {
   loggedIn: {
-    tabs: "md:flex",
-    menuButton: "md:hidden",
+    tabs: "sm:flex",
+    menuButton: "sm:hidden",
     searchBox: "lg:block",
     searchButton: "lg:hidden",
     actions: "lg:ml-6",
@@ -60,9 +60,9 @@ export function SiteHeader() {
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="flex h-22 items-center gap-3 px-4 sm:gap-6 sm:px-8 lg:px-12">
+      <div className="flex h-16 items-center gap-3 px-4 sm:gap-6 sm:px-8">
         <Link to="/home" className="shrink-0">
-          <img src={logo} alt="WAYWO home" className="h-20 w-auto sm:h-24" />
+          <img src={logo} alt="WAYWO home" className="h-12 w-auto" />
         </Link>
 
         {/* Takes the place of the nav links until they fit. */}
@@ -75,7 +75,7 @@ export function SiteHeader() {
 
         <nav
           aria-label="Main"
-          className={cn("ml-4 hidden gap-8 xl:gap-12", layout.tabs)}
+          className={cn("ml-4 hidden gap-8", layout.tabs)}
         >
           {NAV_ITEMS.map((item) => (
             <Link
