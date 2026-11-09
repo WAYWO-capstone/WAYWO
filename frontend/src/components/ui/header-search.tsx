@@ -4,8 +4,9 @@
  * small screens and opens a search bar that covers the header.
  */
 
+import { useRouterState } from "@tanstack/react-router";
 import { Search, X } from "lucide-react";
-import { useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
@@ -45,13 +46,33 @@ export function HeaderSearch({
  * search box fits.
  */
 export function HeaderSearchButton({ className }: { className?: string }) {
-  const [open, setOpen] = useState(false);
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+  // The page the bar was opened on, so moving to another page closes it.
+  const [openOn, setOpenOn] = useState<string | null>(null);
+  const open = openOn === pathname;
   const buttonRef = useRef<HTMLButtonElement>(null);
+  const barRef = useRef<HTMLDivElement>(null);
 
   const close = () => {
-    setOpen(false);
+    setOpenOn(null);
     requestAnimationFrame(() => buttonRef.current?.focus());
   };
+
+  // Clicking or tapping outside an empty bar closes it. This listens for the
+  // press rather than blur because Safari doesn't focus buttons on click.
+  useEffect(() => {
+    if (!open) return;
+    const onPointerDown = (event: PointerEvent) => {
+      const bar = barRef.current;
+      if (!bar || bar.contains(event.target as Node)) return;
+      if (bar.querySelector("input")?.value) return;
+      setOpenOn(null);
+    };
+    document.addEventListener("pointerdown", onPointerDown);
+    return () => document.removeEventListener("pointerdown", onPointerDown);
+  }, [open]);
 
   return (
     <>
@@ -60,7 +81,7 @@ export function HeaderSearchButton({ className }: { className?: string }) {
         type="button"
         aria-label="Open search"
         aria-expanded={open}
-        onClick={() => setOpen(true)}
+        onClick={() => setOpenOn(pathname)}
         className={cn(iconButtonClass, className)}
       >
         <Search aria-hidden="true" className="size-6" />
@@ -68,8 +89,16 @@ export function HeaderSearchButton({ className }: { className?: string }) {
 
       {open && (
         <div
+          ref={barRef}
           onKeyDown={(event) => {
             if (event.key === "Escape") close();
+          }}
+          // Tabbing out of an empty bar also closes it.
+          onBlur={(event) => {
+            const next = event.relatedTarget as Node | null;
+            if (!next || event.currentTarget.contains(next)) return;
+            if (event.currentTarget.querySelector("input")?.value) return;
+            setOpenOn(null);
           }}
           className={cn(
             "absolute inset-0 z-10 flex items-center gap-2 bg-background px-4 sm:px-8",

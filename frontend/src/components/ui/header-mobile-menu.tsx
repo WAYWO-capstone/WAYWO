@@ -71,7 +71,7 @@ export function HeaderMobileMenu({
                 </Menu.LinkItem>
                 <Menu.LinkItem
                   closeOnClick
-                  render={<a href="/register" />}
+                  render={<Link to="/register" />}
                   className={cn(itemClass, "xs:hidden")}
                 >
                   Sign up

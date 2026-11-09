@@ -107,7 +107,7 @@ export function SiteHeader() {
             <HeaderProfileMenu />
           ) : (
             <>
-              {/* On phones goes the hamburger menu. */}
+              {/* On narrow screens the login appears in the hamburger menu. */}
               <Link
                 to="/login"
                 className={cn(
@@ -120,8 +120,8 @@ export function SiteHeader() {
               >
                 Log in
               </Link>
-              <a
-                href="/register"
+              <Link
+                to="/register"
                 className={cn(
                   buttonVariants({
                     variant: onLoginPage ? "outline" : "default",
@@ -131,7 +131,7 @@ export function SiteHeader() {
                 )}
               >
                 Sign up
-              </a>
+              </Link>
             </>
           )}
         </div>
