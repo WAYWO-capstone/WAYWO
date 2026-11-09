@@ -39,7 +39,7 @@ export function CreateUpdateForm({ projectId }: { projectId: string }) {
     event.preventDefault();
     setError("");
     setAttempted(true);
-    if (focusFirstInvalidField(event.currentTarget, validateUpdate(values)) || !values.type) return;
+    if (focusFirstInvalidField(event.currentTarget, validateUpdate(values))) return;
     rememberFocus();
     setPosting(true);
     try {
