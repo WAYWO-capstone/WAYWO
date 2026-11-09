@@ -1,5 +1,6 @@
 import { useInfiniteQuery } from "@tanstack/react-query";
-import { CircleAlert, LoaderCircle } from "lucide-react";
+import { Link } from "@tanstack/react-router";
+import { CircleAlert, LoaderCircle, Plus } from "lucide-react";
 import { getProjectHistory } from "@/api/updates";
 import type { ProjectUpdate } from "@/api/models";
 import { UpdateTimeline } from "@/components/projects/update-item";
@@ -29,7 +30,14 @@ export function UpdateHistory({ projectId, previewUpdates = [], canManage = fals
 
   return (
     <section aria-labelledby="updates-heading" className="flex max-h-180 min-h-105 flex-col rounded-lg border border-border bg-background p-4">
-      <h2 id="updates-heading" className="text-lg font-bold text-brand-mahogany">Updates</h2>
+      <div className="flex items-center justify-between gap-3">
+        <h2 id="updates-heading" className="text-lg font-bold text-brand-mahogany">Updates</h2>
+        {projectId && canManage && (
+          <Link to="/add-update" search={{ projectId }} className="inline-flex h-9 items-center gap-1.5 rounded-md bg-primary px-3 text-sm font-semibold text-primary-foreground hover:bg-primary/80 focus-visible:ring-3 focus-visible:ring-ring/50">
+            <Plus className="size-4" aria-hidden="true" />Add update
+          </Link>
+        )}
+      </div>
 
       <div tabIndex={0} aria-label="Project updates" className="mt-2 min-h-0 flex-1 overflow-y-auto pr-1 focus-visible:outline-2 focus-visible:outline-ring">
         {projectId && historyQuery.isLoading ? (

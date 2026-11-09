@@ -50,3 +50,28 @@ export function updateRequestError(error: Error) {
   if (error instanceof TypeError) return "Can't reach the server. Check your connection and try again.";
   return "Something went wrong. Please try again.";
 }
+
+// The create form starts with no type chosen
+export interface NewUpdateFormValues {
+  title: string;
+  body: string;
+  type: UpdateType | null;
+}
+
+export type UpdateFieldErrors = Partial<Record<keyof NewUpdateFormValues, string>>;
+
+export const MIN_UPDATE_TITLE_LENGTH = 3;
+
+export function validateNewUpdate(values: NewUpdateFormValues): UpdateFieldErrors {
+  const errors: UpdateFieldErrors = {};
+  if (values.title.trim().length < MIN_UPDATE_TITLE_LENGTH) errors.title = `Title needs at least ${MIN_UPDATE_TITLE_LENGTH} characters`;
+  if (!values.type) errors.type = "Choose an update type";
+  if (!values.body.trim()) errors.body = "Add a description";
+  return errors;
+}
+
+export function createUpdateRequestError(error: Error) {
+  if (error instanceof ApiError && error.status === 403) return "You can only add updates to your own projects.";
+  if (error instanceof ApiError && error.status === 404) return "This project no longer exists.";
+  return updateRequestError(error);
+}

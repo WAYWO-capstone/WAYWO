@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import { getProjectUpdate } from "../src/api/updates";
-import { hasRequiredUpdateFields, updateChanges, updateRequestError, wasEdited } from "../src/lib/update-form";
+import { createUpdateRequestError, hasRequiredUpdateFields, updateChanges, updateRequestError, validateNewUpdate, wasEdited } from "../src/lib/update-form";
 
 const saved = { title: "Base finished", body: "Finished the base.", type: "PROGRESS" as const };
 
@@ -68,5 +68,34 @@ describe("getProjectUpdate", () => {
     stubHistory(["u1"]);
 
     await expect(getProjectUpdate("p1", "missing")).rejects.toMatchObject({ status: 404 });
+  });
+});
+
+describe("validateNewUpdate", () => {
+  test("accepts a complete update", () => {
+    expect(validateNewUpdate({ title: "Base", body: "Finished the base.", type: "PROGRESS" })).toEqual({});
+  });
+
+  test("explains every missing or too short field", () => {
+    expect(validateNewUpdate({ title: "", body: "", type: null })).toEqual({
+      title: "Title needs at least 3 characters",
+      type: "Choose an update type",
+      body: "Add a description",
+    });
+  });
+
+  test("ignores surrounding spaces when measuring the title and content", () => {
+    const errors = validateNewUpdate({ title: "  ab  ", body: "   ", type: "DECISION" });
+    expect(errors.title).toBeTruthy();
+    expect(errors.body).toBeTruthy();
+    expect(errors.type).toBeUndefined();
+  });
+});
+
+describe("createUpdateRequestError", () => {
+  test("words ownership and missing-project errors for creating", () => {
+    expect(createUpdateRequestError(new ApiError(403))).toBe("You can only add updates to your own projects.");
+    expect(createUpdateRequestError(new ApiError(404))).toBe("This project no longer exists.");
+    expect(createUpdateRequestError(new ApiError(401))).toBe(updateRequestError(new ApiError(401)));
   });
 });

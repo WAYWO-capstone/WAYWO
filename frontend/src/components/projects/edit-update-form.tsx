@@ -1,11 +1,11 @@
 import { useQueryClient } from "@tanstack/react-query";
 import { Link, useNavigate } from "@tanstack/react-router";
-import { ArrowLeft, Calendar, Check, CircleAlert, LoaderCircle } from "lucide-react";
+import { ArrowLeft, Calendar, CircleAlert, LoaderCircle } from "lucide-react";
 import { useState, type SubmitEvent } from "react";
-import { updateTypeStyles } from "@/components/projects/update-types";
+import { UpdateTypePicker } from "@/components/projects/update-type-picker";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import type { ProjectUpdate, ProjectView, UpdateType } from "@/api/models";
+import type { ProjectUpdate, ProjectView } from "@/api/models";
 import { updateProjectUpdate } from "@/api/updates";
 import { useRestoreFocus } from "@/lib/project-form";
 import { statusClasses, statusLabel } from "@/lib/project-status";
@@ -20,8 +20,6 @@ interface EditUpdateFormProps {
   project: Pick<ProjectView, "id" | "title" | "summary" | "status">;
   update: ProjectUpdate;
 }
-
-const updateTypes = Object.keys(updateTypeStyles) as UpdateType[];
 
 export function EditUpdateForm({ project, update }: EditUpdateFormProps) {
   const navigate = useNavigate();
@@ -90,23 +88,7 @@ export function EditUpdateForm({ project, update }: EditUpdateFormProps) {
               <Input id="update-title" required maxLength={200} value={values.title} onChange={(event) => change({ title: event.target.value })} />
             </div>
 
-            <fieldset>
-              <legend className="mb-2 block text-sm font-semibold">Update type <span className="text-primary">*</span></legend>
-              <div className="flex flex-wrap gap-3">
-                {updateTypes.map((type) => {
-                  const selected = values.type === type;
-                  return (
-                    <label key={type} className={`flex cursor-pointer items-center gap-2 rounded-lg border-2 px-3 py-1.5 text-sm font-semibold text-brand-mahogany focus-within:ring-3 focus-within:ring-ring/50 ${updateTypeStyles[type].className} ${selected ? "border-brand-garnet" : "border-transparent"}`}>
-                      <input type="radio" name="update-type" value={type} checked={selected} onChange={() => change({ type })} className="sr-only" />
-                      <span aria-hidden="true" className={`flex size-4 items-center justify-center rounded-full border border-brand-mahogany ${selected ? "bg-brand-garnet text-white" : "bg-white"}`}>
-                        {selected && <Check className="size-3" strokeWidth={3} />}
-                      </span>
-                      {updateTypeStyles[type].label}
-                    </label>
-                  );
-                })}
-              </div>
-            </fieldset>
+            <UpdateTypePicker value={values.type} onChange={(type) => change({ type })} />
 
             <div>
               <label htmlFor="update-body" className="mb-2 block text-sm font-semibold">Detailed content <span className="text-primary">*</span></label>
