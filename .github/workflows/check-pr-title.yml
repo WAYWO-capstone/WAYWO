@@ -1,0 +1,24 @@
+name: Check PR Title
+
+# Make sure PR titles follow the format "#<ISSUE NBR>: <Title>", e.g. "#247: Fix publish button"
+# Optional bracketed tags are allowed before it, e.g. "[LLL] #247: Fix publish button"
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+jobs:
+  check-title:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Validate PR title format
+        env:
+          TITLE: ${{ github.event.pull_request.title }}
+        run: |
+          if echo "$TITLE" | grep -qE '^(\[[^]]+\] *)*#[0-9]+: .+'; then
+            echo "PR title is valid: $TITLE"
+          else
+            echo "::error::PR title '$TITLE' does not match the required format '[TAGS] #<ISSUE NBR>: <Title>' (e.g. '#247: Fix publish button' or '[LLL] #247: Fix publish button')"
+            exit 1
+          fi
