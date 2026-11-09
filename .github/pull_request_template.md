@@ -1,6 +1,7 @@
 <!--
   PR TITLE FORMAT:  #<ISSUE NBR>: <Title>
   Example:          #247: Publish button disappears after saving
+  Optional tags:    [LLL] #247: Publish button disappears after saving
 -->
 
 ## Summary
