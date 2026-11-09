@@ -191,7 +191,18 @@ describe("editing an update", () => {
     fireEvent.change(screen.getByLabelText(/Detailed content/), { target: { value: "   " } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(screen.getByRole("alert").textContent).toContain("Fill in the title and content");
+    expect(screen.getByText("Add a description")).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText(/Detailed content/));
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  test("uses the same title rule as creating an update", () => {
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText(/Update title/), { target: { value: "ab" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(screen.getByText("Title needs at least 3 characters")).toBeTruthy();
     expect(fetchMock).not.toHaveBeenCalled();
   });
 

@@ -2,7 +2,7 @@
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ApiError } from "../src/api/client";
 import { getProjectUpdate } from "../src/api/updates";
-import { createUpdateRequestError, hasRequiredUpdateFields, updateChanges, updateRequestError, validateNewUpdate, wasEdited } from "../src/lib/update-form";
+import { createUpdateRequestError, updateChanges, updateRequestError, validateUpdate, wasEdited } from "../src/lib/update-form";
 
 const saved = { title: "Base finished", body: "Finished the base.", type: "PROGRESS" as const };
 
@@ -15,14 +15,6 @@ describe("updateChanges", () => {
   test("contains only the changed fields, trimmed", () => {
     expect(updateChanges(saved, { ...saved, title: " New title " })).toEqual({ title: "New title" });
     expect(updateChanges(saved, { ...saved, type: "DECISION" })).toEqual({ type: "DECISION" });
-  });
-});
-
-describe("hasRequiredUpdateFields", () => {
-  test("rejects a title or content made of spaces", () => {
-    expect(hasRequiredUpdateFields(saved)).toBe(true);
-    expect(hasRequiredUpdateFields({ ...saved, title: "   " })).toBe(false);
-    expect(hasRequiredUpdateFields({ ...saved, body: "   " })).toBe(false);
   });
 });
 
@@ -71,13 +63,13 @@ describe("getProjectUpdate", () => {
   });
 });
 
-describe("validateNewUpdate", () => {
+describe("validateUpdate", () => {
   test("accepts a complete update", () => {
-    expect(validateNewUpdate({ title: "Base", body: "Finished the base.", type: "PROGRESS" })).toEqual({});
+    expect(validateUpdate({ title: "Base", body: "Finished the base.", type: "PROGRESS" })).toEqual({});
   });
 
   test("explains every missing or too short field", () => {
-    expect(validateNewUpdate({ title: "", body: "", type: null })).toEqual({
+    expect(validateUpdate({ title: "", body: "", type: null })).toEqual({
       title: "Title needs at least 3 characters",
       type: "Choose an update type",
       body: "Add a description",
@@ -85,7 +77,7 @@ describe("validateNewUpdate", () => {
   });
 
   test("ignores surrounding spaces when measuring the title and content", () => {
-    const errors = validateNewUpdate({ title: "  ab  ", body: "   ", type: "DECISION" });
+    const errors = validateUpdate({ title: "  ab  ", body: "   ", type: "DECISION" });
     expect(errors.title).toBeTruthy();
     expect(errors.body).toBeTruthy();
     expect(errors.type).toBeUndefined();
