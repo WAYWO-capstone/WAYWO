@@ -39,7 +39,8 @@ export function CreateUpdateForm({ projectId }: { projectId: string }) {
     event.preventDefault();
     setError("");
     setAttempted(true);
-    if (focusFirstInvalidField(event.currentTarget, validateUpdate(values))) return;
+    // TypeScript needs null check to ensure values.type is not null, even if redundant with validateUpdate check.
+    if (focusFirstInvalidField(event.currentTarget, validateUpdate(values)) || !values.type) return;
     rememberFocus();
     setPosting(true);
     try {
