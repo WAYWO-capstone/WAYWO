@@ -11,8 +11,7 @@ import { useEffect, useRef, useState } from "react";
 import { Input } from "@/components/ui/input";
 import { cn } from "@/lib/utils";
 
-const iconButtonClass =
-  "inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring";
+import "./header.css";
 
 // Search does not return results yet; submitting does nothing for now.
 export function HeaderSearch({
@@ -82,7 +81,7 @@ export function HeaderSearchButton({ className }: { className?: string }) {
         aria-label="Open search"
         aria-expanded={open}
         onClick={() => setOpenOn(pathname)}
-        className={cn(iconButtonClass, className)}
+        className={cn("header-icon-button", className)}
       >
         <Search aria-hidden="true" className="size-6" />
       </button>
@@ -110,7 +109,7 @@ export function HeaderSearchButton({ className }: { className?: string }) {
             type="button"
             aria-label="Close search"
             onClick={close}
-            className={iconButtonClass}
+            className="header-icon-button"
           >
             <X aria-hidden="true" className="size-6" />
           </button>

@@ -9,6 +9,8 @@ import { Menu as MenuIcon } from "lucide-react";
 
 import { cn } from "@/lib/utils";
 
+import "./header.css";
+
 interface NavItem {
   label: string;
   to: string;
@@ -22,8 +24,7 @@ interface HeaderMobileMenuProps {
   className?: string;
 }
 
-const itemClass =
-  "flex cursor-pointer items-center rounded-lg px-3 py-2.5 text-base font-semibold outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground";
+const itemClass = "header-menu-item py-2.5 text-base font-semibold";
 
 export function HeaderMobileMenu({
   items,
@@ -37,7 +38,7 @@ export function HeaderMobileMenu({
         type="button"
         aria-label="Open navigation menu"
         className={cn(
-          "inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring max-xs:order-last",
+          "header-icon-button max-xs:order-last",
           className,
         )}
       >
@@ -45,7 +46,7 @@ export function HeaderMobileMenu({
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="start" sideOffset={8} className="z-50">
-          <Menu.Popup className="min-w-48 rounded-xl border bg-background p-1.5 text-foreground shadow-lg outline-none">
+          <Menu.Popup className="header-menu-popup min-w-48">
             {items.map((item) => (
               <Menu.LinkItem
                 key={item.label}
@@ -61,7 +62,7 @@ export function HeaderMobileMenu({
             {/* Phones only: the header has no room for these buttons. */}
             {showAuthLinks && (
               <>
-                <Menu.Separator className="my-1.5 h-px bg-border xs:hidden" />
+                <Menu.Separator className="header-menu-separator xs:hidden" />
                 <Menu.LinkItem
                   closeOnClick
                   render={<Link to="/login" />}
