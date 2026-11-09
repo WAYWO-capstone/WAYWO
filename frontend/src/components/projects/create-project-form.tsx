@@ -6,7 +6,7 @@ import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
 import { publishProject } from "@/api/projects";
-import type { ProjectInput } from "@/api/models";
+import type { ProjectInput, ProjectView } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
 import {
@@ -19,7 +19,17 @@ import { requestError, useProjectCategories, useRestoreFocus } from "@/lib/proje
 
 const emptyProject: ProjectInput = { title: "", summary: "", description: "", category_id: "", tags: [] };
 
-export function CreateProjectForm() {
+function toProjectInput(project: ProjectView): ProjectInput {
+  return {
+    title: project.title,
+    summary: project.summary,
+    description: project.description,
+    category_id: project.category.id,
+    tags: project.tags.map((tag) => tag.name),
+  };
+}
+
+export function CreateProjectForm({ project }: { project?: ProjectView }) {
   const navigate = useNavigate();
   const queryClient = useQueryClient();
   const categories = useProjectCategories();
@@ -27,15 +37,17 @@ export function CreateProjectForm() {
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const rememberFocus = useRestoreFocus(saving !== null);
   const [{ autosave, draft, restored }] = useState(() => {
-    const draft = { id: null as string | null };
-    // A project started earlier that never got saved (closed tab, expired session).
-    const backup = restorableDraftBackup(null, null, null);
+    const draft = { id: project?.id ?? null };
+    const initial = project ? toProjectInput(project) : emptyProject;
+    const backup = restorableDraftBackup(project?.id ?? null, project ? initial : null, project?.last_autosaved_at ?? null);
     const autosave = createProjectAutosave({
-      projectId: null,
-      initial: emptyProject,
+      projectId: project?.id ?? null,
+      initial,
       restored: backup?.value,
+      lastSavedAt: project?.last_autosaved_at,
       onCreate: (projectId) => {
         draft.id = projectId;
+        void navigate({ to: "/create-project", search: { projectId }, replace: true });
       },
       onSave: (projectId) => markProjectSaved(queryClient, projectId),
     });
@@ -99,7 +111,7 @@ export function CreateProjectForm() {
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-10">
       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Create a project</h1>
+        <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">{draft.id ? "Edit your draft" : "Create a project"}</h1>
         {autosaveState && <AutosaveIndicator state={autosaveState} onRetry={() => void autosave.retry()} />}
       </div>
       <form onSubmit={(event) => void submit(event)} className="mt-8">
