@@ -1,12 +1,13 @@
 import { Menu } from "@base-ui/react/menu";
 import { Link } from "@tanstack/react-router";
-import { UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import { useCurrentProfile } from "@/lib/auth";
+import { useCurrentProfile, useLogout } from "@/lib/auth";
 
 export function HeaderProfileMenu() {
   const profile = useCurrentProfile();
+  const logout = useLogout();
 
   return (
     <Menu.Root>
@@ -43,6 +44,14 @@ export function HeaderProfileMenu() {
               <UserRound aria-hidden="true" className="size-4" />
               Profile
             </Menu.LinkItem>
+            <Menu.Separator className="my-1.5 h-px bg-border" />
+            <Menu.Item
+              onClick={logout}
+              className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+            >
+              <LogOut aria-hidden="true" className="size-4" />
+              Log out
+            </Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>
