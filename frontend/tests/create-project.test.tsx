@@ -6,8 +6,12 @@ import { CreateProjectForm } from "../src/components/projects/create-project-for
 import { clearTokens, saveTokens } from "../src/lib/token-store";
 
 const navigate = vi.hoisted(() => vi.fn());
+const blocker = vi.hoisted(() => ({ shouldBlockFn: undefined as ((args: { action: string }) => boolean) | undefined }));
 
 vi.mock("@tanstack/react-router", () => ({
+  useBlocker: (options: { shouldBlockFn: (args: { action: string }) => boolean }) => {
+    blocker.shouldBlockFn = options.shouldBlockFn;
+  },
   useNavigate: () => navigate,
 }));
 
@@ -61,6 +65,7 @@ let accessToken: string;
 
 beforeEach(() => {
   navigate.mockReset();
+  blocker.shouldBlockFn = undefined;
   localStorage.clear();
   sessionStorage.clear();
   accessToken = jwt(userId);
@@ -182,6 +187,15 @@ describe("creating a project", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
+  test("opens discard confirmation on browser back", async () => {
+    renderForm();
+    expect(blocker.shouldBlockFn).toBeDefined();
+    expect(blocker.shouldBlockFn!({ action: "BACK" })).toBe(true);
+
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.getByRole("dialog").textContent).toContain("autosaved draft will be deleted");
+  });
+
   test("deletes an autosaved draft after cancel is confirmed", async () => {
     renderForm();
     await fillProject();
@@ -195,6 +209,6 @@ describe("creating a project", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => (input as Request).method === "DELETE")).toBe(true));
     const deletion = fetchMock.mock.calls.map(([input]) => input as Request).find((item) => item.method === "DELETE")!;
     expect(new URL(deletion.url).pathname).toBe("/api/projects/" + createdProject.id);
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects" }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects", ignoreBlocker: true }));
   });
 });

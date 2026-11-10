@@ -11,6 +11,7 @@ const navigate = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => <a href={to} {...props}>{children}</a>,
+  useBlocker: () => ({ status: "idle", reset: vi.fn() }),
   useNavigate: () => navigate,
 }));
 
@@ -64,7 +65,10 @@ beforeEach(() => {
     if (new URL(request.url).pathname === "/api/projects/categories") {
       return json([project.category]);
     }
-    if (request.method === "PATCH" && new URL(request.url).pathname === "/api/projects/" + project.id) {
+    if (request.method === "PATCH" && (
+      new URL(request.url).pathname === "/api/projects/" + project.id
+      || new URL(request.url).pathname === "/api/projects/" + project.id + "/autosave"
+    )) {
       const changes = await request.clone().json() as Partial<ProjectView>;
       savedProject = { ...savedProject, ...changes };
       return json(savedProject);
@@ -154,14 +158,29 @@ describe("editing a project", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  test("Cancel discards edits without deleting the draft project", async () => {
+  test("Back to projects opens the discard dialog", async () => {
+    await renderForm();
+    fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Changed stool" } });
+    fireEvent.click(screen.getByRole("link", { name: "Back to projects" }));
+
+    expect(await screen.findByRole("dialog")).toBeTruthy();
+    expect(screen.getByRole("dialog").textContent).toContain("return to this project");
+    expect(navigate).not.toHaveBeenCalled();
+  });
+
+  test("Cancel reverts autosaved edits without deleting the draft project", async () => {
     await renderForm(draftProject);
     fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Changed stool" } });
+    await waitFor(() => expect(savedProject.title).toBe("Changed stool"));
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     fireEvent.click(await screen.findByRole("button", { name: "Discard changes" }));
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects" }));
     expect(savedProject.title).toBe(project.title);
     expect(fetchMock.mock.calls.some(([input]) => (input as Request).method === "DELETE")).toBe(false);
+    const patches = fetchMock.mock.calls
+      .map(([input]) => input as Request)
+      .filter((item) => item.method === "PATCH");
+    expect(await patches.at(-1)!.clone().json()).toMatchObject({ title: project.title });
   });
 });

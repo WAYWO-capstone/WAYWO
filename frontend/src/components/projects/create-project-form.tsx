@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { useNavigate } from "@tanstack/react-router";
+import { useBlocker, useNavigate } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
@@ -37,6 +37,13 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  useBlocker({
+    shouldBlockFn: ({ action }) => {
+      if (action === "BACK") setDiscardDialogOpen(true);
+      return action === "BACK";
+    },
+    enableBeforeUnload: false,
+  });
   const rememberFocus = useRestoreFocus(saving !== null);
   const [{ autosave, draft, restored }] = useState(() => {
     const draft = { id: project?.id ?? null };
@@ -78,7 +85,7 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
     await autosave.flush();
     if (draft.id) await deleteProject(draft.id);
     autosave.discard();
-    await navigate({ to: "/projects" });
+    await navigate({ to: "/projects", ignoreBlocker: true });
   }
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {

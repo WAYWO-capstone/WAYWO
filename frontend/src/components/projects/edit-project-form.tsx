@@ -1,5 +1,5 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
@@ -65,6 +65,11 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"save" | "close" | null>(null);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ action }) => action === "BACK",
+    withResolver: true,
+    enableBeforeUnload: false,
+  });
   const rememberFocus = useRestoreFocus(saving !== null);
   const hasChanges = autosave ? autosave.hasUnsavedChanges : JSON.stringify(projectData) !== JSON.stringify(savedData);
   const autosaveFailure = autosaveState?.status === "error" && autosaveState.error ? autosaveError(autosaveState.error) : "";
@@ -73,6 +78,11 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
   }, []);
+
+  function changeDiscardDialog(open: boolean) {
+    if (!open && blocker.status === "blocked") blocker.reset();
+    setDiscardDialogOpen(open);
+  }
 
   function change(next: ProjectInput) {
     setProjectData(next);
@@ -87,8 +97,13 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   }
 
   async function confirmCancel() {
-    autosave?.discard();
-    if (autosave) await autosave.flush();
+    if (autosave) {
+      autosave.update(savedData);
+      if (!(await autosave.flush())) {
+        throw autosaveState?.error ?? new Error("Could not discard the project changes.");
+      }
+    }
+    if (blocker.status === "blocked") blocker.reset();
     await navigate(isDraft
       ? { to: "/projects" }
       : { to: "/view-project", search: { projectId: project.id } });
@@ -132,7 +147,14 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-10">
-      <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
+      <Link
+        to="/projects"
+        onClick={(event) => {
+          event.preventDefault();
+          setDiscardDialogOpen(true);
+        }}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
         <ArrowLeft className="size-4" aria-hidden="true" />Back to projects
       </Link>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
@@ -160,8 +182,8 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
         <div className="mt-8 flex flex-col-reverse items-stretch justify-end gap-3 border-t pt-5 sm:flex-row sm:items-center sm:gap-4">
           <Button type="button" variant="ghost" disabled={saving !== null} onClick={() => setDiscardDialogOpen(true)} className="h-11 px-5">Cancel</Button>
           <ProjectDiscardDialog
-            open={discardDialogOpen}
-            onOpenChange={setDiscardDialogOpen}
+            open={discardDialogOpen || blocker.status === "blocked"}
+            onOpenChange={changeDiscardDialog}
             onConfirm={confirmCancel}
             deletesDraft={false}
             destination={isDraft ? "your projects" : "this project"}
