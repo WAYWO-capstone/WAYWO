@@ -31,6 +31,7 @@ const project: ProjectView = {
   is_owner: true,
   author: { username: "maker", profile_picture_link: null },
 };
+const draftProject: ProjectView = { ...project, status: "DRAFT", public: false };
 
 let fetchMock: ReturnType<typeof vi.fn<typeof fetch>>;
 let savedProject: ProjectView;
@@ -45,9 +46,9 @@ function jwt(sub: string) {
   return `header.${payload}.signature`;
 }
 
-async function renderForm() {
+async function renderForm(value = project) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(<QueryClientProvider client={client}><EditProjectForm project={project} /></QueryClientProvider>);
+  render(<QueryClientProvider client={client}><EditProjectForm project={value} /></QueryClientProvider>);
   await screen.findByRole("combobox", { name: "Search categories" });
 }
 
@@ -151,5 +152,16 @@ describe("editing a project", () => {
     expect((screen.getByLabelText(/Project title/) as HTMLInputElement).value).toBe("Changed stool");
     expect(fetchMock.mock.calls.some(([input]) => (input as Request).method === "PATCH")).toBe(false);
     expect(navigate).not.toHaveBeenCalled();
+  });
+
+  test("Cancel discards edits without deleting the draft project", async () => {
+    await renderForm(draftProject);
+    fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Changed stool" } });
+    fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
+    fireEvent.click(await screen.findByRole("button", { name: "Discard changes" }));
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects" }));
+    expect(savedProject.title).toBe(project.title);
+    expect(fetchMock.mock.calls.some(([input]) => (input as Request).method === "DELETE")).toBe(false);
   });
 });

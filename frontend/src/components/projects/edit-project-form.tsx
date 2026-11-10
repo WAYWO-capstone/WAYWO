@@ -6,7 +6,7 @@ import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/
 import { ProjectDiscardDialog } from "@/components/projects/project-discard-changes-dialog";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
-import { deleteProject, updateProject } from "@/api/projects";
+import { updateProject } from "@/api/projects";
 import type { ProjectInput, ProjectView } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
@@ -89,13 +89,9 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   async function confirmCancel() {
     autosave?.discard();
     if (autosave) await autosave.flush();
-    if (isDraft) {
-      await deleteProject(project.id);
-      autosave?.discard();
-      await navigate({ to: "/projects" });
-    } else {
-      await navigate({ to: "/view-project", search: { projectId: project.id } });
-    }
+    await navigate(isDraft
+      ? { to: "/projects" }
+      : { to: "/view-project", search: { projectId: project.id } });
   }
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -167,7 +163,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
             open={discardDialogOpen}
             onOpenChange={setDiscardDialogOpen}
             onConfirm={confirmCancel}
-            deletesDraft={isDraft}
+            deletesDraft={false}
             destination={isDraft ? "your projects" : "this project"}
           />
           <Button type="submit" name="intent" value="close" variant="outline" disabled={saving !== null || (!hasChanges && !autosave) || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "close" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save & close"}</Button>
