@@ -714,10 +714,10 @@ export interface components {
         UpdateCreate: {
             /** Body */
             body: string;
-            /** Problem Id */
-            problem_id?: string | null;
             /** Public */
             public?: boolean | null;
+            /** References */
+            references?: string[];
             /** Title */
             title: string;
             /** @default PROGRESS */
@@ -727,10 +727,10 @@ export interface components {
         UpdateEdit: {
             /** Body */
             body?: string | null;
-            /** Problem Id */
-            problem_id?: string | null;
             /** Public */
             public?: boolean | null;
+            /** References */
+            references?: string[] | null;
             /** Title */
             title?: string | null;
             type?: components["schemas"]["UpdateType"] | null;
@@ -766,8 +766,6 @@ export interface components {
              * Format: uuid
              */
             id: string;
-            /** Problem Id */
-            problem_id: string | null;
             /**
              * Project Id
              * Format: uuid
@@ -775,6 +773,8 @@ export interface components {
             project_id: string;
             /** Public */
             public: boolean;
+            /** References */
+            references: string[];
             /** Title */
             title: string;
             type: components["schemas"]["UpdateType"];

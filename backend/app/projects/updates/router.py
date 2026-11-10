@@ -7,9 +7,8 @@ from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.updates.dependencies import get_update_service
 from app.projects.updates.exceptions import (
-    InvalidProblemLinkError,
-    ProblemLinkRequiredError,
-    ProblemNotFoundError,
+    InvalidUpdateReferenceError,
+    ReferencedUpdateNotFoundError,
     UpdateNotFoundError,
     UpdateNotOwnedError,
 )
@@ -45,12 +44,13 @@ def create_project_update(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this project"
         ) from exc
-    except ProblemNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Problem not found") from exc
-    except (InvalidProblemLinkError, ProblemLinkRequiredError) as exc:
+    except ReferencedUpdateNotFoundError as exc:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "A solution must reference a problem update",
+            status.HTTP_404_NOT_FOUND, "Referenced update not found"
+        ) from exc
+    except InvalidUpdateReferenceError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid update reference"
         ) from exc
 
 
@@ -95,12 +95,13 @@ def edit_project_update(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this update"
         ) from exc
-    except ProblemNotFoundError as exc:
-        raise HTTPException(status.HTTP_404_NOT_FOUND, "Problem not found") from exc
-    except (InvalidProblemLinkError, ProblemLinkRequiredError) as exc:
+    except ReferencedUpdateNotFoundError as exc:
         raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY,
-            "A solution must reference a problem update",
+            status.HTTP_404_NOT_FOUND, "Referenced update not found"
+        ) from exc
+    except InvalidUpdateReferenceError as exc:
+        raise HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid update reference"
         ) from exc
 
 

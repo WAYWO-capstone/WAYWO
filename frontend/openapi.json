@@ -700,18 +700,6 @@
             "title": "Body",
             "type": "string"
           },
-          "problem_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Problem Id"
-          },
           "public": {
             "anyOf": [
               {
@@ -722,6 +710,15 @@
               }
             ],
             "title": "Public"
+          },
+          "references": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "References",
+            "type": "array"
           },
           "title": {
             "maxLength": 200,
@@ -754,18 +751,6 @@
             ],
             "title": "Body"
           },
-          "problem_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Problem Id"
-          },
           "public": {
             "anyOf": [
               {
@@ -776,6 +761,22 @@
               }
             ],
             "title": "Public"
+          },
+          "references": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "References"
           },
           "title": {
             "anyOf": [
@@ -859,18 +860,6 @@
             "title": "Id",
             "type": "string"
           },
-          "problem_id": {
-            "anyOf": [
-              {
-                "format": "uuid",
-                "type": "string"
-              },
-              {
-                "type": "null"
-              }
-            ],
-            "title": "Problem Id"
-          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -879,6 +868,14 @@
           "public": {
             "title": "Public",
             "type": "boolean"
+          },
+          "references": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "References",
+            "type": "array"
           },
           "title": {
             "title": "Title",
@@ -896,7 +893,7 @@
         "required": [
           "id",
           "project_id",
-          "problem_id",
+          "references",
           "author_id",
           "title",
           "body",

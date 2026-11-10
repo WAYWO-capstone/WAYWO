@@ -1,13 +1,29 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey
+from sqlalchemy import DateTime, Enum, ForeignKey, Table, Column
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
 from app.core.common import utcnow
 from app.feed_items.feed_item.enums import FeedItemType
 from app.feed_items.feed_item.models import FeedItem
 from app.projects.updates.enums import UpdateType
+
+
+update_references = Table(
+    "update_references",
+    FeedItem.metadata,
+    Column(
+        "update_id",
+        ForeignKey("updates.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+    Column(
+        "referenced_update_id",
+        ForeignKey("updates.id", ondelete="CASCADE"),
+        primary_key=True,
+    ),
+)
 
 
 class Update(FeedItem):
@@ -20,9 +36,6 @@ class Update(FeedItem):
     )
     project_id: Mapped[uuid.UUID] = mapped_column(
         ForeignKey("projects.id", ondelete="CASCADE"), index=True
-    )
-    problem_id: Mapped[uuid.UUID | None] = mapped_column(
-        ForeignKey("updates.id", ondelete="SET NULL"), index=True, default=None
     )
     update_type: Mapped[UpdateType] = mapped_column(
         "type",
@@ -39,15 +52,15 @@ class Update(FeedItem):
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
     )
 
-    problem: Mapped["Update | None"] = relationship(
-        remote_side="Update.id",
-        foreign_keys="Update.problem_id",
-        back_populates="solutions",
-    )
-    solutions: Mapped[list["Update"]] = relationship(
-        foreign_keys="Update.problem_id",
-        back_populates="problem",
-        cascade="save-update",
+    references: Mapped[list["Update"]] = relationship(
+        secondary=update_references,
+        primaryjoin=id == update_references.c.update_id,
+        secondaryjoin=id == update_references.c.referenced_update_id,
+        foreign_keys=(
+            update_references.c.update_id,
+            update_references.c.referenced_update_id,
+        ),
+        passive_deletes=True,
     )
 
     __mapper_args__ = {"polymorphic_identity": FeedItemType.UPDATE}

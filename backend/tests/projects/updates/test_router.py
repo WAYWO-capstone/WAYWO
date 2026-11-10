@@ -245,19 +245,23 @@ def test_create_update_persists_to_database(
     assert saved.public is False
 
 
-def test_solution_update_links_to_a_problem(
+def test_update_can_reference_multiple_updates(
     client: TestClient,
     engine: Engine,
     project: Project,
     payload: dict[str, Any],
 ) -> None:
-    problem_response = post_update(
+    first_response = post_update(
         client,
         project.id,
-        {**payload, "title": "Blocked by a missing part", "type": "PROBLEM"},
+        {**payload, "title": "A problem", "type": "PROBLEM"},
     )
-    assert problem_response.status_code == 201
-    problem_id = problem_response.json()["id"]
+    second_response = post_update(
+        client,
+        project.id,
+        {**payload, "title": "A decision", "type": "DECISION"},
+    )
+    assert first_response.status_code == second_response.status_code == 201
 
     solution_response = post_update(
         client,
@@ -266,34 +270,78 @@ def test_solution_update_links_to_a_problem(
             **payload,
             "title": "Use a replacement part",
             "type": "SOLUTION",
-            "problem_id": problem_id,
+            "references": [
+                first_response.json()["id"],
+                second_response.json()["id"],
+            ],
         },
     )
 
     assert solution_response.status_code == 201
-    assert solution_response.json()["problem_id"] == problem_id
+    assert solution_response.json()["references"] == [
+        first_response.json()["id"],
+        second_response.json()["id"],
+    ]
     with Session(engine) as session:
         saved = session.get(Update, uuid.UUID(solution_response.json()["id"]))
-    assert saved is not None
-    assert saved.problem_id == uuid.UUID(problem_id)
+        assert saved is not None
+        assert {reference.id for reference in saved.references} == {
+            uuid.UUID(first_response.json()["id"]),
+            uuid.UUID(second_response.json()["id"]),
+        }
 
 
-def test_solution_update_rejects_a_non_problem_link(
+def test_any_update_type_can_reference_an_update(
     client: TestClient,
     project: Project,
     payload: dict[str, Any],
 ) -> None:
-    progress_response = post_update(client, project.id, payload)
-    assert progress_response.status_code == 201
-
     response = post_update(
         client,
         project.id,
         {
             **payload,
-            "type": "SOLUTION",
-            "problem_id": progress_response.json()["id"],
+            "type": "PROGRESS",
+            "references": [],
         },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["references"] == []
+
+
+def test_update_references_must_belong_to_the_same_project(
+    client: TestClient,
+    project: Project,
+    make_project: Callable[[User], Project],
+    owner: User,
+    payload: dict[str, Any],
+) -> None:
+    other_project = make_project(owner)
+    other_update = post_update(client, other_project.id, payload)
+    assert other_update.status_code == 201
+
+    response = post_update(
+        client,
+        project.id,
+        {**payload, "references": [other_update.json()["id"]]},
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_cannot_reference_itself(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = update_update(
+        client,
+        project.id,
+        created["id"],
+        {"references": [created["id"]]},
     )
 
     assert response.status_code == 422
