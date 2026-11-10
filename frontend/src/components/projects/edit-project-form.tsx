@@ -3,9 +3,10 @@ import { Link, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
+import { ProjectDiscardDialog } from "@/components/projects/project-discard-changes-dialog";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
-import { updateProject } from "@/api/projects";
+import { deleteProject, updateProject } from "@/api/projects";
 import type { ProjectInput, ProjectView } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
@@ -63,6 +64,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"save" | "close" | null>(null);
+  const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
   const rememberFocus = useRestoreFocus(saving !== null);
   const hasChanges = autosave ? autosave.hasUnsavedChanges : JSON.stringify(projectData) !== JSON.stringify(savedData);
   const autosaveFailure = autosaveState?.status === "error" && autosaveState.error ? autosaveError(autosaveState.error) : "";
@@ -84,10 +86,16 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
     setShowRestored(false);
   }
 
-  // Changes already autosaved stay saved; Cancel drops the ones that aren't yet.
-  function cancel() {
+  async function confirmCancel() {
     autosave?.discard();
-    void navigate({ to: "/view-project", search: { projectId: project.id } });
+    if (autosave) await autosave.flush();
+    if (isDraft) {
+      await deleteProject(project.id);
+      autosave?.discard();
+      await navigate({ to: "/projects" });
+    } else {
+      await navigate({ to: "/view-project", search: { projectId: project.id } });
+    }
   }
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -154,7 +162,14 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
         {showRestored && <RestoredChangesNotice onDiscard={discardRestored} />}
         {(error || autosaveFailure) && <p role="alert" className="mt-6 flex items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive"><CircleAlert className="size-4 shrink-0" />{error || autosaveFailure}</p>}
         <div className="mt-8 flex flex-col-reverse items-stretch justify-end gap-3 border-t pt-5 sm:flex-row sm:items-center sm:gap-4">
-          <Button type="button" variant="ghost" disabled={saving !== null} onClick={cancel} className="h-11 px-5">Cancel</Button>
+          <Button type="button" variant="ghost" disabled={saving !== null} onClick={() => setDiscardDialogOpen(true)} className="h-11 px-5">Cancel</Button>
+          <ProjectDiscardDialog
+            open={discardDialogOpen}
+            onOpenChange={setDiscardDialogOpen}
+            onConfirm={confirmCancel}
+            deletesDraft={isDraft}
+            destination={isDraft ? "your projects" : "this project"}
+          />
           <Button type="submit" name="intent" value="close" variant="outline" disabled={saving !== null || (!hasChanges && !autosave) || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "close" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save & close"}</Button>
           <Button type="submit" name="intent" value="save" disabled={saving !== null || !hasChanges || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "save" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save changes"}</Button>
         </div>
