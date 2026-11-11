@@ -1,16 +1,27 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor } from "@testing-library/react";
+import { useState } from "react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { CreateProjectForm } from "../src/components/projects/create-project-form";
 import { clearTokens, saveTokens } from "../src/lib/token-store";
 
 const navigate = vi.hoisted(() => vi.fn());
-const blocker = vi.hoisted(() => ({ shouldBlockFn: undefined as ((args: { action: string }) => boolean) | undefined }));
+const blocker = vi.hoisted(() => ({
+  shouldBlockFn: undefined as ((args: { action: string }) => boolean) | undefined,
+  reset: vi.fn(),
+}));
 
 vi.mock("@tanstack/react-router", () => ({
   useBlocker: (options: { shouldBlockFn: (args: { action: string }) => boolean }) => {
-    blocker.shouldBlockFn = options.shouldBlockFn;
+    const [status, setStatus] = useState("idle");
+    blocker.shouldBlockFn = (args) => {
+      const blocked = options.shouldBlockFn(args);
+      if (blocked) setStatus("blocked");
+      return blocked;
+    };
+    blocker.reset = vi.fn(() => setStatus("idle"));
+    return { status, reset: blocker.reset };
   },
   useNavigate: () => navigate,
 }));
@@ -66,6 +77,7 @@ let accessToken: string;
 beforeEach(() => {
   navigate.mockReset();
   blocker.shouldBlockFn = undefined;
+  blocker.reset.mockReset();
   localStorage.clear();
   sessionStorage.clear();
   accessToken = jwt(userId);
@@ -190,10 +202,12 @@ describe("creating a project", () => {
   test("opens discard confirmation on browser back", async () => {
     renderForm();
     expect(blocker.shouldBlockFn).toBeDefined();
-    expect(blocker.shouldBlockFn!({ action: "BACK" })).toBe(true);
+    act(() => expect(blocker.shouldBlockFn!({ action: "BACK" })).toBe(true));
 
     expect(await screen.findByRole("dialog")).toBeTruthy();
     expect(screen.getByRole("dialog").textContent).toContain("autosaved draft will be deleted");
+    fireEvent.click(screen.getByRole("button", { name: "Keep editing" }));
+    await waitFor(() => expect(screen.queryByRole("dialog")).toBeNull());
   });
 
   test("deletes an autosaved draft after cancel is confirmed", async () => {
@@ -209,6 +223,6 @@ describe("creating a project", () => {
     await waitFor(() => expect(fetchMock.mock.calls.some(([input]) => (input as Request).method === "DELETE")).toBe(true));
     const deletion = fetchMock.mock.calls.map(([input]) => input as Request).find((item) => item.method === "DELETE")!;
     expect(new URL(deletion.url).pathname).toBe("/api/projects/" + createdProject.id);
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects", ignoreBlocker: true }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects" }));
   });
 });

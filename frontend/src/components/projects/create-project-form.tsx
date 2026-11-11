@@ -37,11 +37,9 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  useBlocker({
-    shouldBlockFn: ({ action }) => {
-      if (action === "BACK") setDiscardDialogOpen(true);
-      return action === "BACK";
-    },
+  const blocker = useBlocker({
+    shouldBlockFn: ({ action }) => action === "BACK",
+    withResolver: true,
     enableBeforeUnload: false,
   });
   const rememberFocus = useRestoreFocus(saving !== null);
@@ -85,7 +83,13 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
     await autosave.flush();
     if (draft.id) await deleteProject(draft.id);
     autosave.discard();
-    await navigate({ to: "/projects", ignoreBlocker: true });
+    if (blocker.status === "blocked") blocker.reset();
+    await navigate({ to: "/projects" });
+  }
+
+  function changeDiscardDialog(open: boolean) {
+    if (!open && blocker.status === "blocked") blocker.reset();
+    setDiscardDialogOpen(open);
   }
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -140,8 +144,8 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
         <div className="mt-8 flex flex-col-reverse items-stretch justify-end gap-3 border-t pt-5 sm:flex-row sm:items-center sm:gap-4">
           <Button type="button" variant="ghost" disabled={saving !== null} onClick={() => setDiscardDialogOpen(true)} className="h-11 px-5">Cancel</Button>
           <ProjectDiscardDialog
-            open={discardDialogOpen}
-            onOpenChange={setDiscardDialogOpen}
+            open={discardDialogOpen || blocker.status === "blocked"}
+            onOpenChange={changeDiscardDialog}
             onConfirm={confirmCancel}
             deletesDraft
             destination="projects"
