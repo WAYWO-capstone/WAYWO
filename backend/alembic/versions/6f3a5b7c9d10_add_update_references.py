@@ -1,4 +1,4 @@
-"""replace problem links with general update references
+"""add general update references
 
 Revision ID: 6f3a5b7c9d10
 Revises: b3ea848880d4
