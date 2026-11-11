@@ -175,7 +175,7 @@ describe("editing a project", () => {
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
     fireEvent.click(await screen.findByRole("button", { name: "Discard changes" }));
 
-    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/projects" }));
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/view-project", search: { projectId: project.id } }));
     expect(savedProject.title).toBe(project.title);
     expect(fetchMock.mock.calls.some(([input]) => (input as Request).method === "DELETE")).toBe(false);
     const patches = fetchMock.mock.calls

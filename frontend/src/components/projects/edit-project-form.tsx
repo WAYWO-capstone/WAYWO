@@ -104,9 +104,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
       }
     }
     if (blocker.status === "blocked") blocker.reset();
-    await navigate(isDraft
-      ? { to: "/projects" }
-      : { to: "/view-project", search: { projectId: project.id } });
+    await navigate({ to: "/view-project", search: { projectId: project.id } });
   }
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
@@ -186,7 +184,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
             onOpenChange={changeDiscardDialog}
             onConfirm={confirmCancel}
             deletesDraft={false}
-            destination={isDraft ? "your projects" : "this project"}
+            destination="this project"
           />
           <Button type="submit" name="intent" value="close" variant="outline" disabled={saving !== null || (!hasChanges && !autosave) || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "close" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save & close"}</Button>
           <Button type="submit" name="intent" value="save" disabled={saving !== null || !hasChanges || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "save" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save changes"}</Button>

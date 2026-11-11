@@ -37,12 +37,6 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
   const [error, setError] = useState("");
   const [saving, setSaving] = useState<"draft" | "publish" | null>(null);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
-  const blocker = useBlocker({
-    shouldBlockFn: ({ action }) => action === "BACK",
-    withResolver: true,
-    enableBeforeUnload: false,
-  });
-  const rememberFocus = useRestoreFocus(saving !== null);
   const [{ autosave, draft, restored }] = useState(() => {
     const draft = { id: project?.id ?? null };
     const initial = project ? toProjectInput(project) : emptyProject;
@@ -60,6 +54,12 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
     });
     return { autosave, draft, restored: backup !== null };
   });
+  const blocker = useBlocker({
+    shouldBlockFn: ({ action }) => action === "BACK" && (draft.id !== null || autosave.hasUnsavedChanges),
+    withResolver: true,
+    enableBeforeUnload: false,
+  });
+  const rememberFocus = useRestoreFocus(saving !== null);
   const [projectData, setProjectData] = useState(() => autosave.value);
   const [showRestored, setShowRestored] = useState(restored);
   const autosaveState = useAutosave(autosave);

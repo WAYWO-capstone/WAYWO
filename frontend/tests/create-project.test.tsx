@@ -199,8 +199,16 @@ describe("creating a project", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  test("opens discard confirmation on browser back", async () => {
+  test("does not block browser back when the form is untouched", () => {
     renderForm();
+    expect(blocker.shouldBlockFn).toBeDefined();
+    expect(blocker.shouldBlockFn!({ action: "BACK" })).toBe(false);
+    expect(screen.queryByRole("dialog")).toBeNull();
+  });
+
+  test("opens discard confirmation on browser back when the form has changes", async () => {
+    renderForm();
+    fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Unfinished stool" } });
     expect(blocker.shouldBlockFn).toBeDefined();
     act(() => expect(blocker.shouldBlockFn!({ action: "BACK" })).toBe(true));
 
