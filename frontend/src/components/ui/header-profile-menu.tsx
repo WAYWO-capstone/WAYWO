@@ -1,12 +1,17 @@
 import { Menu } from "@base-ui/react/menu";
 import { Link } from "@tanstack/react-router";
-import { UserRound } from "lucide-react";
+import { LogOut, UserRound } from "lucide-react";
 
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
-import { useCurrentProfile } from "@/lib/auth";
+import { useCurrentProfile, useLogout } from "@/lib/auth";
+
+import "./header.css";
+
+const itemClass = "header-menu-item py-2 text-sm font-medium";
 
 export function HeaderProfileMenu() {
   const profile = useCurrentProfile();
+  const logout = useLogout();
 
   return (
     <Menu.Root>
@@ -34,15 +39,23 @@ export function HeaderProfileMenu() {
       </Menu.Trigger>
       <Menu.Portal>
         <Menu.Positioner align="end" sideOffset={8} className="z-50">
-          <Menu.Popup className="min-w-40 rounded-xl border bg-background p-1.5 text-foreground shadow-lg outline-none">
+          <Menu.Popup className="header-menu-popup min-w-40">
             <Menu.LinkItem
               closeOnClick
               render={<Link to="/profile" />}
-              className="flex cursor-pointer items-center gap-2 rounded-lg px-3 py-2 text-sm font-medium outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground"
+              className={itemClass}
             >
               <UserRound aria-hidden="true" className="size-4" />
               Profile
             </Menu.LinkItem>
+            <Menu.Separator className="header-menu-separator" />
+            <Menu.Item
+              onClick={logout}
+              className={itemClass}
+            >
+              <LogOut aria-hidden="true" className="size-4" />
+              Log out
+            </Menu.Item>
           </Menu.Popup>
         </Menu.Positioner>
       </Menu.Portal>

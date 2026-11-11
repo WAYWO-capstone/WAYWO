@@ -1,16 +1,19 @@
 /**
  * Top navigation bar shown on every page
- * Holds the logo; home, my projects and explore links; search; Log in and Sign up buttons,
+ * Holds the logo; home, my projects and explore links; search; Log in and Sign up buttons or the profile menu.
  */
 
 import { Link, useRouterState } from "@tanstack/react-router";
-import { LogOut, Search } from "lucide-react";
 
 import logo from "@/assets/waywo-logo.png";
 import { buttonVariants } from "@/components/ui/button";
+import { HeaderMobileMenu } from "@/components/ui/header-mobile-menu";
 import { HeaderProfileMenu } from "@/components/ui/header-profile-menu";
-import { Input } from "@/components/ui/input";
-import { useIsAuthenticated, useLogout } from "@/lib/auth";
+import {
+  HeaderSearch,
+  HeaderSearchButton,
+} from "@/components/ui/header-search";
+import { useIsAuthenticated } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -19,34 +22,68 @@ const NAV_ITEMS = [
   { label: "Explore", to: "/explore" },
 ] as const;
 
+/**
+ * Where the header switches layout.
+ * Logged in, there are no Log in / Sign up buttons, so the tabs fit from 640px
+ * as long as search stays a button until 1024px.
+ * Logged out, the buttons take that space, so the tabs wait until 1024px.
+ */
+const BREAKPOINTS = {
+  loggedIn: {
+    tabs: "sm:flex",
+    menuButton: "sm:hidden",
+    searchBox: "lg:block",
+    searchButton: "lg:hidden",
+    actions: "lg:ml-6",
+  },
+  loggedOut: {
+    tabs: "lg:flex",
+    menuButton: "lg:hidden",
+    searchBox: "md:block",
+    searchButton: "md:hidden",
+    actions: "md:ml-6",
+  },
+} as const;
+
 const authButtonClass =
-  "h-10 rounded-xl px-4 font-semibold sm:h-12 sm:px-7 sm:text-base";
+  "h-10 rounded-xl px-3 font-semibold sm:h-12 sm:px-7 sm:text-base";
 
 export function SiteHeader() {
   const isAuthenticated = useIsAuthenticated();
-  const logout = useLogout();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
+  const layout = isAuthenticated ? BREAKPOINTS.loggedIn : BREAKPOINTS.loggedOut;
 
   // The current page button is the filled one
   const onLoginPage = pathname === "/login";
 
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
-      <div className="mx-auto flex h-22 max-w-7xl items-center gap-6 px-4 sm:px-8">
+      <div className="flex h-16 items-center gap-3 px-4 sm:gap-6 sm:px-8">
         <Link to="/home" className="shrink-0">
-          <img src={logo} alt="WAYWO home" className="h-24 w-auto" />
+          <img src={logo} alt="WAYWO home" className="h-12 w-auto" />
         </Link>
 
-        <nav aria-label="Main" className="ml-14 hidden gap-12 lg:flex">
+        {/* Takes the place of the nav links until they fit. */}
+        <HeaderMobileMenu
+          items={NAV_ITEMS}
+          pathname={pathname}
+          showAuthLinks={!isAuthenticated}
+          className={layout.menuButton}
+        />
+
+        <nav
+          aria-label="Main"
+          className={cn("ml-4 hidden gap-8", layout.tabs)}
+        >
           {NAV_ITEMS.map((item) => (
             <Link
               key={item.label}
               to={item.to}
               aria-current={pathname === item.to ? "page" : undefined}
               className={cn(
-                "text-lg font-semibold hover:text-brand-rust",
+                "text-lg font-semibold whitespace-nowrap hover:text-brand-rust",
                 pathname === item.to && "text-brand-rust",
               )}
             >
@@ -55,37 +92,22 @@ export function SiteHeader() {
           ))}
         </nav>
 
-        <form
-          role="search"
-          onSubmit={(event) => event.preventDefault()}
-          className="relative ml-auto hidden w-75 md:block"
-        >
-          <Input
-            type="search"
-            aria-label="Search projects and creators"
-            placeholder="Search creations..."
-            className="pl-12"
-          />
-          <Search className="pointer-events-none absolute top-1/2 left-4 size-5 -translate-y-1/2 text-muted-foreground" />
-        </form>
+        <HeaderSearch className={cn("ml-auto hidden w-75", layout.searchBox)} />
 
-        <div className="ml-auto flex items-center gap-2 sm:gap-4 md:ml-6">
-          
-          {isAuthenticated && <HeaderProfileMenu />}
+        <div
+          className={cn(
+            "ml-auto flex items-center gap-2 sm:gap-4",
+            layout.actions,
+          )}
+        >
+          {/* Replaces the search box until it fits. */}
+          <HeaderSearchButton className={layout.searchButton} />
+
           {isAuthenticated ? (
-            <button
-              type="button"
-              onClick={logout}
-              className={cn(
-                buttonVariants({ variant: "outline" }),
-                authButtonClass,
-              )}
-            >
-              <LogOut className="size-4" />
-              Log out
-            </button>
+            <HeaderProfileMenu />
           ) : (
             <>
+              {/* On narrow screens the login appears in the hamburger menu. */}
               <Link
                 to="/login"
                 className={cn(
@@ -93,21 +115,23 @@ export function SiteHeader() {
                     variant: onLoginPage ? "default" : "outline",
                   }),
                   authButtonClass,
+                  "hidden xs:inline-flex",
                 )}
               >
                 Log in
               </Link>
-              <a
-                href="/register"
+              <Link
+                to="/register"
                 className={cn(
                   buttonVariants({
                     variant: onLoginPage ? "outline" : "default",
                   }),
                   authButtonClass,
+                  "hidden xs:inline-flex",
                 )}
               >
                 Sign up
-              </a>
+              </Link>
             </>
           )}
         </div>
