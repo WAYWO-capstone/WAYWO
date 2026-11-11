@@ -158,10 +158,10 @@ describe("editing a project", () => {
     expect(navigate).not.toHaveBeenCalled();
   });
 
-  test("Back to projects opens the discard dialog", async () => {
+  test("Back to project opens the discard dialog", async () => {
     await renderForm();
     fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Changed stool" } });
-    fireEvent.click(screen.getByRole("link", { name: "Back to projects" }));
+    fireEvent.click(screen.getByRole("link", { name: "Back to project" }));
 
     expect(await screen.findByRole("dialog")).toBeTruthy();
     expect(screen.getByRole("dialog").textContent).toContain("return to this project");

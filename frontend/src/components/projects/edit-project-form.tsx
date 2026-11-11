@@ -153,7 +153,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
         }}
         className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
       >
-        <ArrowLeft className="size-4" aria-hidden="true" />Back to projects
+        <ArrowLeft className="size-4" aria-hidden="true" />Back to project
       </Link>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Edit project</h1>
