@@ -139,7 +139,7 @@ class UpdateService:
             id=update.id,
             project_id=update.project_id,
             references=[
-                reference.id for reference in getattr(update, "references", [])
+                reference.id for reference in update.references
             ],
             author_id=update.author_id,
             title=update.title,

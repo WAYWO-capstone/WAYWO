@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, func, select
+from sqlalchemy import Engine, create_engine, event, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -15,7 +15,7 @@ from app.core.database import get_session
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.enums import ProjectStatus
 from app.projects.project.models import Category, Project
-from app.projects.updates.models import Update
+from app.projects.updates.models import Update, update_references
 from app.projects.updates.router import router as updates_router
 
 # --------------------------------------------------------------------------
@@ -29,6 +29,13 @@ def engine() -> Iterator[Engine]:
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
+    )
+    event.listen(
+        engine,
+        "connect",
+        lambda dbapi_connection, _: dbapi_connection.execute(
+            "PRAGMA foreign_keys=ON"
+        ),
     )
     Base.metadata.create_all(engine)
     yield engine
@@ -98,6 +105,7 @@ def make_user(db: Session) -> Callable[[str], User]:
             email=f"{username}@example.com",
         )
         db.add(user)
+        db.flush()
         db.add(
             Profile(
                 user_id=user.id,
@@ -345,6 +353,93 @@ def test_update_cannot_reference_itself(
     )
 
     assert response.status_code == 422
+
+
+def test_update_can_be_relinked_to_different_updates(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    first = post_update(client, project.id, payload).json()
+    second = post_update(
+        client, project.id, {**payload, "type": "DECISION"}
+    ).json()
+    update = post_update(
+        client,
+        project.id,
+        {**payload, "references": [first["id"]]},
+    ).json()
+
+    response = update_update(
+        client,
+        project.id,
+        update["id"],
+        {"references": [second["id"]]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["references"] == [second["id"]]
+
+
+def test_update_rejects_duplicate_references(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    referenced = post_update(client, project.id, payload).json()
+
+    response = post_update(
+        client,
+        project.id,
+        {**payload, "references": [referenced["id"], referenced["id"]]},
+    )
+
+    assert response.status_code == 422
+
+
+def test_deleting_an_update_cascades_only_its_references(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    referenced = post_update(client, project.id, payload).json()
+    source = post_update(
+        client,
+        project.id,
+        {**payload, "references": [referenced["id"]]},
+    ).json()
+
+    response = delete_update(client, project.id, referenced["id"])
+
+    assert response.status_code == 204
+    with Session(engine) as session:
+        remaining_source = session.get(Update, uuid.UUID(source["id"]))
+        assert remaining_source is not None
+        assert remaining_source.references == []
+        assert session.get(Update, uuid.UUID(referenced["id"])) is None
+        assert session.scalar(select(update_references).limit(1)) is None
+
+
+def test_deleting_an_update_removes_outgoing_references_only(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    referenced = post_update(client, project.id, payload).json()
+    source = post_update(
+        client,
+        project.id,
+        {**payload, "references": [referenced["id"]]},
+    ).json()
+
+    response = delete_update(client, project.id, source["id"])
+
+    assert response.status_code == 204
+    with Session(engine) as session:
+        assert session.get(Update, uuid.UUID(referenced["id"])) is not None
+        assert session.scalar(select(update_references).limit(1)) is None
 
 
 def test_create_update_rejects_non_owner(

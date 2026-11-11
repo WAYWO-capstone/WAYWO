@@ -23,6 +23,18 @@ from app.projects.updates.service import UpdateService
 router = APIRouter(tags=["project updates"])
 
 
+def _reference_http_exception(
+    exc: ReferencedUpdateNotFoundError | InvalidUpdateReferenceError,
+) -> HTTPException:
+    if isinstance(exc, ReferencedUpdateNotFoundError):
+        return HTTPException(
+            status.HTTP_404_NOT_FOUND, "Referenced update not found"
+        )
+    return HTTPException(
+        status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid update reference"
+    )
+
+
 @router.post(
     "/{project_id}/updates",
     response_model=UpdateRead,
@@ -44,14 +56,8 @@ def create_project_update(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this project"
         ) from exc
-    except ReferencedUpdateNotFoundError as exc:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Referenced update not found"
-        ) from exc
-    except InvalidUpdateReferenceError as exc:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid update reference"
-        ) from exc
+    except (ReferencedUpdateNotFoundError, InvalidUpdateReferenceError) as exc:
+        raise _reference_http_exception(exc) from exc
 
 
 @router.get("/{project_id}/updates", response_model=UpdateHistoryPage)
@@ -95,14 +101,8 @@ def edit_project_update(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this update"
         ) from exc
-    except ReferencedUpdateNotFoundError as exc:
-        raise HTTPException(
-            status.HTTP_404_NOT_FOUND, "Referenced update not found"
-        ) from exc
-    except InvalidUpdateReferenceError as exc:
-        raise HTTPException(
-            status.HTTP_422_UNPROCESSABLE_ENTITY, "Invalid update reference"
-        ) from exc
+    except (ReferencedUpdateNotFoundError, InvalidUpdateReferenceError) as exc:
+        raise _reference_http_exception(exc) from exc
 
 
 @router.delete(
