@@ -395,6 +395,40 @@ def test_update_rejects_duplicate_references(
     )
 
     assert response.status_code == 422
+    assert response.json()["detail"] == "Duplicate update reference"
+
+
+def test_history_hides_private_references_from_other_viewers(
+    client: TestClient,
+    api: FastAPI,
+    db: Session,
+    make_user: Callable[[str], User],
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    project.public = True
+    db.commit()
+    private_update = post_update(
+        client,
+        project.id,
+        {**payload, "public": False},
+    ).json()
+    public_update = post_update(
+        client,
+        project.id,
+        {**payload, "references": [private_update["id"]]},
+    ).json()
+
+    authenticate_as(api, make_user("viewer"))
+    response = client.get(f"/projects/{project.id}/updates")
+
+    assert response.status_code == 200
+    visible_update = next(
+        item
+        for item in response.json()["items"]
+        if item["id"] == public_update["id"]
+    )
+    assert visible_update["references"] == []
 
 
 def test_deleting_an_update_cascades_only_its_references(
