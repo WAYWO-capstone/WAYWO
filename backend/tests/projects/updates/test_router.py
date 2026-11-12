@@ -402,7 +402,6 @@ def test_history_hides_private_references_from_other_viewers(
     client: TestClient,
     api: FastAPI,
     db: Session,
-    make_user: Callable[[str], User],
     project: Project,
     payload: dict[str, Any],
 ) -> None:
@@ -419,7 +418,12 @@ def test_history_hides_private_references_from_other_viewers(
         {**payload, "references": [private_update["id"]]},
     ).json()
 
-    authenticate_as(api, make_user("viewer"))
+    viewer_id = uuid.uuid4()
+
+    def get_viewer_id() -> uuid.UUID:
+        return viewer_id
+
+    api.dependency_overrides[get_current_user_id] = get_viewer_id
     response = client.get(f"/projects/{project.id}/updates")
 
     assert response.status_code == 200
