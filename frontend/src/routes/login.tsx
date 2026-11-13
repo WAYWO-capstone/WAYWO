@@ -3,6 +3,7 @@
 import { createFileRoute, redirect, useNavigate } from "@tanstack/react-router";
 import { ArrowRight, CircleAlert, LoaderCircle } from "lucide-react";
 import { useState, type FormEvent } from "react";
+import logo from "@/assets/waywo-logo.png";
 import { PasswordInput } from "@/components/ui/password-input";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -71,8 +72,13 @@ function LoginPage() {
       <p className="text-sm font-bold tracking-widest text-brand-rust uppercase">
         Welcome back, maker
       </p>
-      <h1 className="mt-5 text-center text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
-        Log in to <span className="text-brand-rust">WAYWO.</span>
+      <h1 className="mt-5 flex flex-wrap items-center justify-center gap-x-4 text-center text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
+        Log in to
+        <img
+          src={logo}
+          alt="WAYWO"
+          className="-mx-4 -mt-7 -mb-6 size-32 sm:-mx-6 sm:-mt-10 sm:-mb-8 sm:size-44"
+        />
       </h1>
       <p className="mt-5 text-center text-lg text-muted-foreground">
         Pick up where you left off.{" "}
