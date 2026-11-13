@@ -32,6 +32,21 @@ export async function getProjectUpdate(projectId: string, updateId: string) {
   }
 }
 
+export interface NewProjectUpdate {
+  title: string;
+  body: string;
+  type: UpdateType;
+}
+
+export function createProjectUpdate(projectId: string, update: NewProjectUpdate) {
+  return unwrap(
+    api.POST("/projects/{project_id}/updates", {
+      params: { path: { project_id: projectId } },
+      body: update,
+    }),
+  );
+}
+
 export interface ProjectUpdateChanges {
   title?: string;
   body?: string;

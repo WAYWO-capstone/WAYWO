@@ -10,6 +10,7 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AddUpdateRouteImport } from './routes/add-update'
 import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as EditProjectRouteImport } from './routes/edit-project'
 import { Route as EditUpdateRouteImport } from './routes/edit-update'
@@ -25,6 +26,11 @@ import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddUpdateRoute = AddUpdateRouteImport.update({
+  id: '/add-update',
+  path: '/add-update',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreateProjectRoute = CreateProjectRouteImport.update({
@@ -85,6 +91,7 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/add-update': typeof AddUpdateRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
@@ -99,6 +106,7 @@ export interface FileRoutesByFullPath {
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/add-update': typeof AddUpdateRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
@@ -114,6 +122,7 @@ export interface FileRoutesByTo {
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/add-update': typeof AddUpdateRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
@@ -130,6 +139,7 @@ export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/add-update'
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
@@ -144,6 +154,7 @@ export interface FileRouteTypes {
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/add-update'
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
@@ -158,6 +169,7 @@ export interface FileRouteTypes {
   id:
     | '__root__'
     | '/'
+    | '/add-update'
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
@@ -173,6 +185,7 @@ export interface FileRouteTypes {
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddUpdateRoute: typeof AddUpdateRoute
   CreateProjectRoute: typeof CreateProjectRoute
   EditProjectRoute: typeof EditProjectRoute
   EditUpdateRoute: typeof EditUpdateRoute
@@ -193,6 +206,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/add-update': {
+      id: '/add-update'
+      path: '/add-update'
+      fullPath: '/add-update'
+      preLoaderRoute: typeof AddUpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/create-project': {
@@ -277,6 +297,7 @@ declare module '@tanstack/react-router' {
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddUpdateRoute: AddUpdateRoute,
   CreateProjectRoute: CreateProjectRoute,
   EditProjectRoute: EditProjectRoute,
   EditUpdateRoute: EditUpdateRoute,
