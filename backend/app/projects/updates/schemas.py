@@ -12,6 +12,7 @@ class UpdateCreate(BaseModel):
     body: str
     type: UpdateType = UpdateType.PROGRESS
     public: bool | None = None
+    references: list[uuid.UUID] = Field(default_factory=list, max_length=50)
 
     @field_validator("title")
     @classmethod
@@ -21,12 +22,12 @@ class UpdateCreate(BaseModel):
             raise ValueError("title must not be blank")
         return value
 
-
 class UpdateEdit(BaseModel):
     title: str | None = Field(default=None, min_length=1, max_length=200)
     body: str | None = None
     type: UpdateType | None = None
     public: bool | None = None
+    references: list[uuid.UUID] | None = Field(default=None, max_length=50)
 
     @field_validator("title", "body", "type", "public")
     @classmethod
@@ -55,6 +56,7 @@ class UpdateRead(BaseModel):
 
     id: uuid.UUID
     project_id: uuid.UUID
+    references: list[uuid.UUID]
     author_id: uuid.UUID
     title: str
     body: str

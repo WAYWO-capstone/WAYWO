@@ -5,7 +5,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, create_engine, func, select
+from sqlalchemy import Engine, create_engine, event, func, select
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
@@ -15,7 +15,7 @@ from app.core.database import get_session
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.enums import ProjectStatus
 from app.projects.project.models import Category, Project
-from app.projects.updates.models import Update
+from app.projects.updates.models import Update, update_references
 from app.projects.updates.router import router as updates_router
 
 # --------------------------------------------------------------------------
@@ -29,6 +29,13 @@ def engine() -> Iterator[Engine]:
         "sqlite://",
         connect_args={"check_same_thread": False},
         poolclass=StaticPool,
+    )
+    event.listen(
+        engine,
+        "connect",
+        lambda dbapi_connection, _: dbapi_connection.execute(
+            "PRAGMA foreign_keys=ON"
+        ),
     )
     Base.metadata.create_all(engine)
     yield engine
@@ -98,6 +105,7 @@ def make_user(db: Session) -> Callable[[str], User]:
             email=f"{username}@example.com",
         )
         db.add(user)
+        db.flush()
         db.add(
             Profile(
                 user_id=user.id,
@@ -243,6 +251,233 @@ def test_create_update_persists_to_database(
     assert saved.title == payload["title"]
     assert saved.body == payload["body"]
     assert saved.public is False
+
+
+def test_update_can_reference_multiple_updates(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    first_response = post_update(
+        client,
+        project.id,
+        {**payload, "title": "A problem", "type": "PROBLEM"},
+    )
+    second_response = post_update(
+        client,
+        project.id,
+        {**payload, "title": "A decision", "type": "DECISION"},
+    )
+    assert first_response.status_code == second_response.status_code == 201
+
+    solution_response = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "title": "Use a replacement part",
+            "type": "SOLUTION",
+            "references": [
+                first_response.json()["id"],
+                second_response.json()["id"],
+            ],
+        },
+    )
+
+    assert solution_response.status_code == 201
+    assert solution_response.json()["references"] == [
+        first_response.json()["id"],
+        second_response.json()["id"],
+    ]
+    with Session(engine) as session:
+        saved = session.get(Update, uuid.UUID(solution_response.json()["id"]))
+        assert saved is not None
+        assert {reference.id for reference in saved.references} == {
+            uuid.UUID(first_response.json()["id"]),
+            uuid.UUID(second_response.json()["id"]),
+        }
+
+
+def test_any_update_type_can_reference_an_update(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    response = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "type": "PROGRESS",
+            "references": [],
+        },
+    )
+
+    assert response.status_code == 201
+    assert response.json()["references"] == []
+
+
+def test_update_references_must_belong_to_the_same_project(
+    client: TestClient,
+    project: Project,
+    make_project: Callable[[User], Project],
+    owner: User,
+    payload: dict[str, Any],
+) -> None:
+    other_project = make_project(owner)
+    other_update = post_update(client, other_project.id, payload)
+    assert other_update.status_code == 201
+
+    response = post_update(
+        client,
+        project.id,
+        {**payload, "references": [other_update.json()["id"]]},
+    )
+
+    assert response.status_code == 404
+
+
+def test_update_cannot_reference_itself(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    created = post_update(client, project.id, payload).json()
+
+    response = update_update(
+        client,
+        project.id,
+        created["id"],
+        {"references": [created["id"]]},
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_can_be_relinked_to_different_updates(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    first = post_update(client, project.id, payload).json()
+    second = post_update(
+        client, project.id, {**payload, "type": "DECISION"}
+    ).json()
+    update = post_update(
+        client,
+        project.id,
+        {**payload, "references": [first["id"]]},
+    ).json()
+
+    response = update_update(
+        client,
+        project.id,
+        update["id"],
+        {"references": [second["id"]]},
+    )
+
+    assert response.status_code == 200
+    assert response.json()["references"] == [second["id"]]
+
+
+def test_update_rejects_duplicate_references(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    referenced = post_update(client, project.id, payload).json()
+
+    response = post_update(
+        client,
+        project.id,
+        {**payload, "references": [referenced["id"], referenced["id"]]},
+    )
+
+    assert response.status_code == 422
+    assert response.json()["detail"] == "Duplicate update reference"
+
+
+def test_history_hides_private_references_from_other_viewers(
+    client: TestClient,
+    api: FastAPI,
+    db: Session,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    project.public = True
+    db.commit()
+    private_update = post_update(
+        client,
+        project.id,
+        {**payload, "public": False},
+    ).json()
+    public_update = post_update(
+        client,
+        project.id,
+        {**payload, "references": [private_update["id"]]},
+    ).json()
+
+    viewer_id = uuid.uuid4()
+
+    def get_viewer_id() -> uuid.UUID:
+        return viewer_id
+
+    api.dependency_overrides[get_current_user_id] = get_viewer_id
+    response = client.get(f"/projects/{project.id}/updates")
+
+    assert response.status_code == 200
+    visible_update = next(
+        item
+        for item in response.json()["items"]
+        if item["id"] == public_update["id"]
+    )
+    assert visible_update["references"] == []
+
+
+def test_deleting_an_update_cascades_only_its_references(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    referenced = post_update(client, project.id, payload).json()
+    source = post_update(
+        client,
+        project.id,
+        {**payload, "references": [referenced["id"]]},
+    ).json()
+
+    response = delete_update(client, project.id, referenced["id"])
+
+    assert response.status_code == 204
+    with Session(engine) as session:
+        remaining_source = session.get(Update, uuid.UUID(source["id"]))
+        assert remaining_source is not None
+        assert remaining_source.references == []
+        assert session.get(Update, uuid.UUID(referenced["id"])) is None
+        assert session.scalar(select(update_references).limit(1)) is None
+
+
+def test_deleting_an_update_removes_outgoing_references_only(
+    client: TestClient,
+    engine: Engine,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    referenced = post_update(client, project.id, payload).json()
+    source = post_update(
+        client,
+        project.id,
+        {**payload, "references": [referenced["id"]]},
+    ).json()
+
+    response = delete_update(client, project.id, source["id"])
+
+    assert response.status_code == 204
+    with Session(engine) as session:
+        assert session.get(Update, uuid.UUID(referenced["id"])) is not None
+        assert session.scalar(select(update_references).limit(1)) is None
 
 
 def test_create_update_rejects_non_owner(

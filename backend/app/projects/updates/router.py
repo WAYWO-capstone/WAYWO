@@ -6,7 +6,13 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.updates.dependencies import get_update_service
-from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
+from app.projects.updates.exceptions import (
+    DuplicateUpdateReferenceError,
+    InvalidUpdateReferenceError,
+    ReferencedUpdateNotFoundError,
+    UpdateNotFoundError,
+    UpdateNotOwnedError,
+)
 from app.projects.updates.schemas import (
     UpdateCreate,
     UpdateEdit,
@@ -16,6 +22,25 @@ from app.projects.updates.schemas import (
 from app.projects.updates.service import UpdateService
 
 router = APIRouter(tags=["project updates"])
+
+
+def _reference_http_exception(
+    exc: (
+        ReferencedUpdateNotFoundError
+        | InvalidUpdateReferenceError
+        | DuplicateUpdateReferenceError
+    ),
+) -> HTTPException:
+    if isinstance(exc, ReferencedUpdateNotFoundError):
+        return HTTPException(
+            status.HTTP_404_NOT_FOUND, "Referenced update not found"
+        )
+    message = (
+        "Duplicate update reference"
+        if isinstance(exc, DuplicateUpdateReferenceError)
+        else "Invalid update reference"
+    )
+    return HTTPException(status.HTTP_422_UNPROCESSABLE_ENTITY, message)
 
 
 @router.post(
@@ -39,6 +64,12 @@ def create_project_update(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this project"
         ) from exc
+    except (
+        ReferencedUpdateNotFoundError,
+        InvalidUpdateReferenceError,
+        DuplicateUpdateReferenceError,
+    ) as exc:
+        raise _reference_http_exception(exc) from exc
 
 
 @router.get("/{project_id}/updates", response_model=UpdateHistoryPage)
@@ -82,6 +113,12 @@ def edit_project_update(
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this update"
         ) from exc
+    except (
+        ReferencedUpdateNotFoundError,
+        InvalidUpdateReferenceError,
+        DuplicateUpdateReferenceError,
+    ) as exc:
+        raise _reference_http_exception(exc) from exc
 
 
 @router.delete(

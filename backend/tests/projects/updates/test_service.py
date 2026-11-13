@@ -61,6 +61,7 @@ def make_update(project_id: uuid.UUID, title: str = "First cut"):
         title=title,
         body="Cut the panels.",
         update_type=UpdateType.PROGRESS,
+        references=[],
         public=True,
         created_at=now,
         updated_at=now,

@@ -711,6 +711,15 @@
             ],
             "title": "Public"
           },
+          "references": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 50,
+            "title": "References",
+            "type": "array"
+          },
           "title": {
             "maxLength": 200,
             "minLength": 1,
@@ -752,6 +761,22 @@
               }
             ],
             "title": "Public"
+          },
+          "references": {
+            "anyOf": [
+              {
+                "items": {
+                  "format": "uuid",
+                  "type": "string"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "References"
           },
           "title": {
             "anyOf": [
@@ -844,6 +869,14 @@
             "title": "Public",
             "type": "boolean"
           },
+          "references": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "title": "References",
+            "type": "array"
+          },
           "title": {
             "title": "Title",
             "type": "string"
@@ -860,6 +893,7 @@
         "required": [
           "id",
           "project_id",
+          "references",
           "author_id",
           "title",
           "body",

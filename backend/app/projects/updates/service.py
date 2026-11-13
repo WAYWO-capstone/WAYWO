@@ -4,7 +4,13 @@ from app.core.common import utcnow
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
 from app.projects.project.schemas import ProjectAuthorRead
-from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
+from app.projects.updates.exceptions import (
+    DuplicateUpdateReferenceError,
+    InvalidUpdateReferenceError,
+    ReferencedUpdateNotFoundError,
+    UpdateNotFoundError,
+    UpdateNotOwnedError,
+)
 from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
 from app.projects.updates.schemas import UpdateCreate, UpdateEdit, UpdateRead
@@ -30,6 +36,7 @@ class UpdateService:
             raise ProjectNotFoundError(project_id)
         if project.author_id != author_id:
             raise ProjectNotOwnedError(project_id)
+        references = self._get_referenced_updates(project_id, data.references)
 
         update = Update(
             project_id=project_id,
@@ -39,8 +46,9 @@ class UpdateService:
             update_type=data.type,
             public=project.public and data.public is not False,
         )
+        update.references = references
         row = self._repo.add(update)
-        return self._to_read(row)
+        return self._to_read(row, author_id)
 
     def edit_project_update(
         self,
@@ -50,10 +58,15 @@ class UpdateService:
         data: UpdateEdit,
     ) -> UpdateRead:
         update = self._get_owned_update(project_id, update_id, author_id)
-        for field, value in data.model_dump(exclude_unset=True).items():
+        values = data.model_dump(exclude_unset=True)
+        if "references" in values:
+            update.references = self._get_referenced_updates(
+                project_id, values.pop("references") or [], update.id
+            )
+        for field, value in values.items():
             setattr(update, "update_type" if field == "type" else field, value)
         update.updated_at = utcnow()
-        return self._to_read(self._repo.update(update))
+        return self._to_read(self._repo.update(update), author_id)
 
     def delete_project_update(
         self,
@@ -86,7 +99,7 @@ class UpdateService:
         rows, total = self._repo.list_for_project(
             project_id, viewer_id, limit=limit, offset=offset
         )
-        items = [self._to_read(row) for row in rows]
+        items = [self._to_read(row, viewer_id) for row in rows]
         return items, total
 
     def _get_owned_update(
@@ -102,12 +115,45 @@ class UpdateService:
             raise UpdateNotOwnedError(update_id)
         return update
 
+    def _get_referenced_updates(
+        self,
+        project_id: uuid.UUID,
+        reference_ids: list[uuid.UUID],
+        update_id: uuid.UUID | None = None,
+    ) -> list[Update]:
+        seen_ids: set[uuid.UUID] = set()
+        for reference_id in reference_ids:
+            if reference_id in seen_ids:
+                raise DuplicateUpdateReferenceError(reference_id)
+            seen_ids.add(reference_id)
+        if update_id in reference_ids:
+            raise InvalidUpdateReferenceError(update_id)
+
+        references_by_id = {
+            reference.id: reference
+            for reference in self._repo.get_many(reference_ids)
+        }
+        references = []
+        for reference_id in reference_ids:
+            reference = references_by_id.get(reference_id)
+            if reference is None or reference.project_id != project_id:
+                raise ReferencedUpdateNotFoundError(reference_id)
+            references.append(reference)
+        return references
+
     @staticmethod
-    def _to_read(row: tuple[Update, str | None, str | None]) -> UpdateRead:
+    def _to_read(
+        row: tuple[Update, str | None, str | None],
+        viewer_id: uuid.UUID,
+    ) -> UpdateRead:
         update, username, profile_picture_link = row
         return UpdateRead(
             id=update.id,
             project_id=update.project_id,
+            references=[
+                reference.id for reference in update.references
+                if reference.public or reference.author_id == viewer_id
+            ],
             author_id=update.author_id,
             title=update.title,
             body=update.body,

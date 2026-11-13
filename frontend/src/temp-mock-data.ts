@@ -27,6 +27,7 @@ export const previewUpdates: ProjectUpdate[] = [
   {
     id: "preview-update-5",
     project_id: "preview-project",
+    references: [],
     author_id: "preview-author",
     title: "Handles attached",
     body: "Sewed both handles on with a box stitch. Carried a full load of groceries home and nothing stretched.",
@@ -39,6 +40,7 @@ export const previewUpdates: ProjectUpdate[] = [
   {
     id: "preview-update-4",
     project_id: "preview-project",
+    references: ["preview-update-3"],
     author_id: "preview-collaborator",
     title: "Skip a stitch at each corner",
     body: "Skipping one stitch at each corner while joining the sides to the base flattened the corners out.",
@@ -51,6 +53,7 @@ export const previewUpdates: ProjectUpdate[] = [
   {
     id: "preview-update-3",
     project_id: "preview-project",
+    references: [],
     author_id: "preview-author",
     title: "Corners are lumpy",
     body: "Where the side seams meet the base, the fabric bunches up and the bag won't stand on its own.",
@@ -63,6 +66,7 @@ export const previewUpdates: ProjectUpdate[] = [
   {
     id: "preview-update-2",
     project_id: "preview-project",
+    references: [],
     author_id: "preview-author",
     title: "Switched to a tighter stitch",
     body: "The first panel stretched too much once it held a few books, so I redid the base in single crochet with a smaller hook.",
@@ -75,6 +79,7 @@ export const previewUpdates: ProjectUpdate[] = [
   {
     id: "preview-update-1",
     project_id: "preview-project",
+    references: [],
     author_id: "preview-author",
     title: "Base and first panel done",
     body: "Finished the base and the first side panel. The recycled cotton is softer than expected.",

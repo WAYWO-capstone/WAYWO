@@ -2,7 +2,7 @@ import uuid
 from typing import cast
 
 from sqlalchemy import func, or_, select
-from sqlalchemy.orm import Session
+from sqlalchemy.orm import Session, selectinload
 
 from app.accounts.users.models import Profile, User
 from app.projects.updates.models import Update
@@ -28,6 +28,15 @@ class UpdateRepository:
 
     def get(self, update_id: uuid.UUID) -> Update | None:
         return self._session.get(Update, update_id)
+
+    def get_many(self, update_ids: list[uuid.UUID]) -> list[Update]:
+        if not update_ids:
+            return []
+        return list(
+            self._session.scalars(
+                select(Update).where(Update.id.in_(update_ids))
+            ).all()
+        )
 
     def update(self, update: Update) -> UpdateRow:
         self._session.flush()
@@ -66,6 +75,7 @@ class UpdateRepository:
 
         rows = self._session.execute(
             select(Update, User.username, Profile.profile_picture_link)
+            .options(selectinload(Update.references))
             .outerjoin(User, User.id == Update.author_id)
             .outerjoin(Profile, Profile.user_id == User.id)
             .where(*conditions)

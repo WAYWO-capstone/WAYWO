@@ -716,6 +716,8 @@ export interface components {
             body: string;
             /** Public */
             public?: boolean | null;
+            /** References */
+            references?: string[];
             /** Title */
             title: string;
             /** @default PROGRESS */
@@ -727,6 +729,8 @@ export interface components {
             body?: string | null;
             /** Public */
             public?: boolean | null;
+            /** References */
+            references?: string[] | null;
             /** Title */
             title?: string | null;
             type?: components["schemas"]["UpdateType"] | null;
@@ -769,6 +773,8 @@ export interface components {
             project_id: string;
             /** Public */
             public: boolean;
+            /** References */
+            references: string[];
             /** Title */
             title: string;
             type: components["schemas"]["UpdateType"];
