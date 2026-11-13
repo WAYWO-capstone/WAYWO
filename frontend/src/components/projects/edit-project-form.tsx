@@ -6,7 +6,7 @@ import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/
 import { ProjectDiscardDialog } from "@/components/projects/project-discard-changes-dialog";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
-import { updateProject } from "@/api/projects";
+import { publishProject, updateProject } from "@/api/projects";
 import type { ProjectInput, ProjectView } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
@@ -63,7 +63,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState<"save" | "close" | null>(null);
+  const [saving, setSaving] = useState<"save" | "close" | "publish" | null>(null);
   const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
   const blocker = useBlocker({
     shouldBlockFn: ({ action }) => action === "BACK",
@@ -110,14 +110,16 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    const shouldClose = (event.submitter as HTMLButtonElement | null)?.value === "close";
+    const intent = (event.submitter as HTMLButtonElement | null)?.value;
+    const shouldClose = intent === "close";
+    const shouldPublish = intent === "publish";
     // Spaces pass the browser's required check but not the backend's.
     if (!hasRequiredFields(projectData)) {
       setError("Fill in the title, summary and category before saving.");
       return;
     }
     rememberFocus();
-    setSaving(shouldClose ? "close" : "save");
+    setSaving(shouldPublish ? "publish" : shouldClose ? "close" : "save");
     try {
       if (autosave) {
         // Saves right away instead of waiting for the next autosave.
@@ -128,12 +130,13 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
         setSavedAt(new Date().toISOString());
         setNow(Date.now());
       }
+      if (shouldPublish) await publishProject(project.id);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["project", project.id] }),
         queryClient.invalidateQueries({ queryKey: ["my-projects"] }),
       ]);
 
-      if (shouldClose) {
+      if (shouldClose || shouldPublish) {
         await navigate({ to: "/view-project", search: { projectId: project.id } });
       }
     } catch (cause) {
@@ -171,7 +174,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
           categories={categories}
           disabled={saving !== null}
           hint={isDraft
-            ? "This draft saves automatically as you edit it. Publish it when you’re ready from the project page."
+            ? "This draft saves automatically as you edit it. Publish it when you’re ready."
             : "This project is published. Changes you save here are visible to everyone right away."}
         />
 
@@ -187,7 +190,9 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
             destination="this project"
           />
           <Button type="submit" name="intent" value="close" variant="outline" disabled={saving !== null || (!hasChanges && !autosave) || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "close" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save & close"}</Button>
-          <Button type="submit" name="intent" value="save" disabled={saving !== null || !hasChanges || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "save" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save changes"}</Button>
+          {isDraft
+            ? <Button type="submit" name="intent" value="publish" disabled={saving !== null || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "publish" ? <><LoaderCircle className="size-4 animate-spin" />Publishing...</> : "Publish"}</Button>
+            : <Button type="submit" name="intent" value="save" disabled={saving !== null || !hasChanges || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "save" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save changes"}</Button>}
         </div>
       </form>
     </div>
