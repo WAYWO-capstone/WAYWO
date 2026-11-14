@@ -6,6 +6,7 @@ from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.updates.dependencies import get_update_service
+from app.projects.updates.enums import UpdateSort, UpdateType
 from app.projects.updates.exceptions import (
     DuplicateUpdateReferenceError,
     InvalidUpdateReferenceError,
@@ -79,10 +80,17 @@ def get_project_history(
     service: Annotated[UpdateService, Depends(get_update_service)],
     limit: Annotated[int, Query(ge=1, le=100)] = 20,
     offset: Annotated[int, Query(ge=0)] = 0,
+    filter: Annotated[list[UpdateType] | None, Query()] = None,
+    sort: UpdateSort = UpdateSort.DATE_DESC,
 ) -> UpdateHistoryPage:
     try:
         updates, total = service.list_project_updates(
-            project_id, user_id, limit=limit, offset=offset
+            project_id,
+            user_id,
+            limit=limit,
+            offset=offset,
+            filter=filter,
+            sort=sort,
         )
     except ProjectNotFoundError as exc:
         raise HTTPException(

@@ -8,8 +8,6 @@ import {
   ArrowUpDown,
   CircleAlert,
   Filter,
-  ListSortAscending,
-  ListSortDescending,
   LoaderCircle,
   Plus,
 } from "lucide-react";
@@ -45,8 +43,14 @@ export function UpdateHistory({
   const [filterOptions, setFilterOptions] = useState<UpdateType[]>([]);
 
   const historyQuery = useInfiniteQuery({
-    queryKey: ["project-history", projectId],
-    queryFn: ({ pageParam }) => getProjectHistory(projectId!, pageParam),
+    queryKey: ["project-history", projectId, filterOptions, sortOption],
+    queryFn: ({ pageParam }) =>
+      getProjectHistory(
+        projectId!,
+        pageParam,
+        filterOptions.length > 0 ? filterOptions : undefined,
+        sortOption,
+      ),
     initialPageParam: 0,
     getNextPageParam: (lastPage) => {
       const loaded = lastPage.offset + lastPage.items.length;
@@ -135,19 +139,16 @@ export function UpdateHistory({
 }
 
 export const UpdateHistorySortOptions = {
-  DATE_ASC: "Date (Ascending)",
-  DATE_DESC: "Date (Descending)",
+  DATE_ASC: "date_asc",
+  DATE_DESC: "date_desc",
 } as const;
 export type UpdateHistorySortOptions =
   (typeof UpdateHistorySortOptions)[keyof typeof UpdateHistorySortOptions];
 
-//todo: add state (controlled by parent, so api query can adjust)
-//todo: debounce
 function UpdateHistorySort(props: {
   value: UpdateHistorySortOptions;
   onChange: (value: UpdateHistorySortOptions) => void;
 }) {
-  console.log("UpdateHistorySort props:", props); // Debugging line to check props
   return (
     <>
       <DropdownMenu>
@@ -168,7 +169,9 @@ function UpdateHistorySort(props: {
               const value = option[1];
               return (
                 <DropdownMenuRadioItem key={key} value={value}>
-                  {value}
+                  {key === "DATE_ASC"
+                    ? "Date (Ascending)"
+                    : "Date (Descending)"}
                 </DropdownMenuRadioItem>
               );
             })}
@@ -179,8 +182,6 @@ function UpdateHistorySort(props: {
   );
 }
 
-//todo: add state (controlled by parent, so api query can adjust)
-//todo: debounce
 function UpdateHistoryFilter(props: {
   value: UpdateType[];
   onChange: (value: UpdateType[]) => void;
@@ -214,7 +215,7 @@ function UpdateHistoryFilter(props: {
             <DropdownMenuLabel>Filter by type</DropdownMenuLabel>
             <DropdownMenuCheckboxItem
               key={"none"}
-              onChange={() => handleTypeChange("none")}
+              onClick={() => handleTypeChange("none")}
               checked={selectedTypes.length === 0}
               className={"m-1"}
             >
