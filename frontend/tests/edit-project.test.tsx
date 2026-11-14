@@ -73,6 +73,10 @@ beforeEach(() => {
       savedProject = { ...savedProject, ...changes };
       return json(savedProject);
     }
+    if (request.method === "POST" && new URL(request.url).pathname === "/api/projects/" + project.id + "/publish") {
+      savedProject = { ...savedProject, status: "ACTIVE", public: true };
+      return json(savedProject);
+    }
     return json({ detail: "Unexpected request" }, 500);
   });
   vi.stubGlobal("fetch", fetchMock);
@@ -182,5 +186,19 @@ describe("editing a project", () => {
       .map(([input]) => input as Request)
       .filter((item) => item.method === "PATCH");
     expect(await patches.at(-1)!.clone().json()).toMatchObject({ title: project.title });
+  });
+
+  test("publishes a draft after saving its latest edits", async () => {
+    await renderForm(draftProject);
+    fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Published stool" } });
+    fireEvent.click(screen.getByRole("button", { name: "Publish" }));
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith({ to: "/view-project", search: { projectId: project.id } }));
+    expect(savedProject).toMatchObject({ title: "Published stool", status: "ACTIVE", public: true });
+    const requests = fetchMock.mock.calls.map(([input]) => input as Request);
+    const autosaveIndex = requests.findIndex((request) => new URL(request.url).pathname === "/api/projects/" + project.id + "/autosave");
+    const publishIndex = requests.findIndex((request) => new URL(request.url).pathname === "/api/projects/" + project.id + "/publish");
+    expect(autosaveIndex).toBeGreaterThanOrEqual(0);
+    expect(publishIndex).toBeGreaterThan(autosaveIndex);
   });
 });
