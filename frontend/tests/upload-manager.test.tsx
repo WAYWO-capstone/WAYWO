@@ -109,6 +109,31 @@ describe("useUploadManager", () => {
     expect(item().error).toBe("Your session expired. Log in again.");
   });
 
+  test("shows a readable message for a 422 instead of the raw status", async () => {
+    vi.mocked(createUpload).mockRejectedValue(new ApiError(422));
+    const { item } = setup();
+    await waitFor(() => expect(item().status).toBe("error"));
+    expect(item().error).toBe("Something went wrong. Try again.");
+  });
+
+  test("gives each added file its own id", () => {
+    vi.mocked(uploadToR2).mockReturnValue({ promise: new Promise(() => {}), abort: vi.fn() });
+    const hook = renderHook(() => useUploadManager());
+    act(() => hook.result.current.add("RESOURCE", [file, file]));
+    const [first, second] = hook.result.current.items;
+    expect(first.id).not.toBe(second.id);
+  });
+
+  test("can't remove a file while it is being attached", async () => {
+    const onUploaded = vi.fn(() => new Promise(() => {}));
+    const { hook, item } = setup(onUploaded);
+    await waitFor(() => expect(item().status).toBe("attaching"));
+
+    act(() => hook.result.current.remove(item().id));
+    expect(hook.result.current.items).toHaveLength(1);
+    expect(item().status).toBe("attaching");
+  });
+
   test("is busy while uploading and aborts the upload when removed", async () => {
     const abort = vi.fn();
     vi.mocked(uploadToR2).mockReturnValue({ promise: new Promise(() => {}), abort });
