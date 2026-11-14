@@ -9,6 +9,9 @@ const POLL_INTERVAL_MS = 2000;
 const MAX_POLLS = 30;
 
 const ACTIVE: UploadStatus[] = ["queued", "uploading", "completing", "processing", "attaching"];
+const LOCKED: UploadStatus[] = ["completing", "processing", "attaching"];
+
+let nextId = 0;
 
 // add option to attach and action after upload is done
 export interface UploadManagerOptions {
@@ -30,7 +33,6 @@ function errorMessage(error: unknown): string {
         return "This file is too large.";
       case 400:
       case 409:
-      case 422:
         return error.message;
     }
   }
@@ -120,7 +122,7 @@ export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
   const add = useCallback(
     (kind: UploadKind, files: File[]) => {
       const added = files.map<UploadItem>((file) => ({
-        id: crypto.randomUUID(),
+        id: `upload-${++nextId}`,
         kind,
         file,
         uploadId: null,
@@ -144,11 +146,16 @@ export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
     [items, run],
   );
 
-  const remove = useCallback((id: string) => {
-    runs.current.get(id)?.abort?.();
-    runs.current.delete(id);
-    setItems((current) => current.filter((item) => item.id !== id));
-  }, []);
+  const remove = useCallback(
+    (id: string) => {
+      const item = items.find((candidate) => candidate.id === id);
+      if (!item || LOCKED.includes(item.status)) return;
+      runs.current.get(id)?.abort?.();
+      runs.current.delete(id);
+      setItems((current) => current.filter((candidate) => candidate.id !== id));
+    },
+    [items],
+  );
 
   const isBusy = items.some((item) => ACTIVE.includes(item.status));
 
