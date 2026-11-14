@@ -5,8 +5,9 @@ from sqlalchemy import func, or_, select
 from sqlalchemy.orm import Session, selectinload
 
 from app.accounts.users.models import Profile, User
-from app.projects.updates.enums import UpdateSort, UpdateType
+from app.projects.updates.enums import UpdateSort
 from app.projects.updates.models import Update
+from app.projects.updates.schemas import UpdateListOptions
 
 UpdateRow = tuple[Update, str | None, str | None]
 
@@ -58,10 +59,7 @@ class UpdateRepository:
         project_id: uuid.UUID,
         viewer_id: uuid.UUID,
         *,
-        limit: int,
-        offset: int,
-        filter: list[UpdateType] | None = None,
-        sort: UpdateSort = UpdateSort.DATE_DESC,
+        options: UpdateListOptions,
     ) -> tuple[list[UpdateRow], int]:
         """One page of a project's updates, sorted by date, plus the total count.
 
@@ -71,8 +69,8 @@ class UpdateRepository:
             Update.project_id == project_id,
             or_(Update.public.is_(True), Update.author_id == viewer_id),
         )
-        if filter:
-            conditions += (Update.update_type.in_(filter),)
+        if options.update_types:
+            conditions += (Update.update_type.in_(options.update_types),)
 
         total: int = self._session.scalar(
             select(func.count()).select_from(Update).where(*conditions)
@@ -88,17 +86,17 @@ class UpdateRepository:
             .order_by(
                 (
                     Update.created_at.asc()
-                    if sort == UpdateSort.DATE_ASC
+                    if options.sort == UpdateSort.DATE_ASC
                     else Update.created_at.desc()
                 ),
                 (
                     Update.id.asc()
-                    if sort == UpdateSort.DATE_ASC
+                    if options.sort == UpdateSort.DATE_ASC
                     else Update.id.desc()
                 ),
             )
-            .limit(limit)
-            .offset(offset)
+            .limit(options.limit)
+            .offset(options.offset)
         ).all()
 
         return cast(list[UpdateRow], list(rows)), total

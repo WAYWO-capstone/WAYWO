@@ -11,10 +11,14 @@ from app.projects.updates.exceptions import (
     UpdateNotFoundError,
     UpdateNotOwnedError,
 )
-from app.projects.updates.enums import UpdateSort, UpdateType
 from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate, UpdateEdit, UpdateRead
+from app.projects.updates.schemas import (
+    UpdateCreate,
+    UpdateEdit,
+    UpdateListOptions,
+    UpdateRead,
+)
 
 
 class UpdateService:
@@ -83,10 +87,7 @@ class UpdateService:
         project_id: uuid.UUID,
         viewer_id: uuid.UUID,
         *,
-        limit: int,
-        offset: int,
-        filter: list[UpdateType] | None = None,
-        sort: UpdateSort = UpdateSort.DATE_DESC,
+        options: UpdateListOptions,
     ) -> tuple[list[UpdateRead], int]:
         """Return one page of a project's updates and the total.
 
@@ -99,15 +100,10 @@ class UpdateService:
         ):
             raise ProjectNotFoundError(project_id)
 
-        repository_options: dict[
-            str, int | list[UpdateType] | UpdateSort
-        ] = {"limit": limit, "offset": offset}
-        if filter is not None:
-            repository_options["filter"] = filter
-        if sort != UpdateSort.DATE_DESC:
-            repository_options["sort"] = sort
         rows, total = self._repo.list_for_project(
-            project_id, viewer_id, **repository_options
+            project_id,
+            viewer_id,
+            options=options,
         )
         items = [self._to_read(row, viewer_id) for row in rows]
         return items, total

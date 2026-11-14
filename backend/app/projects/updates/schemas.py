@@ -4,7 +4,7 @@ from datetime import datetime
 from pydantic import BaseModel, ConfigDict, Field, field_validator, model_validator
 
 from app.projects.project.schemas import ProjectAuthorRead
-from app.projects.updates.enums import UpdateType
+from app.projects.updates.enums import UpdateSort, UpdateType
 
 
 class UpdateCreate(BaseModel):
@@ -65,6 +65,16 @@ class UpdateRead(BaseModel):
     created_at: datetime
     updated_at: datetime
     author: ProjectAuthorRead
+
+
+class UpdateListOptions(BaseModel):
+    limit: int = Field(default=20, ge=1, le=100)
+    offset: int = Field(default=0, ge=0)
+    update_types: list[UpdateType] | None = Field(
+        default=None,
+        alias="filter",
+    )
+    sort: UpdateSort = UpdateSort.DATE_DESC
 
 
 class UpdateHistoryPage(BaseModel):
