@@ -15,7 +15,7 @@ from app.core.database import get_session
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.enums import ProjectStatus
 from app.projects.project.models import Category, Project
-from app.projects.updates.models import Update, update_references
+from app.projects.updates.models import Update, UpdateReference
 from app.projects.updates.router import router as updates_router
 
 # --------------------------------------------------------------------------
@@ -253,7 +253,7 @@ def test_create_update_persists_to_database(
     assert saved.public is False
 
 
-def test_update_can_reference_multiple_updates(
+def test_update_can_have_multiple_outgoing_references_with_reciprocal_reasons(
     client: TestClient,
     engine: Engine,
     project: Project,
@@ -279,43 +279,139 @@ def test_update_can_reference_multiple_updates(
             "title": "Use a replacement part",
             "type": "SOLUTION",
             "references": [
-                first_response.json()["id"],
-                second_response.json()["id"],
+                {
+                    "target_update_id": first_response.json()["id"],
+                    "reason": "SOLVES",
+                },
+                {
+                    "target_update_id": second_response.json()["id"],
+                    "reason": "RELATED_TO",
+                },
             ],
         },
     )
 
     assert solution_response.status_code == 201
-    assert solution_response.json()["references"] == [
-        first_response.json()["id"],
-        second_response.json()["id"],
-    ]
+    assert {
+        reference["update_id"]: reference
+        for reference in solution_response.json()["outgoing_references"]
+    } == {
+        first_response.json()["id"]: {
+            "update_id": first_response.json()["id"],
+            "title": "A problem",
+            "type": "PROBLEM",
+            "reason": "SOLVES",
+        },
+        second_response.json()["id"]: {
+            "update_id": second_response.json()["id"],
+            "title": "A decision",
+            "type": "DECISION",
+            "reason": "RELATED_TO",
+        },
+    }
     with Session(engine) as session:
         saved = session.get(Update, uuid.UUID(solution_response.json()["id"]))
         assert saved is not None
-        assert {reference.id for reference in saved.references} == {
-            uuid.UUID(first_response.json()["id"]),
-            uuid.UUID(second_response.json()["id"]),
+        assert {
+            (str(reference.referenced_update_id), reference.reason.value)
+            for reference in saved.outgoing_references
+        } == {
+            (first_response.json()["id"], "SOLVES"),
+            (second_response.json()["id"], "RELATED_TO"),
         }
 
+    history = client.get(f"/projects/{project.id}/updates").json()
+    problem = next(
+        item
+        for item in history["items"]
+        if item["id"] == first_response.json()["id"]
+    )
+    assert problem["incoming_references"] == [
+        {
+            "update_id": solution_response.json()["id"],
+            "title": "Use a replacement part",
+            "type": "SOLUTION",
+            "reason": "SOLVED_BY",
+        }
+    ]
+    decision = next(
+        item
+        for item in history["items"]
+        if item["id"] == second_response.json()["id"]
+    )
+    assert decision["incoming_references"][0]["reason"] == "RELATED_TO"
 
-def test_any_update_type_can_reference_an_update(
+
+@pytest.mark.parametrize(
+    ("stored_reason", "display_reason"),
+    [
+        ("PARTIALLY_SOLVES", "PARTIALLY_SOLVED_BY"),
+        ("RELATED_TO", "RELATED_TO"),
+    ],
+)
+def test_update_reference_supports_distinct_inverse_reasons(
     client: TestClient,
     project: Project,
     payload: dict[str, Any],
+    stored_reason: str,
+    display_reason: str,
 ) -> None:
-    response = post_update(
+    target = post_update(client, project.id, payload).json()
+    source = post_update(
         client,
         project.id,
         {
             **payload,
-            "type": "PROGRESS",
-            "references": [],
+            "references": [
+                {"target_update_id": target["id"], "reason": stored_reason}
+            ],
         },
-    )
+    ).json()
 
-    assert response.status_code == 201
-    assert response.json()["references"] == []
+    assert source["outgoing_references"][0]["reason"] == stored_reason
+    history = client.get(f"/projects/{project.id}/updates").json()
+    target_read = next(item for item in history["items"] if item["id"] == target["id"])
+    assert target_read["incoming_references"][0]["reason"] == display_reason
+
+
+def test_update_allows_multiple_incoming_references(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    target = post_update(client, project.id, payload).json()
+    first_source = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "title": "First source",
+            "references": [
+                {"target_update_id": target["id"], "reason": "SOLVES"}
+            ],
+        },
+    ).json()
+    second_source = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "title": "Second source",
+            "references": [
+                {"target_update_id": target["id"], "reason": "PARTIALLY_SOLVES"}
+            ],
+        },
+    ).json()
+
+    history = client.get(f"/projects/{project.id}/updates").json()
+    target_read = next(item for item in history["items"] if item["id"] == target["id"])
+    assert {
+        (link["update_id"], link["reason"])
+        for link in target_read["incoming_references"]
+    } == {
+        (first_source["id"], "SOLVED_BY"),
+        (second_source["id"], "PARTIALLY_SOLVED_BY"),
+    }
 
 
 def test_update_references_must_belong_to_the_same_project(
@@ -332,7 +428,15 @@ def test_update_references_must_belong_to_the_same_project(
     response = post_update(
         client,
         project.id,
-        {**payload, "references": [other_update.json()["id"]]},
+        {
+            **payload,
+            "references": [
+                {
+                    "target_update_id": other_update.json()["id"],
+                    "reason": "RELATED_TO",
+                }
+            ],
+        },
     )
 
     assert response.status_code == 404
@@ -349,7 +453,11 @@ def test_update_cannot_reference_itself(
         client,
         project.id,
         created["id"],
-        {"references": [created["id"]]},
+        {
+            "references": [
+                {"target_update_id": created["id"], "reason": "SOLVES"}
+            ]
+        },
     )
 
     assert response.status_code == 422
@@ -367,31 +475,104 @@ def test_update_can_be_relinked_to_different_updates(
     update = post_update(
         client,
         project.id,
-        {**payload, "references": [first["id"]]},
+        {
+            **payload,
+            "references": [
+                {"target_update_id": first["id"], "reason": "RELATED_TO"}
+            ],
+        },
     ).json()
 
     response = update_update(
         client,
         project.id,
         update["id"],
-        {"references": [second["id"]]},
+        {
+            "references": [
+                {"target_update_id": second["id"], "reason": "SOLVES"}
+            ]
+        },
     )
 
     assert response.status_code == 200
-    assert response.json()["references"] == [second["id"]]
+    assert response.json()["outgoing_references"][0]["update_id"] == second["id"]
+    assert response.json()["outgoing_references"][0]["reason"] == "SOLVES"
 
 
-def test_update_rejects_duplicate_references(
+def test_update_reference_can_be_cleared(
     client: TestClient,
     project: Project,
     payload: dict[str, Any],
 ) -> None:
-    referenced = post_update(client, project.id, payload).json()
+    target = post_update(client, project.id, payload).json()
+    source = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "references": [
+                {"target_update_id": target["id"], "reason": "RELATED_TO"}
+            ],
+        },
+    ).json()
+    response = update_update(client, project.id, source["id"], {"references": []})
 
+    assert response.status_code == 200
+    assert response.json()["outgoing_references"] == []
+
+
+def test_update_rejects_reference_ids_without_reasons(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    target = post_update(client, project.id, payload).json()
     response = post_update(
         client,
         project.id,
-        {**payload, "references": [referenced["id"], referenced["id"]]},
+        {**payload, "references": [target["id"]]},
+    )
+
+    assert response.status_code == 422
+    assert "references" in str(response.json()["detail"])
+
+
+def test_update_rejects_unknown_reference_reason(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    target = post_update(client, project.id, payload).json()
+    response = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "references": [
+                {"target_update_id": target["id"], "reason": "FIXES"}
+            ],
+        },
+    )
+
+    assert response.status_code == 422
+
+
+def test_update_rejects_duplicate_outgoing_references(
+    client: TestClient,
+    project: Project,
+    payload: dict[str, Any],
+) -> None:
+    target = post_update(client, project.id, payload).json()
+    response = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "references": [
+                {"target_update_id": target["id"], "reason": "SOLVES"},
+                {"target_update_id": target["id"], "reason": "RELATED_TO"},
+            ],
+        },
     )
 
     assert response.status_code == 422
@@ -412,10 +593,31 @@ def test_history_hides_private_references_from_other_viewers(
         project.id,
         {**payload, "public": False},
     ).json()
+    public_target = post_update(
+        client,
+        project.id,
+        {**payload, "title": "Public target"},
+    ).json()
     public_update = post_update(
         client,
         project.id,
-        {**payload, "references": [private_update["id"]]},
+        {
+            **payload,
+            "references": [
+                {"target_update_id": private_update["id"], "reason": "RELATED_TO"}
+            ],
+        },
+    ).json()
+    private_source = post_update(
+        client,
+        project.id,
+        {
+            **payload,
+            "public": False,
+            "references": [
+                {"target_update_id": public_target["id"], "reason": "SOLVES"}
+            ],
+        },
     ).json()
 
     viewer_id = uuid.uuid4()
@@ -432,7 +634,16 @@ def test_history_hides_private_references_from_other_viewers(
         for item in response.json()["items"]
         if item["id"] == public_update["id"]
     )
-    assert visible_update["references"] == []
+    assert visible_update["outgoing_references"] == []
+    visible_target = next(
+        item
+        for item in response.json()["items"]
+        if item["id"] == public_target["id"]
+    )
+    assert all(
+        link["update_id"] != private_source["id"]
+        for link in visible_target["incoming_references"]
+    )
 
 
 def test_deleting_an_update_cascades_only_its_references(
@@ -445,7 +656,12 @@ def test_deleting_an_update_cascades_only_its_references(
     source = post_update(
         client,
         project.id,
-        {**payload, "references": [referenced["id"]]},
+        {
+            **payload,
+            "references": [
+                {"target_update_id": referenced["id"], "reason": "RELATED_TO"}
+            ],
+        },
     ).json()
 
     response = delete_update(client, project.id, referenced["id"])
@@ -454,9 +670,9 @@ def test_deleting_an_update_cascades_only_its_references(
     with Session(engine) as session:
         remaining_source = session.get(Update, uuid.UUID(source["id"]))
         assert remaining_source is not None
-        assert remaining_source.references == []
+        assert remaining_source.outgoing_references == []
         assert session.get(Update, uuid.UUID(referenced["id"])) is None
-        assert session.scalar(select(update_references).limit(1)) is None
+        assert session.scalar(select(UpdateReference).limit(1)) is None
 
 
 def test_deleting_an_update_removes_outgoing_references_only(
@@ -469,7 +685,12 @@ def test_deleting_an_update_removes_outgoing_references_only(
     source = post_update(
         client,
         project.id,
-        {**payload, "references": [referenced["id"]]},
+        {
+            **payload,
+            "references": [
+                {"target_update_id": referenced["id"], "reason": "RELATED_TO"}
+            ],
+        },
     ).json()
 
     response = delete_update(client, project.id, source["id"])
@@ -477,7 +698,7 @@ def test_deleting_an_update_removes_outgoing_references_only(
     assert response.status_code == 204
     with Session(engine) as session:
         assert session.get(Update, uuid.UUID(referenced["id"])) is not None
-        assert session.scalar(select(update_references).limit(1)) is None
+        assert session.scalar(select(UpdateReference).limit(1)) is None
 
 
 def test_create_update_rejects_non_owner(
