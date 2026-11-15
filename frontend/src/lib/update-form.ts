@@ -41,6 +41,8 @@ export function formatUpdateDateRelative(value: string) {
   return dayjs().from(dayjs(value), true) + " ago";
 }
 
+// Format a date for display in an update item. Absolute time is used, with the user's locale.
+// LLLL corresponds to "Tuesday, June 6, 2023 8:30 PM" in en-US. https://day.js.org/docs/en/display/format#localized-formats
 export function formatUpdateDateAbsolute(value: string) {
   return dayjs(value).format("LLLL");
 }
