@@ -60,14 +60,18 @@ const placeholderCopy: Record<ProfileSection, { title: string; description: stri
   notifications: { title: "Notification Preferences", description: "Choose which notifications you receive here when preferences are available." },
   accessibility: { title: "Accessibility", description: "Accessibility options will be available here soon." },
 };
+const sidebarItemClass = "flex min-h-10 items-center gap-3 rounded-md px-2 py-1.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const selectedSidebarItemClass = "bg-brand-garnet/8 font-semibold text-brand-garnet";
+const idleSidebarItemClass = "hover:bg-brand-garnet/4 hover:text-brand-garnet";
 
-function SidebarItem({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
+function SidebarItem({ label, icon: Icon, active = false }: { label: string; icon: LucideIcon; active?: boolean }) {
   return (
     <li>
       <Link
         to={label === "Projects" ? "/projects" : "/profile"}
         search={label === "Projects" ? undefined : { section: sectionByLabel[label] }}
-        className="flex min-h-10 w-full items-center gap-3 rounded-md py-1.5 text-left text-base outline-none hover:text-primary focus-visible:ring-2 focus-visible:ring-ring"
+        aria-current={active ? "page" : undefined}
+        className={`${sidebarItemClass} w-full text-left ${active ? selectedSidebarItemClass : idleSidebarItemClass}`}
       >
         <Icon aria-hidden="true" className="size-4.5 shrink-0" />
         <span>{label}</span>
@@ -100,19 +104,19 @@ export function AccountProfilePage({ profile, onLogout, section }: AccountProfil
                   to="/profile"
                   search={{ section: undefined }}
                   aria-current={section ? undefined : "page"}
-                  className="flex min-h-10 items-center gap-3 rounded-md py-1.5 text-base font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  className={`${sidebarItemClass} ${section ? idleSidebarItemClass : selectedSidebarItemClass}`}
                 >
                   <UserRound aria-hidden="true" className="size-4.5 shrink-0" />
                   Profile
                 </Link>
               </li>
-              {mainItems.map((item) => <SidebarItem key={item.label} {...item} />)}
+              {mainItems.map((item) => <SidebarItem key={item.label} {...item} active={item.label !== "Projects" && section === sectionByLabel[item.label]} />)}
             </ul>
 
             <hr className="my-5 border-t-2 border-brand-garnet" />
 
             <ul className="grid grid-cols-2 gap-x-4 md:block">
-              {preferenceItems.map((item) => <SidebarItem key={item.label} {...item} />)}
+              {preferenceItems.map((item) => <SidebarItem key={item.label} {...item} active={section === sectionByLabel[item.label]} />)}
             </ul>
           </nav>
         </aside>
