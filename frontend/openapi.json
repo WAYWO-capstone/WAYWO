@@ -695,6 +695,7 @@
         "type": "object"
       },
       "UpdateCreate": {
+        "additionalProperties": false,
         "properties": {
           "body": {
             "title": "Body",
@@ -713,8 +714,7 @@
           },
           "references": {
             "items": {
-              "format": "uuid",
-              "type": "string"
+              "$ref": "#/components/schemas/UpdateReferenceCreate"
             },
             "maxItems": 50,
             "title": "References",
@@ -739,6 +739,7 @@
         "type": "object"
       },
       "UpdateEdit": {
+        "additionalProperties": false,
         "properties": {
           "body": {
             "anyOf": [
@@ -766,8 +767,7 @@
             "anyOf": [
               {
                 "items": {
-                  "format": "uuid",
-                  "type": "string"
+                  "$ref": "#/components/schemas/UpdateReferenceCreate"
                 },
                 "maxItems": 50,
                 "type": "array"
@@ -860,6 +860,20 @@
             "title": "Id",
             "type": "string"
           },
+          "incoming_references": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateReferenceRead"
+            },
+            "title": "Incoming References",
+            "type": "array"
+          },
+          "outgoing_references": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateReferenceRead"
+            },
+            "title": "Outgoing References",
+            "type": "array"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -868,14 +882,6 @@
           "public": {
             "title": "Public",
             "type": "boolean"
-          },
-          "references": {
-            "items": {
-              "format": "uuid",
-              "type": "string"
-            },
-            "title": "References",
-            "type": "array"
           },
           "title": {
             "title": "Title",
@@ -893,7 +899,6 @@
         "required": [
           "id",
           "project_id",
-          "references",
           "author_id",
           "title",
           "body",
@@ -905,6 +910,71 @@
         ],
         "title": "UpdateRead",
         "type": "object"
+      },
+      "UpdateReferenceCreate": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/UpdateReferenceReason"
+          },
+          "target_update_id": {
+            "format": "uuid",
+            "title": "Target Update Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_update_id",
+          "reason"
+        ],
+        "title": "UpdateReferenceCreate",
+        "type": "object"
+      },
+      "UpdateReferenceDisplayReason": {
+        "enum": [
+          "SOLVES",
+          "SOLVED_BY",
+          "PARTIALLY_SOLVES",
+          "PARTIALLY_SOLVED_BY",
+          "RELATED_TO"
+        ],
+        "title": "UpdateReferenceDisplayReason",
+        "type": "string"
+      },
+      "UpdateReferenceRead": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/UpdateReferenceDisplayReason"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/UpdateType"
+          },
+          "update_id": {
+            "format": "uuid",
+            "title": "Update Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "update_id",
+          "title",
+          "type",
+          "reason"
+        ],
+        "title": "UpdateReferenceRead",
+        "type": "object"
+      },
+      "UpdateReferenceReason": {
+        "enum": [
+          "SOLVES",
+          "PARTIALLY_SOLVES",
+          "RELATED_TO"
+        ],
+        "title": "UpdateReferenceReason",
+        "type": "string"
       },
       "UpdateSort": {
         "enum": [
