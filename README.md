@@ -219,8 +219,10 @@ The GitHub Wiki contains detailed project documentation.
 
 | Page | Description |
 |---|---|
-| [Home](../../wiki/Introduction) | Introduction to WAYWO and an overview of the project |
+| [Home](../../wiki) | Introduction to WAYWO and the team members |
 | [Personas](../../wiki/Personas) | Personas representing the intended WAYWO users |
+| [User Stories & Backlog](../../wiki/User-Stories-&-Backlog) | Story point scale, user stories and product backlog |
+| [Iteration and Release Notes](../../wiki/Iteration-and-Release-Notes) | Per-iteration velocity, contractor estimates and release summaries |
 | [Infrastructure and Tools](../../wiki/Infrastructure-and-tools) | Development infrastructure, tools, and technologies used by the team |
 | [Overall Architecture and Class Diagrams](../../wiki/Overall-Architecture-and-Class-Diagrams) | Overall system architecture and class diagrams |
 | [Name Conventions](../../wiki/Name-Conventions) | Naming conventions followed throughout the project |
@@ -228,7 +230,7 @@ The GitHub Wiki contains detailed project documentation.
 | [Performance](../../wiki/Performance) | Performance considerations and requirements |
 | [Security](../../wiki/Security) | Security considerations and measures |
 | [Legal and Ethical issues](../../wiki/Legal-and-Ethical-issues) | Legal and ethical considerations for the project |
-| [User consent and end-user license agreement](../../wiki/User-consent-and-end-user-license-agreement) | User consent and end-user license agreement information |
+| [User consent and end-user license agreement](../../wiki/User-consent-and-end%E2%80%90user-license-agreement) | User consent and end-user license agreement information |
 | [Diversity statement](../../wiki/Diversity-statement) | Project diversity and inclusion considerations |
 | [Risks](../../wiki/Risks) | Identified project risks and mitigation strategies |
 | [Economic](../../wiki/Economic) | Economic considerations for the project |
