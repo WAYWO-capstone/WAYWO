@@ -217,6 +217,8 @@ class UpdateService:
     ) -> UpdateReferenceDisplayReason:
         return {
             UpdateReferenceReason.SOLVES: UpdateReferenceDisplayReason.SOLVED_BY,
-            UpdateReferenceReason.PARTIALLY_SOLVES: UpdateReferenceDisplayReason.PARTIALLY_SOLVED_BY,
+            UpdateReferenceReason.PARTIALLY_SOLVES: (
+                UpdateReferenceDisplayReason.PARTIALLY_SOLVED_BY
+            ),
             UpdateReferenceReason.RELATED_TO: UpdateReferenceDisplayReason.RELATED_TO,
         }[reason]
