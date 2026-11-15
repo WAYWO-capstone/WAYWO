@@ -41,5 +41,3 @@ def count_updates(engine: Engine) -> int:
     # A brand-new session, so we read what was actually committed.
     with Session(engine) as session:
         return session.scalar(select(func.count()).select_from(Update)) or 0
-
-

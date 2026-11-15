@@ -4,7 +4,7 @@ from typing import Any
 import pytest
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
-from sqlalchemy import Engine, func, select
+from sqlalchemy import Engine
 from sqlalchemy.orm import Session
 
 from app.accounts.users.models import User

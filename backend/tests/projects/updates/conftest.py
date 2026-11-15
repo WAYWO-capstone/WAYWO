@@ -172,5 +172,3 @@ def created_update(
     response = post_update(client, project.id, payload)
     assert response.status_code == 201
     return response.json()
-
-

@@ -705,5 +705,3 @@ def test_deleting_an_update_removes_outgoing_references_only(
     with Session(engine) as session:
         assert session.get(Update, uuid.UUID(referenced["id"])) is not None
         assert session.scalar(select(UpdateReference).limit(1)) is None
-
-
