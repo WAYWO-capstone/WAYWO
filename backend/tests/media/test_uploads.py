@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Callable, Iterator
 from typing import Any
+from urllib.parse import parse_qs, urlparse
 
 import pytest
 from fastapi import FastAPI
@@ -16,7 +17,7 @@ from app.core.database import get_session
 from app.media.enums import UploadStatus
 from app.media.models import FileAsset
 from app.media.router import router as media_router
-from app.media.service import StoredObject, get_object_storage
+from app.media.service import ObjectStorage, StoredObject, get_object_storage
 from app.projects.project.dependencies import get_current_user_id
 
 # Registers every model so foreign keys to users resolve in create_all.
@@ -171,13 +172,26 @@ def test_create_signs_a_pending_upload(
 
     assert response.status_code == 201
     body = response.json()
-    assert body["headers"] == {"Content-Type": "application/octet-stream"}
+    assert body["headers"] == {
+        "Content-Type": "application/octet-stream",
+        "If-None-Match": "*",
+    }
     assert body["url"].startswith("https://r2.example/")
     asset = stored(db, body["upload_id"])
     assert asset.status == UploadStatus.PENDING
     assert asset.owner_id == owner.id
     assert asset.mime_type == "application/octet-stream"
     assert storage.signed[0]["content_type"] == "application/octet-stream"
+
+
+def test_signed_upload_link_cannot_replace_a_stored_file():
+    # Signing is local, so this runs without reaching R2. R2 rejects a PUT whose
+    # signed If-None-Match: * fails, so the link can't overwrite a verified file.
+    url = ObjectStorage().presign_put("bucket", "resources/key", "application/pdf")
+
+    signed = parse_qs(urlparse(url).query)["X-Amz-SignedHeaders"][0].split(";")
+    assert "if-none-match" in signed
+    assert "content-type" in signed
 
 
 def test_storage_key_is_built_by_the_server_without_the_file_name(

@@ -79,11 +79,20 @@ class ObjectStorage:
         )
 
     def presign_put(self, bucket: str, key: str, content_type: str) -> str:
-        """A link the browser can PUT one file to, with exactly this Content-Type."""
+        """A link the browser can PUT one file to, with exactly this Content-Type.
+
+        If-None-Match: * is signed too, so the link only works while nothing is
+        stored at the key: a verified file can't be replaced before it expires.
+        """
 
         return self._client.generate_presigned_url(
             "put_object",
-            Params={"Bucket": bucket, "Key": key, "ContentType": content_type},
+            Params={
+                "Bucket": bucket,
+                "Key": key,
+                "ContentType": content_type,
+                "IfNoneMatch": "*",
+            },
             ExpiresIn=int(SIGNED_URL_TTL.total_seconds()),
         )
 
@@ -198,7 +207,7 @@ class UploadService:
         return UploadCreated(
             upload_id=asset.id,
             url=url,
-            headers={"Content-Type": mime_type},
+            headers={"Content-Type": mime_type, "If-None-Match": "*"},
             expires_at=expires_at,
         )
 
