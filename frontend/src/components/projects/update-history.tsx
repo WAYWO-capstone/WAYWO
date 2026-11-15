@@ -113,7 +113,10 @@ export function UpdateHistory({
             Could not load updates. Try again later.
           </p>
         ) : updates.length === 0 ? (
-          <p className="py-10 text-sm text-muted-foreground">No updates yet.</p>
+          <p className="py-10 text-sm text-muted-foreground">
+            No updates were found.
+            {filterOptions.length > 0 && " Try adjusting your filters."}
+          </p>
         ) : (
           <UpdateTimeline updates={updates} canManage={canManage} />
         )}
@@ -202,13 +205,22 @@ function UpdateHistoryFilter(props: {
   };
 
   const updateTypes = Object.keys(updateTypeStyles) as UpdateType[];
+
   return (
     <>
       <DropdownMenu>
         <DropdownMenuTrigger
-          render={<Button variant="outline" size={"icon-lg"} />}
+          render={
+            <Button variant="outline" size={"icon-lg"} className="relative" />
+          }
         >
           <Filter />
+          {selectedTypes.length > 0 && (
+            <span
+              aria-label="Filter active"
+              className="absolute top-1 right-1 size-2 rounded-full bg-blue-500"
+            />
+          )}
         </DropdownMenuTrigger>
         <DropdownMenuContent>
           <DropdownMenuGroup>
