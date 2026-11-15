@@ -1,0 +1,64 @@
+# .github/workflows/iteration-lock.yml
+#
+# Blocks merges/pushes to every "iteration-*" branch for the whole day
+# (America/Toronto time) on each date in LOCK_DATES below.
+#
+# How it works: a repository ruleset targeting iteration-* is switched
+# between "active" (locked) and "disabled" (unlocked). Each run checks
+# whether today's Toronto date is in the list and sets the ruleset to
+# match, so a late or skipped run fixes itself on the next one.
+# Daylight saving time is handled by using TZ=America/Toronto.
+
+name: Iteration deadline lock
+
+on:
+  schedule:
+    # Every 10 min from 04:00-06:59 UTC, every day.
+    # Toronto midnight is 05:00 UTC in winter (EST) and 04:00 UTC in
+    # summer (EDT), so this window covers the start of each lock day and
+    # the start of the day after (unlock), all year round.
+    - cron: "*/10 4-6 * * *"
+  workflow_dispatch: # "Run workflow" button for manual fixes/testing
+
+concurrency:
+  group: iteration-lock
+  cancel-in-progress: false
+
+jobs:
+  set-lock:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check whether today is a lock day
+        id: decide
+        env:
+          # Lock days, one per line, YYYY-MM-DD (Toronto time).
+          LOCK_DATES: |
+            2026-11-17
+            2026-12-01
+            2026-12-15
+            2027-01-19
+            2027-02-05
+            2027-02-16
+            2027-03-02
+            2027-03-16
+            2027-03-30
+            2027-04-13
+        run: |
+          TODAY=$(TZ=America/Toronto date +%F)
+
+          STATE=disabled
+          if printf '%s\n' "$LOCK_DATES" | tr -d ' ' | grep -qx "$TODAY"; then
+            STATE=active
+          fi
+
+          echo "Toronto date: $TODAY -> $STATE"
+          echo "state=$STATE" >> "$GITHUB_OUTPUT"
+
+      - name: Apply ruleset enforcement
+        env:
+          GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
+          RULESET_ID: ${{ vars.RULESET_ID }}
+        run: |
+          gh api -X PUT "repos/${{ github.repository }}/rulesets/$RULESET_ID" \
+            -f enforcement="${{ steps.decide.outputs.state }}" \
+            --jq '"Ruleset \(.name) is now \(.enforcement)"'
