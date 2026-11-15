@@ -1,6 +1,11 @@
 import { ApiError } from "@/api/client";
 import type { ProjectUpdate, UpdateType } from "@/api/models";
 import type { ProjectUpdateChanges } from "@/api/updates";
+import dayjs from "dayjs";
+import relativeTime from 'dayjs/plugin/relativeTime'
+import localizedFormat from 'dayjs/plugin/localizedFormat'
+dayjs.extend(relativeTime);
+dayjs.extend(localizedFormat)
 
 export interface UpdateFormValues {
   title: string;
@@ -30,12 +35,14 @@ export function wasEdited(update: Pick<ProjectUpdate, "created_at" | "updated_at
   return new Date(update.updated_at).getTime() - new Date(update.created_at).getTime() > EDIT_THRESHOLD_MS;
 }
 
-export function formatUpdateDate(value: string) {
-  return new Date(value).toLocaleDateString(undefined, {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-  });
+// Format a date for display in an update item. Relative time is used.
+// Assumed that timestamp is in the past.
+export function formatUpdateDateRelative(value: string) {
+  return dayjs().from(dayjs(value), true) + " ago";
+}
+
+export function formatUpdateDateAbsolute(value: string) {
+  return dayjs(value).format("LLLL");
 }
 
 export function updateRequestError(error: Error) {
