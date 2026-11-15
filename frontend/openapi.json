@@ -906,6 +906,14 @@
         "title": "UpdateRead",
         "type": "object"
       },
+      "UpdateSort": {
+        "enum": [
+          "date_asc",
+          "date_desc"
+        ],
+        "title": "UpdateSort",
+        "type": "string"
+      },
       "UpdateType": {
         "enum": [
           "PROGRESS",
@@ -1989,6 +1997,34 @@
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/UpdateType"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UpdateSort",
+              "default": "date_desc"
             }
           }
         ],

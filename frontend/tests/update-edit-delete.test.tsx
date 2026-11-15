@@ -129,7 +129,7 @@ describe("deleting an update", () => {
     const dialog = await openDialog();
     fireEvent.click(within(dialog).getByRole("button", { name: "Delete update" }));
 
-    await screen.findByText("No updates yet.");
+    await screen.findByText("No updates were found.");
     expect(await writes(fetchMock)).toEqual([["DELETE", "/api/projects/p1/updates/u1", undefined]]);
   });
 
