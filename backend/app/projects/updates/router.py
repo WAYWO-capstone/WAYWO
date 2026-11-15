@@ -9,6 +9,7 @@ from app.projects.updates.dependencies import get_update_service
 from app.projects.updates.exceptions import (
     DuplicateUpdateReferenceError,
     InvalidUpdateReferenceError,
+    InvalidUpdateReferenceTypeError,
     ReferencedUpdateNotFoundError,
     UpdateNotFoundError,
     UpdateNotOwnedError,
@@ -29,12 +30,18 @@ def _reference_http_exception(
     exc: (
         ReferencedUpdateNotFoundError
         | InvalidUpdateReferenceError
+        | InvalidUpdateReferenceTypeError
         | DuplicateUpdateReferenceError
     ),
 ) -> HTTPException:
     if isinstance(exc, ReferencedUpdateNotFoundError):
         return HTTPException(
             status.HTTP_404_NOT_FOUND, "Referenced update not found"
+        )
+    if isinstance(exc, InvalidUpdateReferenceTypeError):
+        return HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Solve references must link SOLUTION updates to PROBLEM updates",
         )
     message = (
         "Duplicate update reference"
@@ -68,6 +75,7 @@ def create_project_update(
     except (
         ReferencedUpdateNotFoundError,
         InvalidUpdateReferenceError,
+        InvalidUpdateReferenceTypeError,
         DuplicateUpdateReferenceError,
     ) as exc:
         raise _reference_http_exception(exc) from exc
@@ -121,6 +129,7 @@ def edit_project_update(
     except (
         ReferencedUpdateNotFoundError,
         InvalidUpdateReferenceError,
+        InvalidUpdateReferenceTypeError,
         DuplicateUpdateReferenceError,
     ) as exc:
         raise _reference_http_exception(exc) from exc

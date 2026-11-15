@@ -788,6 +788,7 @@ export interface components {
         };
         /** UpdateReferenceCreate */
         UpdateReferenceCreate: {
+            /** @default RELATED_TO */
             reason: components["schemas"]["UpdateReferenceReason"];
             /**
              * Target Update Id
@@ -802,15 +803,15 @@ export interface components {
         UpdateReferenceDisplayReason: "SOLVES" | "SOLVED_BY" | "PARTIALLY_SOLVES" | "PARTIALLY_SOLVED_BY" | "RELATED_TO";
         /** UpdateReferenceRead */
         UpdateReferenceRead: {
+            /**
+             * Linked Update Id
+             * Format: uuid
+             */
+            linked_update_id: string;
             reason: components["schemas"]["UpdateReferenceDisplayReason"];
             /** Title */
             title: string;
             type: components["schemas"]["UpdateType"];
-            /**
-             * Update Id
-             * Format: uuid
-             */
-            update_id: string;
         };
         /**
          * UpdateReferenceReason

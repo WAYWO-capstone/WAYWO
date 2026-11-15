@@ -40,6 +40,22 @@ class UpdateRepository:
             ).all()
         )
 
+    def get_reverse_reference_source_ids(
+        self,
+        update_id: uuid.UUID,
+        source_ids: list[uuid.UUID],
+    ) -> set[uuid.UUID]:
+        if not source_ids:
+            return set()
+        return set(
+            self._session.scalars(
+                select(UpdateReference.update_id).where(
+                    UpdateReference.referenced_update_id == update_id,
+                    UpdateReference.update_id.in_(source_ids),
+                )
+            ).all()
+        )
+
     def update(self, update: Update) -> UpdateRow:
         self._session.flush()
         row = self._session.execute(

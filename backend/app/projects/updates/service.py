@@ -7,10 +7,12 @@ from app.projects.project.schemas import ProjectAuthorRead
 from app.projects.updates.enums import (
     UpdateReferenceDisplayReason,
     UpdateReferenceReason,
+    UpdateType,
 )
 from app.projects.updates.exceptions import (
     DuplicateUpdateReferenceError,
     InvalidUpdateReferenceError,
+    InvalidUpdateReferenceTypeError,
     ReferencedUpdateNotFoundError,
     UpdateNotFoundError,
     UpdateNotOwnedError,
@@ -55,7 +57,9 @@ class UpdateService:
             update_type=data.type,
             public=project.public and data.public is not False,
         )
-        references = self._get_referenced_updates(project_id, data.references)
+        references = self._get_referenced_updates(
+            project_id, data.references, source_type=data.type
+        )
         update.outgoing_references = [
             UpdateReference(
                 referenced_update_id=target.id,
@@ -75,18 +79,47 @@ class UpdateService:
     ) -> UpdateRead:
         update = self._get_owned_update(project_id, update_id, author_id)
         values = data.model_dump(exclude_unset=True)
-        if "references" in values:
+        source_type = values.get("type", update.update_type)
+        references_changed = "references" in values
+        type_changed = source_type != update.update_type
+        resolved_references: list[
+            tuple[Update, UpdateReferenceReason]
+        ] | None = None
+
+        if references_changed:
             values.pop("references")
-            references = self._get_referenced_updates(
-                project_id, data.references or [], update.id
+            resolved_references = self._get_referenced_updates(
+                project_id,
+                data.references or [],
+                source_type=source_type,
+                update_id=update.id,
             )
+
+        if type_changed:
+            if not references_changed:
+                for reference in update.outgoing_references:
+                    self._validate_reference_types(
+                        source_type,
+                        reference.target.update_type,
+                        reference.reason,
+                    )
+
+            for reference in update.incoming_references:
+                self._validate_reference_types(
+                    reference.source.update_type,
+                    source_type,
+                    reference.reason,
+                )
+
+        if resolved_references is not None:
             update.outgoing_references = [
                 UpdateReference(
                     referenced_update_id=target.id,
                     reason=reason,
                 )
-                for target, reason in references
+                for target, reason in resolved_references
             ]
+
         for field, value in values.items():
             setattr(update, "update_type" if field == "type" else field, value)
         update.updated_at = utcnow()
@@ -144,6 +177,8 @@ class UpdateService:
         self,
         project_id: uuid.UUID,
         references: list[UpdateReferenceCreate],
+        *,
+        source_type: UpdateType,
         update_id: uuid.UUID | None = None,
     ) -> list[tuple[Update, UpdateReferenceReason]]:
         reference_ids = [reference.target_update_id for reference in references]
@@ -163,8 +198,37 @@ class UpdateService:
             target = updates_by_id.get(reference.target_update_id)
             if target is None or target.project_id != project_id:
                 raise ReferencedUpdateNotFoundError(reference.target_update_id)
+            self._validate_reference_types(
+                source_type,
+                target.update_type,
+                reference.reason,
+            )
             resolved.append((target, reference.reason))
+
+        if update_id is not None:
+            reverse_reference_ids = self._repo.get_reverse_reference_source_ids(
+                update_id,
+                [target.id for target, _ in resolved],
+            )
+            for target, _ in resolved:
+                if target.id in reverse_reference_ids:
+                    raise DuplicateUpdateReferenceError(target.id)
+
         return resolved
+
+    @staticmethod
+    def _validate_reference_types(
+        source_type: UpdateType,
+        target_type: UpdateType,
+        reason: UpdateReferenceReason,
+    ) -> None:
+        if reason == UpdateReferenceReason.RELATED_TO:
+            return
+        if (
+            source_type != UpdateType.SOLUTION
+            or target_type != UpdateType.PROBLEM
+        ):
+            raise InvalidUpdateReferenceTypeError()
 
     @staticmethod
     def _to_read(
@@ -174,7 +238,7 @@ class UpdateService:
         update, username, profile_picture_link = row
         outgoing_reads = [
             UpdateReferenceRead(
-                update_id=reference.target.id,
+                linked_update_id=reference.target.id,
                 title=reference.target.title,
                 type=reference.target.update_type,
                 reason=reference.reason,
@@ -185,7 +249,7 @@ class UpdateService:
 
         incoming_reads = [
             UpdateReferenceRead(
-                update_id=reference.source.id,
+                linked_update_id=reference.source.id,
                 title=reference.source.title,
                 type=reference.source.update_type,
                 reason=UpdateService._inverse_reason(reference.reason),

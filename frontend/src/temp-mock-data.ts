@@ -43,7 +43,7 @@ export const previewUpdates: ProjectUpdate[] = [
     project_id: "preview-project",
     outgoing_references: [
       {
-        update_id: "preview-update-3",
+        linked_update_id: "preview-update-3",
         title: "Corners are lumpy",
         type: "PROBLEM",
         reason: "SOLVES",
@@ -65,7 +65,7 @@ export const previewUpdates: ProjectUpdate[] = [
     outgoing_references: [],
     incoming_references: [
       {
-        update_id: "preview-update-4",
+        linked_update_id: "preview-update-4",
         title: "Skip a stitch at each corner",
         type: "SOLUTION",
         reason: "SOLVED_BY",

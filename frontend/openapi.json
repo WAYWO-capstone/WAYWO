@@ -914,7 +914,8 @@
       "UpdateReferenceCreate": {
         "properties": {
           "reason": {
-            "$ref": "#/components/schemas/UpdateReferenceReason"
+            "$ref": "#/components/schemas/UpdateReferenceReason",
+            "default": "RELATED_TO"
           },
           "target_update_id": {
             "format": "uuid",
@@ -923,8 +924,7 @@
           }
         },
         "required": [
-          "target_update_id",
-          "reason"
+          "target_update_id"
         ],
         "title": "UpdateReferenceCreate",
         "type": "object"
@@ -942,6 +942,11 @@
       },
       "UpdateReferenceRead": {
         "properties": {
+          "linked_update_id": {
+            "format": "uuid",
+            "title": "Linked Update Id",
+            "type": "string"
+          },
           "reason": {
             "$ref": "#/components/schemas/UpdateReferenceDisplayReason"
           },
@@ -951,15 +956,10 @@
           },
           "type": {
             "$ref": "#/components/schemas/UpdateType"
-          },
-          "update_id": {
-            "format": "uuid",
-            "title": "Update Id",
-            "type": "string"
           }
         },
         "required": [
-          "update_id",
+          "linked_update_id",
           "title",
           "type",
           "reason"

@@ -14,7 +14,7 @@ from app.projects.updates.enums import (
 
 class UpdateReferenceCreate(BaseModel):
     target_update_id: uuid.UUID
-    reason: UpdateReferenceReason
+    reason: UpdateReferenceReason = UpdateReferenceReason.RELATED_TO
 
 
 class UpdateCreate(BaseModel):
@@ -70,7 +70,7 @@ class UpdateEdit(BaseModel):
 
 
 class UpdateReferenceRead(BaseModel):
-    update_id: uuid.UUID
+    linked_update_id: uuid.UUID
     title: str
     type: UpdateType
     reason: UpdateReferenceDisplayReason
