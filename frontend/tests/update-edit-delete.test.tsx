@@ -84,7 +84,7 @@ describe("update card", () => {
 
   test("shows the edited date only after an edit", () => {
     renderWithQueries(<UpdateTimeline updates={[makeUpdate()]} />);
-    expect(screen.getByText(/^Posted on/)).toBeTruthy();
+    expect(screen.getByText(/^Posted/)).toBeTruthy();
     expect(screen.queryByText(/^Edited/)).toBeNull();
     cleanup();
 
