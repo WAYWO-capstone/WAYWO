@@ -1,16 +1,34 @@
 # WAYWO
 
+
+[![CI](https://github.com/WAYWO-capstone/WAYWO/actions/workflows/ci-tests.yml/badge.svg?branch=main)](https://github.com/WAYWO-capstone/WAYWO/actions/workflows/ci-tests.yml)
+[![Check PR Title](https://github.com/WAYWO-capstone/WAYWO/actions/workflows/check-pr-title.yml/badge.svg)](https://github.com/WAYWO-capstone/WAYWO/actions/workflows/check-pr-title.yml)
+
 ## Project Summary
 
 WAYWO is a collaborative platform for makers to document and share the complete lifecycle of DIY projects, from the initial idea and experimentation to completion and reflection. Rather than treating project information as isolated posts, WAYWO organizes project history, discussions, files, and updates around the project itself, with the goal of transforming evolving project documentation into reusable knowledge that can help other makers learn from and build upon previous work.
 
 ---
 
-# Developer Getting Started Guide
+## Release Demos
+
+| Release | Demo |
+|---|---|
+| Release 1 | _Coming soon_ |
+
+---
+
+## Project Board
+
+[WAYWO Project Board](https://github.com/orgs/WAYWO-capstone/projects/1)
+
+--- 
+
+## Developer Getting Started Guide
 
 This guide explains how to set up the WAYWO development environment and run the project locally.
 
-## Prerequisites
+### Prerequisites
 
 Before getting started, install the following:
 
@@ -30,12 +48,12 @@ bun --version
 
 ---
 
-## 1. Clone the Repository
+### 1. Clone the Repository
 
 Clone the repository:
 
 ```bash
-git clone <repository-url>
+git clone https://github.com/WAYWO-capstone/WAYWO.git
 ```
 
 Navigate into the project:
@@ -46,7 +64,7 @@ cd WAYWO
 
 ---
 
-## 2. Project Structure
+### 2. Project Structure
 
 The repository is organized into separate components:
 
@@ -62,11 +80,11 @@ Refer to the relevant documentation in the [Wiki](#wiki) for component-specific 
 
 ---
 
-# Backend Setup
+### Backend Setup
 
 The backend uses **Python, FastAPI, and PostgreSQL**.
 
-## 1. Create a Virtual Environment
+#### 1. Create a Virtual Environment
 
 ```bash
 python -m venv .venv
@@ -85,7 +103,7 @@ macOS/Linux:
 source .venv/bin/activate
 ```
 
-## 2. Install Backend Dependencies
+#### 2. Install Backend Dependencies
 
 Navigate to the backend:
 
@@ -99,15 +117,15 @@ Install the required dependencies:
 pip install -r requirements.txt
 ```
 
-## 3. Configure Environment Variables
+#### 3. Configure Environment Variables
 
 Create a `.env` file in the `backend/` directory.
 
-Configure the required environment variables.
+Configure the required environment variables using the example file found at `backend/.env.example`
 
 **Do not commit `.env` to the repository.**
 
-## 4. Set Up PostgreSQL
+#### 4. Set Up PostgreSQL
 
 Create a PostgreSQL database for local development:
 
@@ -123,7 +141,7 @@ Example:
 DATABASE_URL=postgresql://<username>:<password>@localhost:5432/waywo
 ```
 
-## 5. Run Database Migrations
+#### 5. Run Database Migrations
 
 Once database migrations are configured:
 
@@ -131,7 +149,7 @@ Once database migrations are configured:
 alembic upgrade head
 ```
 
-## 6. Start the Backend
+#### 6. Start the Backend
 
 From the `backend/` directory:
 
@@ -153,12 +171,12 @@ http://localhost:8000/docs
 
 ---
 
-# Frontend Setup
+### Frontend Setup
 
 The frontend uses React + Typescript + Vite.
 Package management/bundling is handled using [Bun.js](https://bun.com/). Review the Bun [installation steps](https://bun.com/docs/installation) before starting.
 
-## 1. Install Frontend Dependencies
+#### 1. Install Frontend Dependencies
 
 From the root, navigate to the frontend:
 
@@ -172,16 +190,32 @@ Install the required dependencies:
 bun i
 ```
 
-## 2. Run the Vite Development Server
+#### 2. Run the Vite Development Server
 ```bash
 bun dev
 ```
 
-# Wiki
+---
+
+## Continuous Integration
+
+CI runs on GitHub Actions for every pull request:
+
+- **Backend:** Pylint and Pytest against a PostgreSQL 18 service, after running Alembic migrations
+- **Frontend:** Vitest tests, Vite build and oxlint
+- **API types:** checks that the generated OpenAPI schema and frontend types match the backend
+- **PR title check:** titles must follow `[TAGS] #<issue>: <title>`
+- **Issue linking:** a PR is linked to its issue automatically from the branch name (`task/123-name`)
+
+See [Testing Plan and Continuous Integration](../../wiki/Testing-Plan-and-Continuous-Integration) for details.
+
+
+---
+## Wiki
 
 The GitHub Wiki contains detailed project documentation.
 
-## Wiki Table of Contents
+### Wiki Table of Contents
 
 | Page | Description |
 |---|---|
@@ -205,6 +239,6 @@ The GitHub Wiki contains detailed project documentation.
 
 ---
 
-# Project Documentation
+## Project Documentation
 
 For detailed information about WAYWO, refer to the [project Wiki](../../wiki).
