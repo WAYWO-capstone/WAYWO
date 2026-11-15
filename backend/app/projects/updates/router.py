@@ -17,6 +17,7 @@ from app.projects.updates.schemas import (
     UpdateCreate,
     UpdateEdit,
     UpdateHistoryPage,
+    UpdateListOptions,
     UpdateRead,
 )
 from app.projects.updates.service import UpdateService
@@ -77,12 +78,13 @@ def get_project_history(
     project_id: uuid.UUID,
     user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     service: Annotated[UpdateService, Depends(get_update_service)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    options: Annotated[UpdateListOptions, Query()],
 ) -> UpdateHistoryPage:
     try:
         updates, total = service.list_project_updates(
-            project_id, user_id, limit=limit, offset=offset
+            project_id,
+            user_id,
+            options=options,
         )
     except ProjectNotFoundError as exc:
         raise HTTPException(
@@ -90,7 +92,10 @@ def get_project_history(
         ) from exc
 
     return UpdateHistoryPage(
-        items=updates, total=total, limit=limit, offset=offset
+        items=updates,
+        total=total,
+        limit=options.limit,
+        offset=options.offset,
     )
 
 

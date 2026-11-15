@@ -13,7 +13,12 @@ from app.projects.updates.exceptions import (
 )
 from app.projects.updates.models import Update
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate, UpdateEdit, UpdateRead
+from app.projects.updates.schemas import (
+    UpdateCreate,
+    UpdateEdit,
+    UpdateListOptions,
+    UpdateRead,
+)
 
 
 class UpdateService:
@@ -82,10 +87,9 @@ class UpdateService:
         project_id: uuid.UUID,
         viewer_id: uuid.UUID,
         *,
-        limit: int,
-        offset: int,
+        options: UpdateListOptions,
     ) -> tuple[list[UpdateRead], int]:
-        """Return one page of a project's updates (newest first) and the total.
+        """Return one page of a project's updates and the total.
 
         A project the viewer may not see is reported as not found, so its
         existence isn't leaked.
@@ -97,7 +101,9 @@ class UpdateService:
             raise ProjectNotFoundError(project_id)
 
         rows, total = self._repo.list_for_project(
-            project_id, viewer_id, limit=limit, offset=offset
+            project_id,
+            viewer_id,
+            options=options,
         )
         items = [self._to_read(row, viewer_id) for row in rows]
         return items, total
