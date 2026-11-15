@@ -84,7 +84,7 @@ describe("update card", () => {
 
   test("shows the edited date only after an edit", () => {
     renderWithQueries(<UpdateTimeline updates={[makeUpdate()]} />);
-    expect(screen.getByText(/^Posted on/)).toBeTruthy();
+    expect(screen.getByText(/^Posted/)).toBeTruthy();
     expect(screen.queryByText(/^Edited/)).toBeNull();
     cleanup();
 
@@ -129,7 +129,7 @@ describe("deleting an update", () => {
     const dialog = await openDialog();
     fireEvent.click(within(dialog).getByRole("button", { name: "Delete update" }));
 
-    await screen.findByText("No updates yet.");
+    await screen.findByText("No updates were found.");
     expect(await writes(fetchMock)).toEqual([["DELETE", "/api/projects/p1/updates/u1", undefined]]);
   });
 

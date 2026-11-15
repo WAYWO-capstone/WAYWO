@@ -785,6 +785,11 @@ export interface components {
             updated_at: string;
         };
         /**
+         * UpdateSort
+         * @enum {string}
+         */
+        UpdateSort: "date_asc" | "date_desc";
+        /**
          * UpdateType
          * @enum {string}
          */
@@ -1500,6 +1505,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                filter?: components["schemas"]["UpdateType"][] | null;
+                sort?: components["schemas"]["UpdateSort"];
             };
             header?: never;
             path: {

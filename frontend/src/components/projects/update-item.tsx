@@ -1,11 +1,15 @@
-import { Link } from "@tanstack/react-router";
-import { cn } from "cn";
-import { ChevronRight, Heart, MessageCircle } from "lucide-react";
 import type { ProjectUpdate } from "@/api/models";
 import { DeleteUpdateDialog } from "@/components/projects/delete-update-dialog";
 import { updateTypeStyles } from "@/components/projects/update-types";
 import { buttonVariants } from "@/components/ui/button";
-import { formatUpdateDate, wasEdited } from "@/lib/update-form";
+import {
+  formatUpdateDateAbsolute,
+  formatUpdateDateRelative,
+  wasEdited,
+} from "@/lib/update-form";
+import { Link } from "@tanstack/react-router";
+import { cn } from "cn";
+import { ChevronRight, Heart, MessageCircle } from "lucide-react";
 
 interface UpdateItemProps {
   update: ProjectUpdate;
@@ -32,7 +36,13 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
             {type.label}
           </span>
           <span className="text-brand-rust">
-            {update.author.username} · <time dateTime={update.created_at}>{formatUpdateDate(update.created_at)}</time>
+            {update.author.username} ·{" "}
+            <time
+              title={formatUpdateDateAbsolute(update.created_at)}
+              dateTime={update.created_at}
+            >
+              {formatUpdateDateRelative(update.created_at)}
+            </time>
           </span>
           {!update.public && (
             <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">Private</span>
@@ -66,8 +76,14 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
 
         <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-2.5">
           <div className="text-xs leading-5 text-brand-mahogany">
-            <p>Posted on {formatUpdateDate(update.created_at)}</p>
-            {wasEdited(update) && <p>Edited {formatUpdateDate(update.updated_at)}</p>}
+            <p title={formatUpdateDateAbsolute(update.created_at)}>
+              Posted {formatUpdateDateRelative(update.created_at)}
+            </p>
+            {wasEdited(update) && (
+              <p title={formatUpdateDateAbsolute(update.updated_at)}>
+                Edited {formatUpdateDateRelative(update.updated_at)}
+              </p>
+            )}
           </div>
           {canManage && (
             <div className="flex items-center gap-2">

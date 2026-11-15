@@ -11,7 +11,11 @@ from app.projects.project.repository import ProjectRepository
 from app.projects.updates.enums import UpdateType
 from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.repository import UpdateRepository
-from app.projects.updates.schemas import UpdateCreate, UpdateEdit
+from app.projects.updates.schemas import (
+    UpdateCreate,
+    UpdateEdit,
+    UpdateListOptions,
+)
 from app.projects.updates.service import UpdateService
 
 
@@ -251,7 +255,9 @@ class TestListProjectUpdates:
         )
 
         result, total = service.list_project_updates(
-            project_id, viewer_id, limit=2, offset=0
+            project_id,
+            viewer_id,
+            options=UpdateListOptions(limit=2),
         )
 
         assert total == 45
@@ -274,7 +280,9 @@ class TestListProjectUpdates:
         )
 
         result, _ = service.list_project_updates(
-            project_id, viewer_id, limit=20, offset=0
+            project_id,
+            viewer_id,
+            options=UpdateListOptions(),
         )
 
         assert result[0].author.username == "Unknown creator"
@@ -286,10 +294,11 @@ class TestListProjectUpdates:
             project_id, public=True, author_id=uuid.uuid4()
         )
 
-        service.list_project_updates(project_id, viewer_id, limit=5, offset=10)
+        options = UpdateListOptions(limit=5, offset=10)
+        service.list_project_updates(project_id, viewer_id, options=options)
 
         repository.list_for_project.assert_called_once_with(
-            project_id, viewer_id, limit=5, offset=10
+            project_id, viewer_id, options=options
         )
 
     def test_empty_history_returns_empty_list_and_zero_total(
@@ -300,7 +309,9 @@ class TestListProjectUpdates:
         )
 
         result, total = service.list_project_updates(
-            project_id, viewer_id, limit=20, offset=0
+            project_id,
+            viewer_id,
+            options=UpdateListOptions(),
         )
 
         assert result == []
@@ -315,7 +326,9 @@ class TestListProjectUpdatesVisibility:
             project_id, public=True, author_id=uuid.uuid4()
         )
 
-        service.list_project_updates(project_id, viewer_id, limit=20, offset=0)
+        service.list_project_updates(
+            project_id, viewer_id, options=UpdateListOptions()
+        )
 
         repository.list_for_project.assert_called_once()
 
@@ -326,7 +339,9 @@ class TestListProjectUpdatesVisibility:
             project_id, public=False, author_id=viewer_id
         )
 
-        service.list_project_updates(project_id, viewer_id, limit=20, offset=0)
+        service.list_project_updates(
+            project_id, viewer_id, options=UpdateListOptions()
+        )
 
         repository.list_for_project.assert_called_once()
 
@@ -339,7 +354,7 @@ class TestListProjectUpdatesVisibility:
 
         with pytest.raises(ProjectNotFoundError):
             service.list_project_updates(
-                project_id, viewer_id, limit=20, offset=0
+                project_id, viewer_id, options=UpdateListOptions()
             )
 
         # A project the viewer can't see must not have its updates queried.
@@ -352,7 +367,7 @@ class TestListProjectUpdatesVisibility:
 
         with pytest.raises(ProjectNotFoundError):
             service.list_project_updates(
-                project_id, viewer_id, limit=20, offset=0
+                project_id, viewer_id, options=UpdateListOptions()
             )
 
         project_repository.get.assert_called_once_with(project_id)
