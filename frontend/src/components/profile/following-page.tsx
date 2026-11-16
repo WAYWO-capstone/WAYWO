@@ -1,5 +1,5 @@
 import { Link } from "@tanstack/react-router";
-import { CircleAlert, LoaderCircle, UsersRound } from "lucide-react";
+import { CircleAlert, LoaderCircle } from "lucide-react";
 
 import type { FollowingCreator } from "@/api/models";
 import { ApiError } from "@/api/client";
@@ -63,14 +63,11 @@ export function FollowingPage({ username }: { username?: string }) {
 
   return (
     <section aria-labelledby="following-title">
-      <div className="flex items-center gap-3">
-        <UsersRound aria-hidden="true" className="size-6 text-brand-rust" />
-        <div>
-          <h1 id="following-title" className="text-2xl font-bold">Following</h1>
-          <p className="mt-1 text-sm text-muted-foreground">
-            {username ? `Creators ${username} follows.` : "Creators you follow."}
-          </p>
-        </div>
+      <div>
+        <h1 id="following-title" className="text-2xl font-bold">Following</h1>
+        <p className="mt-1 text-sm text-muted-foreground">
+          {username ? `Creators ${username} follows.` : "Creators you follow."}
+        </p>
       </div>
       {followed.data.length === 0 ? (
         <div className="mt-8 rounded-3xl border bg-card px-6 py-12 text-center">
