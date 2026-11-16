@@ -298,6 +298,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Project Resources */
+        get: operations["list_project_resources_projects__project_id__resources_get"];
+        put?: never;
+        /** Create Project Resource */
+        post: operations["create_project_resource_projects__project_id__resources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/status": {
         parameters: {
             query?: never;
@@ -366,6 +384,77 @@ export interface paths {
         head?: never;
         /** Edit Project Update */
         patch: operations["edit_project_update_projects__project_id__updates__update_id__patch"];
+        trace?: never;
+    };
+    "/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Upload */
+        post: operations["create_upload_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Upload Config
+         * @description The upload rules per kind, so the browser can check files before sending.
+         */
+        get: operations["get_upload_config_uploads_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Upload */
+        get: operations["get_upload_uploads__upload_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Upload */
+        post: operations["complete_upload_uploads__upload_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/users/me": {
@@ -685,6 +774,44 @@ export interface components {
             /** Refresh Token */
             refresh_token: string;
         };
+        /** ResourceCreate */
+        ResourceCreate: {
+            /** Title */
+            title?: string | null;
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+        };
+        /** ResourceRead */
+        ResourceRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Size */
+            size: number;
+            /** Title */
+            title: string;
+        };
         /** TagRead */
         TagRead: {
             /**
@@ -828,6 +955,71 @@ export interface components {
          * @enum {string}
          */
         UpdateType: "PROGRESS" | "DECISION" | "PROBLEM" | "SOLUTION";
+        /** UploadCreate */
+        UploadCreate: {
+            /** Filename */
+            filename: string;
+            kind: components["schemas"]["UploadKind"];
+            /**
+             * Mime Type
+             * @default
+             */
+            mime_type: string;
+            /** Size */
+            size: number;
+        };
+        /** UploadCreated */
+        UploadCreated: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Headers */
+            headers: {
+                [key: string]: string;
+            };
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * UploadKind
+         * @enum {string}
+         */
+        UploadKind: "PICTURE" | "RESOURCE";
+        /** UploadKindConfigRead */
+        UploadKindConfigRead: {
+            /** Allowed Extensions */
+            allowed_extensions: string[];
+            /** Allowed Mime */
+            allowed_mime: string[];
+            /** Max Size */
+            max_size: number;
+        };
+        /** UploadRead */
+        UploadRead: {
+            /** Filename */
+            filename: string;
+            kind: components["schemas"]["UploadKind"];
+            /** Size */
+            size: number;
+            status: components["schemas"]["UploadStatus"];
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+        };
+        /**
+         * UploadStatus
+         * @enum {string}
+         */
+        UploadStatus: "PENDING" | "PROCESSING" | "READY" | "FAILED";
         /**
          * UserCreate
          * @description Payload used to create a user account.
@@ -1468,6 +1660,72 @@ export interface operations {
             };
         };
     };
+    list_project_resources_projects__project_id__resources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_resource_projects__project_id__resources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_project_status_projects__project_id__status_patch: {
         parameters: {
             query?: never;
@@ -1658,6 +1916,123 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_upload_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_upload_config_uploads_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["UploadKindConfigRead"];
+                    };
+                };
+            };
+        };
+    };
+    get_upload_uploads__upload_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_upload_uploads__upload_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadRead"];
                 };
             };
             /** @description Validation Error */
