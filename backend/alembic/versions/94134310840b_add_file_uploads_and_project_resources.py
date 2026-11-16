@@ -1,7 +1,7 @@
 """add file uploads and project resources
 
 Revision ID: 94134310840b
-Revises: 6f3a5b7c9d10
+Revises: 745e6a10cb82
 Create Date: 2026-11-14 21:57:03.949501
 
 """
@@ -13,7 +13,7 @@ import sqlalchemy as sa
 
 # revision identifiers, used by Alembic.
 revision: str = '94134310840b'
-down_revision: Union[str, Sequence[str], None] = '6f3a5b7c9d10'
+down_revision: Union[str, Sequence[str], None] = '745e6a10cb82'
 branch_labels: Union[str, Sequence[str], None] = None
 depends_on: Union[str, Sequence[str], None] = None
 
