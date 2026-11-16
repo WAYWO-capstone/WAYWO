@@ -14,6 +14,7 @@ from app.media.router import router as media_router
 from app.moderation.router import router as moderation_router
 from app.notifications.router import router as notifications_router
 from app.projects.project.router import router as project_router
+from app.projects.resources.router import router as resources_router
 from app.projects.tutorials.router import router as tutorials_router
 from app.projects.updates.router import router as updates_router
 from app.social.router import public_router as social_public_router
@@ -32,6 +33,7 @@ app.include_router(comments_router)
 app.include_router(project_router, prefix="/projects")
 app.include_router(updates_router, prefix="/projects")
 app.include_router(tutorials_router, prefix="/projects")
+app.include_router(resources_router, prefix="/projects")
 app.include_router(social_router)
 app.include_router(social_public_router)
 app.include_router(knowledge_router)

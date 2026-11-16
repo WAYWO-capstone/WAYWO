@@ -16,6 +16,7 @@ MODEL_MODULES = (
     "app.moderation.models",
     "app.notifications.models",
     "app.projects.project.models",
+    "app.projects.resources.models",
     "app.projects.tutorials.models",
     "app.projects.updates.models",
     "app.social.models",
