@@ -13,7 +13,7 @@ import {
   type NewUpdateFormValues,
 } from "@/lib/update-form";
 
-const emptyUpdate: NewUpdateFormValues = { title: "", body: "", type: null };
+const emptyUpdate: NewUpdateFormValues = { title: "", body: "", type: null, references: [] };
 
 export function CreateUpdateForm({ projectId }: { projectId: string }) {
   const navigate = useNavigate();
@@ -44,8 +44,19 @@ export function CreateUpdateForm({ projectId }: { projectId: string }) {
     rememberFocus();
     setPosting(true);
     try {
-      await createProjectUpdate(projectId, { title: values.title.trim(), body: values.body.trim(), type: values.type });
-      await queryClient.invalidateQueries({ queryKey: ["project-history", projectId] });
+      await createProjectUpdate(projectId, {
+        title: values.title.trim(),
+        body: values.body.trim(),
+        type: values.type,
+        references: values.references,
+      });
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ["project-history", projectId] }),
+        queryClient.invalidateQueries({
+          queryKey: ["project-updates-for-references", projectId],
+          refetchType: "none",
+        }),
+      ]);
       await backToProject();
     } catch (cause) {
       setError(createUpdateRequestError(cause instanceof Error ? cause : new Error("Request failed")));

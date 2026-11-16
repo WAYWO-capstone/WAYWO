@@ -2,8 +2,10 @@ import { Link } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert } from "lucide-react";
 import type { ReactNode, SubmitEvent } from "react";
 import { UpdateTypePicker } from "@/components/projects/update-type-picker";
+import { UpdateReferenceEditor } from "@/components/projects/update-reference-editor";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
+import type { UpdateReferenceRead } from "@/api/models";
 import type { NewUpdateFormValues, UpdateFieldErrors, UpdateFormValues } from "@/lib/update-form";
 
 function FieldError({ id, children }: { id: string; children?: ReactNode }) {
@@ -17,6 +19,8 @@ function FieldError({ id, children }: { id: string; children?: ReactNode }) {
 
 interface UpdateFormLayoutProps {
   projectId: string;
+  updateId?: string;
+  incomingReferences?: UpdateReferenceRead[];
   heading: string;
   description?: string;
   values: NewUpdateFormValues;
@@ -33,7 +37,7 @@ interface UpdateFormLayoutProps {
 }
 
 // The page shared by the create and edit update forms, so the two can't drift apart.
-export function UpdateFormLayout({ projectId, heading, description, values, fieldErrors, busy, error, sidebar, status, actions, onChange, onSubmit, onCancel }: UpdateFormLayoutProps) {
+export function UpdateFormLayout({ projectId, updateId, incomingReferences, heading, description, values, fieldErrors, busy, error, sidebar, status, actions, onChange, onSubmit, onCancel }: UpdateFormLayoutProps) {
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-10">
       <Link to="/view-project" search={{ projectId }} className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
@@ -81,6 +85,15 @@ export function UpdateFormLayout({ projectId, heading, description, values, fiel
               />
               <FieldError id="update-body-error">{fieldErrors.body}</FieldError>
             </div>
+
+            <UpdateReferenceEditor
+              projectId={projectId}
+              updateId={updateId}
+              updateType={values.type}
+              references={values.references}
+              incomingReferences={incomingReferences}
+              onChange={(references) => onChange({ references })}
+            />
           </div>
 
           {sidebar}

@@ -1,6 +1,11 @@
 // Project updates: the history timeline on a project.
 import { api, ApiError, unwrap } from "@/api/client";
-import type { UpdateSort, UpdateType } from "@/api/models";
+import type {
+  ProjectUpdate,
+  UpdateReferenceCreate,
+  UpdateSort,
+  UpdateType,
+} from "@/api/models";
 
 export const UPDATE_PAGE_SIZE = 20;
 
@@ -29,6 +34,22 @@ export function getProjectHistory(
   );
 }
 
+export async function getAllProjectUpdates(projectId: string): Promise<ProjectUpdate[]> {
+  const updates: ProjectUpdate[] = [];
+  let offset = 0;
+  let total: number | undefined;
+
+  while (total === undefined || offset < total) {
+    const page = await getProjectHistory(projectId, offset);
+    updates.push(...page.items);
+    total = page.total;
+    if (page.items.length === 0) break;
+    offset += page.items.length;
+  }
+
+  return updates;
+}
+
 // The API has no endpoint for reading one update yet, so look through the
 // project's history. Missing updates fail with 404, as such an endpoint would.
 export async function getProjectUpdate(projectId: string, updateId: string) {
@@ -46,6 +67,7 @@ export interface NewProjectUpdate {
   title: string;
   body: string;
   type: UpdateType;
+  references: UpdateReferenceCreate[];
 }
 
 export function createProjectUpdate(projectId: string, update: NewProjectUpdate) {
@@ -61,6 +83,7 @@ export interface ProjectUpdateChanges {
   title?: string;
   body?: string;
   type?: UpdateType;
+  references?: UpdateReferenceCreate[];
 }
 
 export function updateProjectUpdate(projectId: string, updateId: string, changes: ProjectUpdateChanges) {
