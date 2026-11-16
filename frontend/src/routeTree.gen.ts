@@ -15,7 +15,6 @@ import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as EditProjectRouteImport } from './routes/edit-project'
 import { Route as EditUpdateRouteImport } from './routes/edit-update'
 import { Route as ExploreRouteImport } from './routes/explore'
-import { Route as FollowingRouteImport } from './routes/following'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -53,11 +52,6 @@ const EditUpdateRoute = EditUpdateRouteImport.update({
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
-  getParentRoute: () => rootRouteImport,
-} as any)
-const FollowingRoute = FollowingRouteImport.update({
-  id: '/following',
-  path: '/following',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -109,7 +103,6 @@ export interface FileRoutesByFullPath {
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
   '/explore': typeof ExploreRoute
-  '/following': typeof FollowingRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
@@ -126,7 +119,6 @@ export interface FileRoutesByTo {
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
   '/explore': typeof ExploreRoute
-  '/following': typeof FollowingRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
@@ -144,7 +136,6 @@ export interface FileRoutesById {
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
   '/explore': typeof ExploreRoute
-  '/following': typeof FollowingRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
@@ -163,7 +154,6 @@ export interface FileRouteTypes {
     | '/edit-project'
     | '/edit-update'
     | '/explore'
-    | '/following'
     | '/home'
     | '/login'
     | '/projects'
@@ -180,7 +170,6 @@ export interface FileRouteTypes {
     | '/edit-project'
     | '/edit-update'
     | '/explore'
-    | '/following'
     | '/home'
     | '/login'
     | '/projects'
@@ -197,7 +186,6 @@ export interface FileRouteTypes {
     | '/edit-project'
     | '/edit-update'
     | '/explore'
-    | '/following'
     | '/home'
     | '/login'
     | '/projects'
@@ -215,7 +203,6 @@ export interface RootRouteChildren {
   EditProjectRoute: typeof EditProjectRoute
   EditUpdateRoute: typeof EditUpdateRoute
   ExploreRoute: typeof ExploreRoute
-  FollowingRoute: typeof FollowingRoute
   HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
@@ -267,13 +254,6 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
-      parentRoute: typeof rootRouteImport
-    }
-    '/following': {
-      id: '/following'
-      path: '/following'
-      fullPath: '/following'
-      preLoaderRoute: typeof FollowingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -354,7 +334,6 @@ const rootRouteChildren: RootRouteChildren = {
   EditProjectRoute: EditProjectRoute,
   EditUpdateRoute: EditUpdateRoute,
   ExploreRoute: ExploreRoute,
-  FollowingRoute: FollowingRoute,
   HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,

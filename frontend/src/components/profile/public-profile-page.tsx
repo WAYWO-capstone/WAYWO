@@ -65,7 +65,11 @@ export function PublicProfilePage({
                     <dt className="order-2">
                       {label === "following" ? (
                         isOwnProfile ? (
-                          <Link to="/following" className="hover:text-brand-rust hover:underline">
+                          <Link
+                            to="/profile"
+                            search={{ section: "following" }}
+                            className="hover:text-brand-rust hover:underline"
+                          >
                             {label}
                           </Link>
                         ) : (

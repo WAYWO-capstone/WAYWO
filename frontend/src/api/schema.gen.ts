@@ -790,7 +790,7 @@ export interface components {
             /** Public */
             public?: boolean | null;
             /** References */
-            references?: string[];
+            references?: components["schemas"]["UpdateReferenceCreate"][];
             /** Title */
             title: string;
             /** @default PROGRESS */
@@ -803,7 +803,7 @@ export interface components {
             /** Public */
             public?: boolean | null;
             /** References */
-            references?: string[] | null;
+            references?: components["schemas"]["UpdateReferenceCreate"][] | null;
             /** Title */
             title?: string | null;
             type?: components["schemas"]["UpdateType"] | null;
@@ -839,6 +839,10 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Incoming References */
+            incoming_references?: components["schemas"]["UpdateReferenceRead"][];
+            /** Outgoing References */
+            outgoing_references?: components["schemas"]["UpdateReferenceRead"][];
             /**
              * Project Id
              * Format: uuid
@@ -846,8 +850,6 @@ export interface components {
             project_id: string;
             /** Public */
             public: boolean;
-            /** References */
-            references: string[];
             /** Title */
             title: string;
             type: components["schemas"]["UpdateType"];
@@ -857,6 +859,38 @@ export interface components {
              */
             updated_at: string;
         };
+        /** UpdateReferenceCreate */
+        UpdateReferenceCreate: {
+            /** @default RELATED_TO */
+            reason: components["schemas"]["UpdateReferenceReason"];
+            /**
+             * Target Update Id
+             * Format: uuid
+             */
+            target_update_id: string;
+        };
+        /**
+         * UpdateReferenceDisplayReason
+         * @enum {string}
+         */
+        UpdateReferenceDisplayReason: "SOLVES" | "SOLVED_BY" | "PARTIALLY_SOLVES" | "PARTIALLY_SOLVED_BY" | "RELATED_TO";
+        /** UpdateReferenceRead */
+        UpdateReferenceRead: {
+            /**
+             * Linked Update Id
+             * Format: uuid
+             */
+            linked_update_id: string;
+            reason: components["schemas"]["UpdateReferenceDisplayReason"];
+            /** Title */
+            title: string;
+            type: components["schemas"]["UpdateType"];
+        };
+        /**
+         * UpdateReferenceReason
+         * @enum {string}
+         */
+        UpdateReferenceReason: "SOLVES" | "PARTIALLY_SOLVES" | "RELATED_TO";
         /**
          * UpdateSort
          * @enum {string}

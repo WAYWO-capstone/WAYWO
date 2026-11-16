@@ -27,6 +27,14 @@ class InvalidUpdateReferenceError(Exception):
         self.update_id = update_id
 
 
+class InvalidUpdateReferenceTypeError(Exception):
+    def __init__(self):
+        super().__init__(
+            "SOLVES and PARTIALLY_SOLVES require a SOLUTION update "
+            "to reference a PROBLEM update"
+        )
+
+
 class DuplicateUpdateReferenceError(Exception):
     def __init__(self, update_id: uuid.UUID):
         super().__init__(f"Update {update_id} is referenced more than once")
