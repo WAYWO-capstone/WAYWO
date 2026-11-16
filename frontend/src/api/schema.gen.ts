@@ -444,10 +444,10 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Profile
-         * @description Return a user's public profile.
+         * Get Public Profile
+         * @description Return a user's public profile with follow counts.
          */
-        get: operations["get_profile_users__username__get"];
+        get: operations["get_public_profile_users__username__get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -1868,7 +1868,7 @@ export interface operations {
             };
         };
     };
-    get_profile_users__username__get: {
+    get_public_profile_users__username__get: {
         parameters: {
             query?: never;
             header?: never;

@@ -2566,8 +2566,8 @@
     },
     "/users/{username}": {
       "get": {
-        "description": "Return a user's public profile.",
-        "operationId": "get_profile_users__username__get",
+        "description": "Return a user's public profile with follow counts.",
+        "operationId": "get_public_profile_users__username__get",
         "parameters": [
           {
             "in": "path",
@@ -2601,7 +2601,7 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Get Profile",
+        "summary": "Get Public Profile",
         "tags": [
           "users"
         ]

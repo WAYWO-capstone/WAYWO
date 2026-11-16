@@ -45,14 +45,23 @@ export function FollowingPage({ username }: { username?: string }) {
 
   if (followed.isError) {
     const sessionExpired = followed.error instanceof ApiError && followed.error.status === 401;
+    const notFound = followed.error instanceof ApiError && followed.error.status === 404;
     return (
       <div role="alert" className="rounded-3xl border bg-card p-8 text-center">
         <CircleAlert aria-hidden="true" className="mx-auto size-8 text-brand-rust" />
         <h1 className="mt-4 text-2xl font-bold">
-          {sessionExpired ? "Please log in again" : "Following list couldn't load"}
+          {notFound
+            ? "Creator not found"
+            : sessionExpired
+              ? "Please log in again"
+              : "Following list couldn't load"}
         </h1>
         <p className="mt-3 text-sm text-muted-foreground">
-          {sessionExpired ? "Your session has expired." : "Check your connection and try again."}
+          {notFound
+            ? "This creator’s profile could not be found."
+            : sessionExpired
+              ? "Your session has expired."
+              : "Check your connection and try again."}
         </p>
         <Button type="button" onClick={() => void followed.refetch()} className="mt-6 h-10 px-5">
           Try again

@@ -58,7 +58,14 @@ export function useToggleFollow(username: string) {
       (follow ? followCreator(username) : unfollowCreator(username)).catch((error) => {
         if (!isAlreadySettled(error, follow)) throw error;
       }),
-    onSuccess: (_result, follow) =>
-      queryClient.setQueryData(followingStatusKey(sessionKey, username), { is_following: follow }),
+    onSuccess: (_result, follow) => {
+      queryClient.setQueryData(followingStatusKey(sessionKey, username), {
+        is_following: follow,
+      });
+      void queryClient.invalidateQueries({
+        queryKey: ["public-profile", username.toLowerCase()],
+        exact: true,
+      });
+    },
   });
 }
