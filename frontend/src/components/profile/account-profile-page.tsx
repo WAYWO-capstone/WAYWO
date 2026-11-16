@@ -23,7 +23,9 @@ import { ProfilePictureEditor } from "@/components/profile/profile-picture-edito
 interface AccountProfilePageProps {
   profile: AccountProfile;
   onLogout: () => void;
+  section?: ProfileSection;
 }
+export type ProfileSection = "saved-projects" | "followers" | "settings" | "notifications" | "accessibility";
 // main sidebar options
 const mainItems = [
   { label: "Projects", icon: Folder },
@@ -47,24 +49,38 @@ const preferenceItems = [
 
 const fieldClassName = "h-10 rounded-xl px-3 text-sm";
 
-// these sections will be connected later
-function SidebarItem({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
+const sectionByLabel: Record<string, ProfileSection> = {
+  "Saved Projects": "saved-projects", Followers: "followers", Settings: "settings",
+  "Notification Preferences": "notifications", Accessibility: "accessibility",
+};
+const placeholderCopy: Record<ProfileSection, { title: string; description: string }> = {
+  "saved-projects": { title: "Saved Projects", description: "Saved projects will appear here when this feature is available." },
+  followers: { title: "Followers", description: "Your followers will appear here when follower lists are available." },
+  settings: { title: "Settings", description: "More account settings will be available here soon." },
+  notifications: { title: "Notification Preferences", description: "Choose which notifications you receive here when preferences are available." },
+  accessibility: { title: "Accessibility", description: "Accessibility options will be available here soon." },
+};
+const sidebarItemClass = "flex min-h-10 items-center gap-3 rounded-md px-2 py-1.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring";
+const selectedSidebarItemClass = "bg-brand-garnet/8 font-semibold text-brand-garnet";
+const idleSidebarItemClass = "hover:bg-brand-garnet/4 hover:text-brand-garnet";
+
+function SidebarItem({ label, icon: Icon, active = false }: { label: string; icon: LucideIcon; active?: boolean }) {
   return (
     <li>
-      <button
-        type="button"
-        disabled
-        title={`${label} — coming soon`}
-        className="flex min-h-10 w-full cursor-default items-center gap-3 py-1.5 text-left text-base"
+      <Link
+        to={label === "Projects" ? "/projects" : "/profile"}
+        search={label === "Projects" ? undefined : { section: sectionByLabel[label] }}
+        aria-current={active ? "page" : undefined}
+        className={`${sidebarItemClass} w-full text-left ${active ? selectedSidebarItemClass : idleSidebarItemClass}`}
       >
         <Icon aria-hidden="true" className="size-4.5 shrink-0" />
         <span>{label}</span>
-      </button>
+      </Link>
     </li>
   );
 }
 
-export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProps) {
+export function AccountProfilePage({ profile, onLogout, section }: AccountProfilePageProps) {
   return (
     <div className="mx-auto w-full max-w-6xl px-4 py-8 sm:w-[85%] sm:px-0 lg:py-16">
       <div className="grid rounded-3xl border bg-card p-3 md:min-h-160 md:grid-cols-[minmax(15rem,31.5%)_minmax(0,1fr)] md:p-4">
@@ -86,25 +102,32 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
               <li>
                 <Link
                   to="/profile"
-                  aria-current="page"
-                  className="flex min-h-10 items-center gap-3 rounded-md py-1.5 text-base font-bold outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                  search={{ section: undefined }}
+                  aria-current={section ? undefined : "page"}
+                  className={`${sidebarItemClass} ${section ? idleSidebarItemClass : selectedSidebarItemClass}`}
                 >
                   <UserRound aria-hidden="true" className="size-4.5 shrink-0" />
                   Profile
                 </Link>
               </li>
-              {mainItems.map((item) => <SidebarItem key={item.label} {...item} />)}
+              {mainItems.map((item) => <SidebarItem key={item.label} {...item} active={item.label !== "Projects" && section === sectionByLabel[item.label]} />)}
             </ul>
 
             <hr className="my-5 border-t-2 border-brand-garnet" />
 
             <ul className="grid grid-cols-2 gap-x-4 md:block">
-              {preferenceItems.map((item) => <SidebarItem key={item.label} {...item} />)}
+              {preferenceItems.map((item) => <SidebarItem key={item.label} {...item} active={section === sectionByLabel[item.label]} />)}
             </ul>
           </nav>
         </aside>
 
         <section aria-labelledby="account-profile-title" className="flex min-w-0 flex-col px-3 py-6 md:px-7 lg:px-12">
+          {section ? (
+            <div className="rounded-2xl border border-dashed px-6 py-10 sm:px-8">
+              <h1 id="account-profile-title" className="text-2xl font-bold">{placeholderCopy[section].title}</h1>
+              <p className="mt-2 text-sm text-muted-foreground sm:text-base">{placeholderCopy[section].description}</p>
+            </div>
+          ) : <>
           <div>
             <h1 id="account-profile-title" className="text-2xl font-bold">Profile</h1>
             <p className="mt-1 text-sm sm:text-base">Your details, your style, your preferences.</p>
@@ -136,6 +159,7 @@ export function AccountProfilePage({ profile, onLogout }: AccountProfilePageProp
               Log out
             </Button>
           </div>
+          </>}
         </section>
       </div>
     </div>
