@@ -11,7 +11,6 @@ export const Route = createFileRoute("/profile/$username")({
 });
 
 function CreatorProfileRoute() {
-  const { username } = Route.useParams();
   const pathname = useRouterState({
     select: (state) => state.location.pathname,
   });
@@ -20,6 +19,12 @@ function CreatorProfileRoute() {
   if (pathname.endsWith("/following")) {
     return <Outlet />;
   }
+
+  return <CreatorProfile />;
+}
+
+function CreatorProfile() {
+  const { username } = Route.useParams();
 
   // Load the user named in the URL
   const profile = usePublicProfile(username);
