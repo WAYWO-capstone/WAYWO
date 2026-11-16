@@ -9,6 +9,7 @@ from app.projects.updates.dependencies import get_update_service
 from app.projects.updates.exceptions import (
     DuplicateUpdateReferenceError,
     InvalidUpdateReferenceError,
+    InvalidUpdateReferenceTypeError,
     ReferencedUpdateNotFoundError,
     UpdateNotFoundError,
     UpdateNotOwnedError,
@@ -17,6 +18,7 @@ from app.projects.updates.schemas import (
     UpdateCreate,
     UpdateEdit,
     UpdateHistoryPage,
+    UpdateListOptions,
     UpdateRead,
 )
 from app.projects.updates.service import UpdateService
@@ -28,12 +30,18 @@ def _reference_http_exception(
     exc: (
         ReferencedUpdateNotFoundError
         | InvalidUpdateReferenceError
+        | InvalidUpdateReferenceTypeError
         | DuplicateUpdateReferenceError
     ),
 ) -> HTTPException:
     if isinstance(exc, ReferencedUpdateNotFoundError):
         return HTTPException(
             status.HTTP_404_NOT_FOUND, "Referenced update not found"
+        )
+    if isinstance(exc, InvalidUpdateReferenceTypeError):
+        return HTTPException(
+            status.HTTP_422_UNPROCESSABLE_ENTITY,
+            "Solve references must link SOLUTION updates to PROBLEM updates",
         )
     message = (
         "Duplicate update reference"
@@ -67,6 +75,7 @@ def create_project_update(
     except (
         ReferencedUpdateNotFoundError,
         InvalidUpdateReferenceError,
+        InvalidUpdateReferenceTypeError,
         DuplicateUpdateReferenceError,
     ) as exc:
         raise _reference_http_exception(exc) from exc
@@ -77,12 +86,13 @@ def get_project_history(
     project_id: uuid.UUID,
     user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
     service: Annotated[UpdateService, Depends(get_update_service)],
-    limit: Annotated[int, Query(ge=1, le=100)] = 20,
-    offset: Annotated[int, Query(ge=0)] = 0,
+    options: Annotated[UpdateListOptions, Query()],
 ) -> UpdateHistoryPage:
     try:
         updates, total = service.list_project_updates(
-            project_id, user_id, limit=limit, offset=offset
+            project_id,
+            user_id,
+            options=options,
         )
     except ProjectNotFoundError as exc:
         raise HTTPException(
@@ -90,7 +100,10 @@ def get_project_history(
         ) from exc
 
     return UpdateHistoryPage(
-        items=updates, total=total, limit=limit, offset=offset
+        items=updates,
+        total=total,
+        limit=options.limit,
+        offset=options.offset,
     )
 
 
@@ -116,6 +129,7 @@ def edit_project_update(
     except (
         ReferencedUpdateNotFoundError,
         InvalidUpdateReferenceError,
+        InvalidUpdateReferenceTypeError,
         DuplicateUpdateReferenceError,
     ) as exc:
         raise _reference_http_exception(exc) from exc
