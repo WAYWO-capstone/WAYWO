@@ -10,8 +10,21 @@ import type { ProjectUpdate } from "@/api/models";
 const navigate = vi.hoisted(() => vi.fn());
 
 vi.mock("@tanstack/react-router", () => ({
-  Link: ({ children, to, search, ...props }: { children: ReactNode; to: string; search?: Record<string, string> }) => (
-    <a href={`${to}?${new URLSearchParams(search)}`} {...props}>{children}</a>
+  Link: ({
+    children,
+    to,
+    search,
+    resetScroll: _resetScroll,
+    ...props
+  }: {
+    children: ReactNode;
+    to: string;
+    search?: Record<string, string>;
+    resetScroll?: boolean;
+  }) => (
+    <a href={`${to}?${new URLSearchParams(search)}`} {...props}>
+      {children}
+    </a>
   ),
   useNavigate: () => navigate,
 }));
@@ -60,16 +73,35 @@ function fillIn({ title = "", body = "", type }: { title?: string; body?: string
 const postButton = () => screen.getByRole("button", { name: /Post update|Posting/ });
 
 let fetchMock: ReturnType<typeof vi.fn>;
+let scrollTo: ReturnType<typeof vi.fn>;
+let originalScrollTo: typeof HTMLElement.prototype.scrollTo | undefined;
+let originalLocation: string;
 
 beforeEach(() => {
   navigate.mockReset();
   fetchMock = vi.fn(async () => historyResponse());
   vi.stubGlobal("fetch", fetchMock);
+  originalLocation = `${window.location.pathname}${window.location.search}${window.location.hash}`;
+  originalScrollTo = HTMLElement.prototype.scrollTo;
+  scrollTo = vi.fn();
+  Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+    configurable: true,
+    value: scrollTo,
+  });
 });
 
 afterEach(() => {
   cleanup();
   vi.unstubAllGlobals();
+  window.history.replaceState(null, "", originalLocation);
+  if (originalScrollTo) {
+    Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+      configurable: true,
+      value: originalScrollTo,
+    });
+  } else {
+    Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
+  }
 });
 
 describe("add update form", () => {
@@ -166,6 +198,174 @@ describe("add update form", () => {
 });
 
 describe("add update entry point", () => {
+  test("finds a linked update beyond the first history page", async () => {
+    const first = { ...created, id: "first", title: "First update" };
+    const target = { ...created, id: "target", title: "Linked update" };
+    const offsets: number[] = [];
+    fetchMock.mockImplementation(async (request: Request) => {
+      const offset = Number(new URL(request.url).searchParams.get("offset"));
+      offsets.push(offset);
+      return json({
+        items: offset === 0 ? [first] : [target],
+        total: 2,
+        limit: 20,
+        offset,
+      });
+    });
+
+    renderWithQueries(
+      <UpdateHistory projectId="p1" targetUpdateId="target" />,
+    );
+
+    expect(
+      await screen.findByRole("heading", { name: "Linked update" }),
+    ).toBeTruthy();
+    expect(offsets).toEqual([0, 1]);
+    expect(document.getElementById("update-target")).toBeTruthy();
+    expect(document.activeElement).toBe(document.getElementById("update-target"));
+  });
+
+  test("does not resume target lookup after filtering out a found update", async () => {
+    const target = {
+      ...created,
+      id: "target",
+      title: "Linked update",
+      type: "DECISION" as const,
+    };
+    const problem = {
+      ...created,
+      id: "problem",
+      title: "Other problem",
+      type: "PROBLEM" as const,
+    };
+    const anotherProblem = {
+      ...created,
+      id: "another-problem",
+      title: "Another problem",
+      type: "PROBLEM" as const,
+    };
+    const requestedOffsets: number[] = [];
+    fetchMock.mockImplementation(async (request: Request) => {
+      const url = new URL(request.url);
+      const offset = Number(url.searchParams.get("offset"));
+      requestedOffsets.push(offset);
+      if (url.searchParams.get("filter") === "PROBLEM") {
+        return json({
+          items: offset === 0 ? [problem] : [anotherProblem],
+          total: 2,
+          limit: 20,
+          offset,
+        });
+      }
+      return json({ items: [target, problem], total: 2, limit: 20, offset });
+    });
+
+    renderWithQueries(
+      <UpdateHistory projectId="p1" targetUpdateId="target" />,
+    );
+    expect(
+      await screen.findByRole("heading", { name: "Linked update" }),
+    ).toBeTruthy();
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Filter updates by type" }),
+    );
+    fireEvent.click(await screen.findByRole("menuitemcheckbox", { name: "Problem" }));
+
+    expect(
+      await screen.findByRole("heading", { name: "Other problem" }),
+    ).toBeTruthy();
+    expect(
+      await screen.findByRole("button", { name: "Load more updates" }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByText("The linked update could not be found in this project."),
+    ).toBeNull();
+    expect(requestedOffsets).toEqual([0, 0]);
+  });
+
+  test("re-clicking the current target scrolls within the updates list", async () => {
+    const source = {
+      ...created,
+      id: "source",
+      title: "Source update",
+      outgoing_references: [
+        {
+          linked_update_id: "target",
+          title: "Linked update",
+          type: "PROGRESS" as const,
+          reason: "RELATED_TO" as const,
+        },
+      ],
+    };
+    const target = { ...created, id: "target", title: "Linked update" };
+    fetchMock.mockImplementation(async () =>
+      json({ items: [source, target], total: 2, limit: 20, offset: 0 }),
+    );
+    window.history.replaceState(
+      null,
+      "",
+      "/?projectId=p1&updateId=target",
+    );
+
+    renderWithQueries(
+      <UpdateHistory projectId="p1" targetUpdateId="target" />,
+    );
+    await screen.findByRole("heading", { name: "Linked update" });
+    const scrollContainer = document.querySelector<HTMLElement>(
+      "[data-update-history-scroll-container]",
+    )!;
+    const targetElement = document.getElementById("update-target")!;
+    const rect = (top: number, height: number) =>
+      ({
+        top,
+        bottom: top + height,
+        left: 0,
+        right: 300,
+        width: 300,
+        height,
+        x: 0,
+        y: top,
+        toJSON: () => ({}),
+      }) as DOMRect;
+    vi.spyOn(scrollContainer, "getBoundingClientRect").mockReturnValue(
+      rect(100, 100),
+    );
+    const targetRect = vi
+      .spyOn(targetElement, "getBoundingClientRect")
+      .mockReturnValue(rect(50, 40));
+    Object.defineProperties(scrollContainer, {
+      scrollTop: { configurable: true, writable: true, value: 200 },
+      clientHeight: { configurable: true, value: 100 },
+      scrollHeight: { configurable: true, value: 500 },
+    });
+
+    fireEvent.click(
+      screen.getByRole("link", {
+        name: "Related to Linked update Progress",
+      }),
+    );
+
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      top: 138,
+      behavior: "smooth",
+    });
+    scrollContainer.scrollTop = 0;
+    targetRect.mockReturnValue(rect(220, 40));
+    fireEvent.click(
+      screen.getByRole("link", {
+        name: "Related to Linked update Progress",
+      }),
+    );
+
+    expect(scrollTo).toHaveBeenLastCalledWith({
+      top: 72,
+      behavior: "smooth",
+    });
+    expect(window.location.search).toBe("?projectId=p1&updateId=target");
+    expect(document.activeElement).toBe(targetElement);
+  });
+
   test("only the project owner sees Add update", async () => {
     fetchMock.mockImplementation(async () => json({ items: [], total: 0, limit: 20, offset: 0 }));
     renderWithQueries(<UpdateHistory projectId="p1" />);

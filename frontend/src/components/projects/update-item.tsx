@@ -1,5 +1,7 @@
 import type { ProjectUpdate } from "@/api/models";
 import { DeleteUpdateDialog } from "@/components/projects/delete-update-dialog";
+import { scrollToUpdateInHistory } from "@/components/projects/update-history-scroll";
+import { updateReferenceReasonLabels } from "@/components/projects/update-reference-reasons";
 import { updateTypeStyles } from "@/components/projects/update-types";
 import { buttonVariants } from "@/components/ui/button";
 import {
@@ -13,10 +15,15 @@ import { ChevronRight, Heart, MessageCircle } from "lucide-react";
 
 interface UpdateItemProps {
   update: ProjectUpdate;
+  projectId?: string;
   canManage?: boolean;
 }
 
-export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
+export function UpdateItem({
+  update,
+  projectId,
+  canManage = false,
+}: UpdateItemProps) {
   const type = updateTypeStyles[update.type];
 
   return (
@@ -26,7 +33,12 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
         className={`absolute top-1 left-[11px] size-4 -translate-x-1/2 rounded-full border border-brand-mahogany ${type.className}`}
       />
 
-      <article aria-labelledby={`update-${update.id}-title`}>
+      <article
+        id={`update-${update.id}`}
+        tabIndex={-1}
+        aria-labelledby={`update-${update.id}-title`}
+        className="rounded-md transition-colors"
+      >
         <h3 id={`update-${update.id}-title`} className="text-xl font-semibold text-brand-garnet">
           {update.title}
         </h3>
@@ -54,6 +66,8 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
             {update.body}
           </p>
         )}
+
+        <UpdateReferenceLinks update={update} projectId={projectId} />
 
         {/* Placeholders until updates support images, likes and comments. */}
         <div aria-hidden="true" className="mt-2 flex flex-wrap gap-[19px]">
@@ -104,15 +118,109 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
   );
 }
 
-export function UpdateTimeline({ updates, canManage = false }: { updates: ProjectUpdate[]; canManage?: boolean }) {
+export function UpdateTimeline({
+  updates,
+  projectId,
+  canManage = false,
+}: {
+  updates: ProjectUpdate[];
+  projectId?: string;
+  canManage?: boolean;
+}) {
   return (
     <div className="relative">
       <span aria-hidden="true" className="absolute top-3 bottom-0 left-[11px] w-px -translate-x-1/2 bg-brand-rust" />
       <ol className="relative">
         {updates.map((update) => (
-          <UpdateItem key={update.id} update={update} canManage={canManage} />
+          <UpdateItem
+            key={update.id}
+            update={update}
+            projectId={projectId}
+            canManage={canManage}
+          />
         ))}
       </ol>
+    </div>
+  );
+}
+
+function UpdateReferenceLinks({
+  update,
+  projectId,
+}: {
+  update: ProjectUpdate;
+  projectId?: string;
+}) {
+  const references = [
+    ...(update.outgoing_references ?? []).map((reference) => ({
+      ...reference,
+      direction: "outgoing" as const,
+    })),
+    ...(update.incoming_references ?? []).map((reference) => ({
+      ...reference,
+      direction: "incoming" as const,
+    })),
+  ];
+
+  if (references.length === 0) return null;
+
+  return (
+    <div className="mt-3 text-sm">
+      <ul className="flex flex-wrap gap-2">
+        {references.map((reference) => {
+          const reason = updateReferenceReasonLabels[reference.reason];
+          const type = updateTypeStyles[reference.type];
+          const content = (
+            <>
+              <span>{reason}</span>
+              <span className="max-w-56 truncate font-semibold text-brand-garnet">
+                {reference.title}
+              </span>
+              <span
+                className={`rounded-[7px] px-1.5 py-0.5 text-xs font-semibold text-brand-mahogany ${type.className}`}
+              >
+                {type.label}
+              </span>
+            </>
+          );
+          const className =
+            "inline-flex max-w-full items-center gap-1.5 rounded-full border border-brand-garnet px-2.5 py-1 leading-5 text-brand-mahogany hover:bg-brand-garnet/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+          const key = `${reference.direction}-${reference.linked_update_id}`;
+          const accessibleLabel = `${reason} ${reference.title} ${type.label}`;
+
+          return (
+            <li key={key}>
+              {projectId ? (
+                <Link
+                  to="/view-project"
+                  search={{
+                    projectId,
+                    updateId: reference.linked_update_id,
+                  }}
+                  resetScroll={false}
+                  onClick={(event) => {
+                    if (
+                      new URLSearchParams(window.location.search).get("updateId") ===
+                        reference.linked_update_id &&
+                      scrollToUpdateInHistory(reference.linked_update_id)
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                  aria-label={accessibleLabel}
+                  className={className}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <span className={className}>
+                  {content}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

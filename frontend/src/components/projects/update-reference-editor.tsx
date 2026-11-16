@@ -4,10 +4,13 @@ import type {
   ProjectUpdate,
   UpdateReferenceCreate,
   UpdateReferenceRead,
-  UpdateReferenceReason,
   UpdateType,
 } from "@/api/models";
 import { getAllProjectUpdates } from "@/api/updates";
+import {
+  updateReferenceReasonLabels,
+  updateReferenceReasonOptions,
+} from "@/components/projects/update-reference-reasons";
 import {
   Combobox,
   ComboboxContent,
@@ -20,15 +23,6 @@ import { updateTypeStyles } from "@/components/projects/update-types";
 import { Button } from "@/components/ui/button";
 
 const REFERENCE_LIMIT = 50;
-
-const referenceReasons = [
-  { value: "RELATED_TO", label: "Related to" },
-  { value: "SOLVES", label: "Solves" },
-  { value: "PARTIALLY_SOLVES", label: "Partially solves" },
-] as const satisfies readonly {
-  value: UpdateReferenceReason;
-  label: string;
-}[];
 
 interface UpdateReferenceEditorProps {
   projectId: string;
@@ -143,7 +137,7 @@ export function UpdateReferenceEditor({
                       }}
                       className="min-h-9 rounded-md border border-input bg-background px-2.5 py-1.5 text-sm text-foreground outline-none focus-visible:ring-2 focus-visible:ring-ring"
                     >
-                      {referenceReasons.map((reason) => {
+                      {updateReferenceReasonOptions.map((reason) => {
                         const isSolveReason = reason.value !== "RELATED_TO";
                         return (
                           <option
@@ -199,7 +193,7 @@ export function UpdateReferenceEditor({
                   </div>
                 </div>
                 <span className="text-xs font-medium text-brand-mahogany">
-                  {incomingReasonLabels[reference.reason]}
+                  {updateReferenceReasonLabels[reference.reason]}
                 </span>
               </li>
             ))}
@@ -288,11 +282,3 @@ function UpdateTypeTag({ type }: { type: UpdateType }) {
     </span>
   );
 }
-
-const incomingReasonLabels: Record<UpdateReferenceRead["reason"], string> = {
-  SOLVES: "Solves",
-  SOLVED_BY: "Solved by",
-  PARTIALLY_SOLVES: "Partially solves",
-  PARTIALLY_SOLVED_BY: "Partially solved by",
-  RELATED_TO: "Related to",
-};
