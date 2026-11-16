@@ -83,9 +83,11 @@ export function FollowingPage({ username }: { username?: string }) {
           <p className="font-semibold">
             {username ? `${username} isn't following anyone yet.` : "You aren't following anyone yet."}
           </p>
-          <p className="mt-2 text-sm text-muted-foreground">
-            Visit a creator's profile to follow them.
-          </p>
+          {!username && (
+            <p className="mt-2 text-sm text-muted-foreground">
+              Visit a creator's profile to follow them.
+            </p>
+          )}
         </div>
       ) : (
         <div className="mt-8 grid gap-3 sm:grid-cols-2">
