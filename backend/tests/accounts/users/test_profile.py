@@ -8,11 +8,11 @@ from fastapi.testclient import TestClient
 from PIL import Image
 from sqlalchemy.orm import Session
 
-from app.accounts.users.router import get_profile
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES
 from app.core.database import SessionLocal, get_session
 from app.main import app
 from app.media.service import get_object_storage
+from app.social.router import get_public_profile
 
 
 @pytest.fixture
@@ -371,7 +371,7 @@ def test_public_profile_rejects_a_slash_in_the_username() -> None:
     session = SessionLocal()
     try:
         with pytest.raises(HTTPException) as exc:
-            get_profile("ada/lovelace", session)
+            get_public_profile("ada/lovelace", session)
     finally:
         session.close()
 

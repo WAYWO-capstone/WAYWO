@@ -17,15 +17,11 @@ from app.accounts.users.schemas import (
     AccountProfileResponse,
     ProfileResponse,
     ProfileUpdate,
-    PublicProfileResponse,
 )
 from app.accounts.users.service import MAX_PROFILE_PICTURE_BYTES, UserService
 from app.core.database import get_session
 from app.media.exceptions import ImageTooLargeError, UnsupportedImageError
 from app.media.service import ObjectStorage, get_object_storage
-from app.social.repository import SocialRepository
-from app.social.schemas import FollowingCreatorResponse
-from app.social.service import SocialService
 
 router = APIRouter(prefix="/users", tags=["users"])
 
@@ -94,60 +90,6 @@ def delete_my_profile_picture(
             detail=str(exc),
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
-@router.get("/{username}", response_model=PublicProfileResponse)
-def get_profile(
-    username: str,
-    session: Session = Depends(get_session, scope="function"),
-) -> PublicProfileResponse:
-    """Return a user's public profile."""
-
-    if "/" in username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username cannot contain '/'",
-        )
-    users = UserRepository(session)
-    user = users.get_user_by_username(username)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    return UserService(users).get_public_profile(user)
-
-
-@router.get("/{username}/following", response_model=list[FollowingCreatorResponse])
-def get_public_following(
-    username: str,
-    session: Session = Depends(get_session, scope="function"),
-) -> list[FollowingCreatorResponse]:
-    """Return the creators followed by a user."""
-
-    if "/" in username:
-        raise HTTPException(
-            status_code=status.HTTP_400_BAD_REQUEST,
-            detail="Username cannot contain '/'",
-        )
-    user = UserRepository(session).get_user_by_username(username)
-    if user is None:
-        raise HTTPException(
-            status_code=status.HTTP_404_NOT_FOUND,
-            detail="User not found",
-        )
-    followed = SocialService(SocialRepository(session)).list_followed_creators(user)
-    return [
-        FollowingCreatorResponse(
-            username=followed_user.username,
-            bio=None if profile is None else profile.bio,
-            profile_picture_link=(
-                None if profile is None else profile.profile_picture_link
-            ),
-            followed_at=follow.followed_at,
-        )
-        for followed_user, profile, follow in followed
-    ]
 
 
 get_object_storage()

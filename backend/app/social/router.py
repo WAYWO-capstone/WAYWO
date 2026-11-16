@@ -4,6 +4,7 @@ from sqlalchemy.orm import Session
 from app.accounts.users.dependencies import get_current_user
 from app.accounts.users.models import User
 from app.accounts.users.repository import UserRepository
+from app.accounts.users.schemas import PublicProfileResponse
 from app.core.database import get_session
 from app.social.exceptions import (
     AlreadyFollowingError,
@@ -19,6 +20,7 @@ from app.social.schemas import (
 from app.social.service import SocialService
 
 router = APIRouter(prefix="/follows", tags=["social"])
+public_router = APIRouter(prefix="/users", tags=["users"])
 
 
 def _followed_user(username: str, session: Session) -> User:
@@ -34,6 +36,58 @@ def _followed_user(username: str, session: Session) -> User:
             detail="User not found",
         )
     return user
+
+
+def _public_user(username: str, session: Session) -> User:
+    if "/" in username:
+        raise HTTPException(
+            status_code=status.HTTP_400_BAD_REQUEST,
+            detail="Username cannot contain '/'",
+        )
+    user = UserRepository(session).get_user_by_username(username)
+    if user is None:
+        raise HTTPException(
+            status_code=status.HTTP_404_NOT_FOUND,
+            detail="User not found",
+        )
+    return user
+
+
+@public_router.get("/{username}", response_model=PublicProfileResponse)
+def get_public_profile(
+    username: str,
+    session: Session = Depends(get_session, scope="function"),
+) -> PublicProfileResponse:
+    """Return a user's public profile with follow counts."""
+
+    users = UserRepository(session)
+    user = _public_user(username, session)
+    return SocialService(SocialRepository(session)).get_public_profile(user, users)
+
+
+@public_router.get(
+    "/{username}/following",
+    response_model=list[FollowingCreatorResponse],
+)
+def get_public_following(
+    username: str,
+    session: Session = Depends(get_session, scope="function"),
+) -> list[FollowingCreatorResponse]:
+    """Return the creators followed by a user."""
+
+    user = _public_user(username, session)
+    followed = SocialService(SocialRepository(session)).list_followed_creators(user)
+    return [
+        FollowingCreatorResponse(
+            username=followed_user.username,
+            bio=None if profile is None else profile.bio,
+            profile_picture_link=(
+                None if profile is None else profile.profile_picture_link
+            ),
+            followed_at=follow.followed_at,
+        )
+        for followed_user, profile, follow in followed
+    ]
 
 
 @router.get("/following", response_model=list[FollowingCreatorResponse])

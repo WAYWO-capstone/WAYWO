@@ -6,7 +6,6 @@ from app.accounts.users.repository import UserRepository
 from app.accounts.users.schemas import (
     AccountProfileResponse,
     ProfileResponse,
-    PublicProfileResponse,
     ProfileUpdate,
 )
 from app.media.exceptions import ImageTooLargeError
@@ -26,18 +25,6 @@ class UserService:
 
         profile = self._users.get_profile(user.id)
         return self._response(user, profile)
-
-    def get_public_profile(self, user: User) -> PublicProfileResponse:
-        """Return a public profile with creator follow counts."""
-
-        profile = self.get_profile(user)
-        return PublicProfileResponse(
-            username=profile.username,
-            bio=profile.bio,
-            profile_picture_link=profile.profile_picture_link,
-            followers_count=self._users.get_follower_count(user.id),
-            following_count=self._users.get_following_count(user.id),
-        )
 
     def get_account_profile(self, user: User) -> AccountProfileResponse:
         """Return the signed-in user's profile, including their email."""
