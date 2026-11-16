@@ -1,4 +1,4 @@
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, Outlet, useRouterState } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 import { FollowButton } from "@/components/profile/follow-button";
 import { ProfilePageFrame, PublicProfilePage } from "@/components/profile/public-profile-page";
@@ -12,6 +12,15 @@ export const Route = createFileRoute("/profile/$username")({
 
 function CreatorProfileRoute() {
   const { username } = Route.useParams();
+  const pathname = useRouterState({
+    select: (state) => state.location.pathname,
+  });
+
+  // The nested following URL intentionally uses the standalone list layout.
+  if (pathname.endsWith("/following")) {
+    return <Outlet />;
+  }
+
   // Load the user named in the URL
   const profile = usePublicProfile(username);
 
@@ -50,16 +59,20 @@ function CreatorProfileRoute() {
 
   // Projects aren't connected yet
   return (
-  <PublicProfilePage
-    key={profile.data.username.toLowerCase()}
-    profile={{
-      username: profile.data.username,
-      bio: profile.data.bio,
-      pictureUrl: profile.data.profile_picture_link,
-    }}
-    followAction={<FollowButton username={profile.data.username} />}
-    projects={[]}
-
-  />
-);
+    <>
+      <PublicProfilePage
+        key={profile.data.username.toLowerCase()}
+        profile={{
+          username: profile.data.username,
+          bio: profile.data.bio,
+          pictureUrl: profile.data.profile_picture_link,
+          followersCount: profile.data.followers_count,
+          followingCount: profile.data.following_count,
+        }}
+        followAction={<FollowButton username={profile.data.username} />}
+        projects={[]}
+      />
+      <Outlet />
+    </>
+  );
 }

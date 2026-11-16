@@ -6,6 +6,7 @@ from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
 from app.accounts.users.models import Profile, User
+from app.social.models import CreatorFollow
 
 
 class UserRepository:
@@ -41,6 +42,18 @@ class UserRepository:
 
     def get_profile(self, user_id: uuid.UUID) -> Profile | None:
         return self._session.get(Profile, user_id)
+
+    def get_follower_count(self, user_id: uuid.UUID) -> int:
+        statement = select(func.count()).select_from(CreatorFollow).where(
+            CreatorFollow.followed_id == user_id
+        )
+        return self._session.scalar(statement) or 0
+
+    def get_following_count(self, user_id: uuid.UUID) -> int:
+        statement = select(func.count()).select_from(CreatorFollow).where(
+            CreatorFollow.follower_id == user_id
+        )
+        return self._session.scalar(statement) or 0
 
     def save_profile(self, profile: Profile) -> Profile:
         self._session.add(profile)

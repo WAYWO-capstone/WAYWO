@@ -29,7 +29,8 @@ const mainItems = [
   { label: "Projects", icon: Folder },
   { label: "Saved Projects", icon: Bookmark },
   { label: "Followers", icon: UsersRound },
-];
+  { label: "Following", icon: UsersRound, to: "/following" },
+] as const;
 
 // person inside a circle to match the mockup
 const AccessibilityCircle = createLucideIcon("AccessibilityCircle", [
@@ -48,18 +49,20 @@ const preferenceItems = [
 const fieldClassName = "h-10 rounded-xl px-3 text-sm";
 
 // these sections will be connected later
-function SidebarItem({ label, icon: Icon }: { label: string; icon: LucideIcon }) {
+function SidebarItem({ label, icon: Icon, to }: { label: string; icon: LucideIcon; to?: "/following" }) {
   return (
     <li>
-      <button
-        type="button"
-        disabled
-        title={`${label} — coming soon`}
-        className="flex min-h-10 w-full cursor-default items-center gap-3 py-1.5 text-left text-base"
-      >
-        <Icon aria-hidden="true" className="size-4.5 shrink-0" />
-        <span>{label}</span>
-      </button>
+      {to ? (
+        <Link to={to} className="flex min-h-10 items-center gap-3 rounded-md py-1.5 text-base outline-none focus-visible:ring-2 focus-visible:ring-ring">
+          <Icon aria-hidden="true" className="size-4.5 shrink-0" />
+          <span>{label}</span>
+        </Link>
+      ) : (
+        <button type="button" disabled title={`${label} — coming soon`} className="flex min-h-10 w-full cursor-default items-center gap-3 py-1.5 text-left text-base">
+          <Icon aria-hidden="true" className="size-4.5 shrink-0" />
+          <span>{label}</span>
+        </button>
+      )}
     </li>
   );
 }

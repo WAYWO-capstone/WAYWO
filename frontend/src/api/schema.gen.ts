@@ -132,6 +132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/follows/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Followed Creators
+         * @description Return the creators followed by the logged-in user.
+         */
+        get: operations["list_followed_creators_follows_following_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/follows/{username}": {
         parameters: {
             query?: never;
@@ -436,6 +456,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/users/{username}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Following
+         * @description Return the creators followed by a user.
+         */
+        get: operations["get_public_following_users__username__following_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -503,6 +543,23 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /**
+         * FollowingCreatorResponse
+         * @description A creator followed by the logged-in user.
+         */
+        FollowingCreatorResponse: {
+            /** Bio */
+            bio: string | null;
+            /**
+             * Followed At
+             * Format: date-time
+             */
+            followed_at: string;
+            /** Profile Picture Link */
+            profile_picture_link: string | null;
+            /** Username */
+            username: string;
         };
         /**
          * FollowingStatusResponse
@@ -676,6 +733,22 @@ export interface components {
             tags?: string[] | null;
             /** Title */
             title?: string | null;
+        };
+        /**
+         * PublicProfileResponse
+         * @description Public profile details, including creator follow counts.
+         */
+        PublicProfileResponse: {
+            /** Bio */
+            bio: string | null;
+            /** Followers Count */
+            followers_count: number;
+            /** Following Count */
+            following_count: number;
+            /** Profile Picture Link */
+            profile_picture_link: string | null;
+            /** Username */
+            username: string;
         };
         /**
          * RefreshRequest
@@ -1050,6 +1123,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_followed_creators_follows_following_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowingCreatorResponse"][];
                 };
             };
         };
@@ -1758,7 +1851,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProfileResponse"];
+                    "application/json": components["schemas"]["PublicProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_following_users__username__following_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowingCreatorResponse"][];
                 };
             };
             /** @description Validation Error */

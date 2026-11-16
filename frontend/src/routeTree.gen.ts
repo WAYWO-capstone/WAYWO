@@ -15,6 +15,7 @@ import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as EditProjectRouteImport } from './routes/edit-project'
 import { Route as EditUpdateRouteImport } from './routes/edit-update'
 import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as FollowingRouteImport } from './routes/following'
 import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
@@ -22,6 +23,7 @@ import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ViewProjectRouteImport } from './routes/view-project'
 import { Route as ProfileIndexRouteImport } from './routes/profile.index'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
+import { Route as ProfileUsernameFollowingRouteImport } from './routes/profile.$username.following'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
@@ -51,6 +53,11 @@ const EditUpdateRoute = EditUpdateRouteImport.update({
 const ExploreRoute = ExploreRouteImport.update({
   id: '/explore',
   path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const FollowingRoute = FollowingRouteImport.update({
+  id: '/following',
+  path: '/following',
   getParentRoute: () => rootRouteImport,
 } as any)
 const HomeRoute = HomeRouteImport.update({
@@ -88,6 +95,12 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileUsernameFollowingRoute =
+  ProfileUsernameFollowingRouteImport.update({
+    id: '/following',
+    path: '/following',
+    getParentRoute: () => ProfileUsernameRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
@@ -96,13 +109,15 @@ export interface FileRoutesByFullPath {
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
   '/explore': typeof ExploreRoute
+  '/following': typeof FollowingRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
   '/view-project': typeof ViewProjectRoute
-  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/$username': typeof ProfileUsernameRouteWithChildren
   '/profile/': typeof ProfileIndexRoute
+  '/profile/$username/following': typeof ProfileUsernameFollowingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
@@ -111,13 +126,15 @@ export interface FileRoutesByTo {
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
   '/explore': typeof ExploreRoute
+  '/following': typeof FollowingRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
   '/view-project': typeof ViewProjectRoute
-  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/$username': typeof ProfileUsernameRouteWithChildren
   '/profile': typeof ProfileIndexRoute
+  '/profile/$username/following': typeof ProfileUsernameFollowingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -127,13 +144,15 @@ export interface FileRoutesById {
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
   '/explore': typeof ExploreRoute
+  '/following': typeof FollowingRoute
   '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
   '/view-project': typeof ViewProjectRoute
-  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/$username': typeof ProfileUsernameRouteWithChildren
   '/profile/': typeof ProfileIndexRoute
+  '/profile/$username/following': typeof ProfileUsernameFollowingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -144,6 +163,7 @@ export interface FileRouteTypes {
     | '/edit-project'
     | '/edit-update'
     | '/explore'
+    | '/following'
     | '/home'
     | '/login'
     | '/projects'
@@ -151,6 +171,7 @@ export interface FileRouteTypes {
     | '/view-project'
     | '/profile/$username'
     | '/profile/'
+    | '/profile/$username/following'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
@@ -159,6 +180,7 @@ export interface FileRouteTypes {
     | '/edit-project'
     | '/edit-update'
     | '/explore'
+    | '/following'
     | '/home'
     | '/login'
     | '/projects'
@@ -166,6 +188,7 @@ export interface FileRouteTypes {
     | '/view-project'
     | '/profile/$username'
     | '/profile'
+    | '/profile/$username/following'
   id:
     | '__root__'
     | '/'
@@ -174,6 +197,7 @@ export interface FileRouteTypes {
     | '/edit-project'
     | '/edit-update'
     | '/explore'
+    | '/following'
     | '/home'
     | '/login'
     | '/projects'
@@ -181,6 +205,7 @@ export interface FileRouteTypes {
     | '/view-project'
     | '/profile/$username'
     | '/profile/'
+    | '/profile/$username/following'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -190,12 +215,13 @@ export interface RootRouteChildren {
   EditProjectRoute: typeof EditProjectRoute
   EditUpdateRoute: typeof EditUpdateRoute
   ExploreRoute: typeof ExploreRoute
+  FollowingRoute: typeof FollowingRoute
   HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
   RegisterRoute: typeof RegisterRoute
   ViewProjectRoute: typeof ViewProjectRoute
-  ProfileUsernameRoute: typeof ProfileUsernameRoute
+  ProfileUsernameRoute: typeof ProfileUsernameRouteWithChildren
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
@@ -241,6 +267,13 @@ declare module '@tanstack/react-router' {
       path: '/explore'
       fullPath: '/explore'
       preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/following': {
+      id: '/following'
+      path: '/following'
+      fullPath: '/following'
+      preLoaderRoute: typeof FollowingRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/home': {
@@ -292,8 +325,27 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/$username/following': {
+      id: '/profile/$username/following'
+      path: '/following'
+      fullPath: '/profile/$username/following'
+      preLoaderRoute: typeof ProfileUsernameFollowingRouteImport
+      parentRoute: typeof ProfileUsernameRoute
+    }
   }
 }
+
+interface ProfileUsernameRouteChildren {
+  ProfileUsernameFollowingRoute: typeof ProfileUsernameFollowingRoute
+}
+
+const ProfileUsernameRouteChildren: ProfileUsernameRouteChildren = {
+  ProfileUsernameFollowingRoute: ProfileUsernameFollowingRoute,
+}
+
+const ProfileUsernameRouteWithChildren = ProfileUsernameRoute._addFileChildren(
+  ProfileUsernameRouteChildren,
+)
 
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
@@ -302,12 +354,13 @@ const rootRouteChildren: RootRouteChildren = {
   EditProjectRoute: EditProjectRoute,
   EditUpdateRoute: EditUpdateRoute,
   ExploreRoute: ExploreRoute,
+  FollowingRoute: FollowingRoute,
   HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,
   RegisterRoute: RegisterRoute,
   ViewProjectRoute: ViewProjectRoute,
-  ProfileUsernameRoute: ProfileUsernameRoute,
+  ProfileUsernameRoute: ProfileUsernameRouteWithChildren,
   ProfileIndexRoute: ProfileIndexRoute,
 }
 export const routeTree = rootRouteImport

@@ -1,7 +1,13 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { useSyncExternalStore } from "react";
 import { ApiError } from "@/api/client";
-import { followCreator, getFollowingStatus, unfollowCreator } from "@/api/follows";
+import {
+  followCreator,
+  getFollowedCreators,
+  getFollowingStatus,
+  getPublicFollowing,
+  unfollowCreator,
+} from "@/api/follows";
 import { getSessionKey, subscribe } from "@/lib/token-store";
 
 export function followingStatusKey(sessionKey: number | null, username: string) {
@@ -19,6 +25,25 @@ export function useFollowingStatus(username: string, enabled: boolean) {
     queryKey: followingStatusKey(sessionKey, username),
     queryFn: () => getFollowingStatus(username),
     enabled: enabled && sessionKey !== null,
+    retry: false,
+  });
+}
+
+export function useFollowedCreators() {
+  const sessionKey = useSyncExternalStore(subscribe, getSessionKey);
+  return useQuery({
+    queryKey: ["followed-creators", sessionKey] as const,
+    queryFn: getFollowedCreators,
+    enabled: sessionKey !== null,
+    retry: false,
+  });
+}
+
+export function usePublicFollowing(username: string) {
+  return useQuery({
+    queryKey: ["public-following", username.toLowerCase()] as const,
+    queryFn: () => getPublicFollowing(username),
+    enabled: username.length > 0,
     retry: false,
   });
 }

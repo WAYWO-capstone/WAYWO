@@ -140,7 +140,44 @@ def test_public_profile_does_not_require_a_token(client: TestClient) -> None:
     assert response.status_code == 200
     assert response.json()["username"] == account["username"]
     assert response.json()["bio"] == "Public bio"
+    assert response.json()["followers_count"] == 0
+    assert response.json()["following_count"] == 0
     assert "email" not in response.json()
+
+
+def test_public_profile_includes_follow_counts(client: TestClient) -> None:
+    follower, token = _register_and_login(client)
+    creator = _account()
+    client.post("/auth/register", json=creator)
+    headers = {"Authorization": f"Bearer {token}"}
+
+    follow_response = client.post(
+        f"/follows/{creator['username']}",
+        headers=headers,
+    )
+
+    assert follow_response.status_code == 201
+    response = client.get(f"/users/{creator['username']}")
+
+    assert response.status_code == 200
+    assert response.json()["followers_count"] == 1
+    assert response.json()["following_count"] == 0
+
+    follower_profile = client.get(f"/users/{follower['username']}")
+    assert follower_profile.json()["following_count"] == 1
+
+
+def test_public_following_returns_followed_creators(client: TestClient) -> None:
+    follower, token = _register_and_login(client)
+    creator = _account()
+    client.post("/auth/register", json=creator)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.post(f"/follows/{creator['username']}", headers=headers)
+
+    response = client.get(f"/users/{follower['username']}/following")
+
+    assert response.status_code == 200
+    assert [item["username"] for item in response.json()] == [creator["username"]]
 
 
 def test_upload_profile_picture_saves_the_public_link(

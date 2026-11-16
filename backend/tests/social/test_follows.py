@@ -199,3 +199,27 @@ def test_following_status_returns_404_for_an_unknown_user(client: TestClient) ->
 
     assert response.status_code == 404
     assert response.json()["detail"] == "User not found"
+
+
+def test_following_list_returns_followed_creators(client: TestClient) -> None:
+    follower = _register(client)
+    first_creator = _register(client)
+    second_creator = _register(client)
+    token = _login(client, follower)
+    headers = {"Authorization": f"Bearer {token}"}
+    client.post(f"/follows/{second_creator['username']}", headers=headers)
+    client.post(f"/follows/{first_creator['username']}", headers=headers)
+
+    response = client.get("/follows/following", headers=headers)
+
+    assert response.status_code == 200
+    assert [creator["username"] for creator in response.json()] == sorted(
+        [first_creator["username"], second_creator["username"]]
+    )
+    assert all(creator["followed_at"] for creator in response.json())
+
+
+def test_following_list_requires_a_token(client: TestClient) -> None:
+    response = client.get("/follows/following")
+
+    assert response.status_code == 401

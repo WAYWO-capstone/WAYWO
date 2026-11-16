@@ -11,7 +11,11 @@ from app.social.exceptions import (
     SelfFollowError,
 )
 from app.social.repository import SocialRepository
-from app.social.schemas import CreatorFollowResponse, FollowingStatusResponse
+from app.social.schemas import (
+    CreatorFollowResponse,
+    FollowingCreatorResponse,
+    FollowingStatusResponse,
+)
 from app.social.service import SocialService
 
 router = APIRouter(prefix="/follows", tags=["social"])
@@ -30,6 +34,29 @@ def _followed_user(username: str, session: Session) -> User:
             detail="User not found",
         )
     return user
+
+
+@router.get("/following", response_model=list[FollowingCreatorResponse])
+def list_followed_creators(
+    current_user: User = Depends(get_current_user),
+    session: Session = Depends(get_session, scope="function"),
+) -> list[FollowingCreatorResponse]:
+    """Return the creators followed by the logged-in user."""
+
+    followed = SocialService(SocialRepository(session)).list_followed_creators(
+        current_user
+    )
+    return [
+        FollowingCreatorResponse(
+            username=user.username,
+            bio=None if profile is None else profile.bio,
+            profile_picture_link=(
+                None if profile is None else profile.profile_picture_link
+            ),
+            followed_at=follow.followed_at,
+        )
+        for user, profile, follow in followed
+    ]
 
 
 @router.get("/{username}", response_model=FollowingStatusResponse)

@@ -1,6 +1,6 @@
 """Business logic for follows, bookmarks, and folders."""
 
-from app.accounts.users.models import User
+from app.accounts.users.models import Profile, User
 from app.social.exceptions import (
     AlreadyFollowingError,
     FollowNotFoundError,
@@ -44,3 +44,11 @@ class SocialService:
         if follow is None:
             raise FollowNotFoundError("You do not follow this creator")
         self._social.delete_creator_follow(follow)
+
+    def list_followed_creators(
+        self,
+        follower: User,
+    ) -> list[tuple[User, Profile | None, CreatorFollow]]:
+        """Return followed creators in a stable, username-sorted order."""
+
+        return self._social.list_followed_creators(follower.id)
