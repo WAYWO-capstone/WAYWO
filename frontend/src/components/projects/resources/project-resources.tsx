@@ -5,6 +5,7 @@ import type { ProjectResource } from "@/api/models";
 import { attachResource, getProjectResources } from "@/api/resources";
 import { UploadDropzone } from "@/components/uploads/upload-dropzone";
 import { UploadRow } from "@/components/uploads/upload-row";
+import { formatFileSize } from "@/lib/uploads/format";
 import { useUploadConfig } from "@/lib/uploads/use-upload-config";
 import { useUploadManager } from "@/lib/uploads/use-upload-manager";
 import { acceptFor, splitFiles } from "@/lib/uploads/validate";
@@ -19,12 +20,6 @@ const listClasses = "mt-2 min-h-0 flex-1 overflow-y-auto pr-1 focus-visible:outl
 
 const resourcesKey = (projectId: string) => ["project-resources", projectId];
 
-function formatSize(bytes: number): string {
-  if (bytes < 1024) return `${bytes} B`;
-  if (bytes < 1024 * 1024) return `${Math.round(bytes / 1024)} KB`;
-  return `${Math.round((bytes / (1024 * 1024)) * 10) / 10} MB`;
-}
-
 function EmptyList() {
   return <p className="py-6 text-sm text-muted-foreground">No files yet.</p>;
 }
@@ -36,7 +31,7 @@ function ResourceRow({ resource }: { resource: ProjectResource }) {
       <p className="min-w-0 flex-1 truncate text-sm font-semibold text-foreground" title={resource.filename}>
         {resource.title}
       </p>
-      <span className="shrink-0 text-xs text-muted-foreground">{formatSize(resource.size)}</span>
+      <span className="shrink-0 text-xs text-muted-foreground">{formatFileSize(resource.size)}</span>
     </li>
   );
 }

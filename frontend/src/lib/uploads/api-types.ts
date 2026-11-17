@@ -5,9 +5,6 @@ type Schemas = components["schemas"];
 
 export type UploadKind = Schemas["UploadKind"];
 
-// Status of the upload on the backend. PROCESSING is reserved for a future job queue.
-export type UploadStatus = Schemas["UploadStatus"];
-
 // Rules for one kind.
 export type UploadKindConfig = Schemas["UploadKindConfigRead"];
 
