@@ -45,10 +45,21 @@ function isAbort(error: unknown): boolean {
 
 const wait = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms));
 
+interface RunToken {
+  abort?: () => void;
+}
+
+interface Run {
+  token: RunToken;
+  report: (changes: Partial<UploadItem>) => void;
+  live: () => void;
+  finish: () => void;
+}
+
 export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
   const [items, setItems] = useState<UploadItem[]>([]);
   const onUploadedRef = useRef(onUploaded);
-  const runs = useRef(new Map<string, { abort?: () => void }>());
+  const runs = useRef(new Map<string, RunToken>());
 
   useEffect(() => {
     onUploadedRef.current = onUploaded;
@@ -58,62 +69,33 @@ export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
     setItems((current) => current.map((item) => (item.id === id ? { ...item, ...changes } : item)));
   }, []);
 
-
   //file upload lifecycle
   const run = useCallback(
     async (item: UploadItem) => {
-      const token: { abort?: () => void } = {};
-      runs.current.get(item.id)?.abort?.();
-      runs.current.set(item.id, token);
-      // Every await can outlive the run, so check it is still the current one.
-      const live = () => {
-        if (runs.current.get(item.id) !== token) throw new StaleRunError();
-      };
-
+      const current = startRun(runs.current, item.id, update);
       try {
-        update(item.id, { status: "uploading", uploadId: null, bytesSent: 0, error: null });
+        current.report({ status: "uploading", uploadId: null, bytesSent: 0, error: null });
         const created = await createUpload(item.kind, item.file);
-        live();
-        update(item.id, { uploadId: created.upload_id });
+        current.live();
+        current.report({ uploadId: created.upload_id });
 
-        const put = uploadToR2({
-          url: created.url,
-          headers: created.headers,
-          file: item.file,
-          onProgress: (bytesSent) => {
-            if (runs.current.get(item.id) === token) update(item.id, { bytesSent });
-          },
-        });
-        token.abort = put.abort;
-        await put.promise;
-        token.abort = undefined;
-        live();
+        await sendToR2(item.file, created.url, created.headers, current);
 
-        update(item.id, { status: "completing", bytesSent: item.totalBytes });
-        let result: UploadResult = await completeUpload(created.upload_id);
-        live();
-        for (let polls = 0; result.status === "PROCESSING" && polls < MAX_POLLS; polls++) {
-          update(item.id, { status: "processing" });
-          await wait(POLL_INTERVAL_MS);
-          live();
-          result = await getUpload(created.upload_id);
-          live();
-        }
-        if (result.status !== "READY") {
-          update(item.id, { status: "error", error: "The file couldn't be verified after uploading. Try again." });
+        current.report({ status: "completing", bytesSent: item.totalBytes });
+        if (!(await confirmReady(created.upload_id, current))) {
+          current.report({ status: "error", error: "The file couldn't be verified after uploading. Try again." });
           return;
         }
 
-        update(item.id, { status: "attaching" });
+        current.report({ status: "attaching" });
         await onUploadedRef.current?.({ ...item, uploadId: created.upload_id, status: "attaching" });
-        live();
-        update(item.id, { status: "done" });
+        current.live();
+        current.report({ status: "done" });
       } catch (error) {
         if (error instanceof StaleRunError || isAbort(error)) return;
-        if (runs.current.get(item.id) !== token) return;
-        update(item.id, { status: "error", error: errorMessage(error) });
+        current.report({ status: "error", error: errorMessage(error) });
       } finally {
-        if (runs.current.get(item.id) === token) runs.current.delete(item.id);
+        current.finish();
       }
     },
     [update],
@@ -159,6 +141,8 @@ export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
 
   const isBusy = items.some((item) => ACTIVE.includes(item.status));
 
+  // Asks the browser to confirm closing, reloading or leaving the site while
+  // an upload is in progress. If the website closes the upload is cancelled
   useEffect(() => {
     if (!isBusy) return;
     const warn = (event: BeforeUnloadEvent) => {
@@ -169,6 +153,7 @@ export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
     return () => window.removeEventListener("beforeunload", warn);
   }, [isBusy]);
 
+  // Cancels any uploads still running when the component unmounts.
   useEffect(() => {
     const current = runs.current;
     return () => {
@@ -178,4 +163,52 @@ export function useUploadManager({ onUploaded }: UploadManagerOptions = {}) {
   }, []);
 
   return { items, add, retry, remove, isBusy };
+}
+
+// Cancel earlier attempts (of same file) and register with new token.
+function startRun(
+  runs: Map<string, RunToken>,
+  id: string,
+  update: (id: string, changes: Partial<UploadItem>) => void,
+): Run {
+  runs.get(id)?.abort?.();
+  const token: RunToken = {};
+  runs.set(id, token);
+  const isCurrent = () => runs.get(id) === token;
+  return {
+    token,
+    // Ignored once the run is stale.
+    report: (changes) => {
+      if (isCurrent()) update(id, changes);
+    },
+    // Every await can outlive the run, so call this after each one.
+    live: () => {
+      if (!isCurrent()) throw new StaleRunError();
+    },
+    finish: () => {
+      if (isCurrent()) runs.delete(id);
+    },
+  };
+}
+
+//send file to file database (r2)
+async function sendToR2(file: File, url: string, headers: Record<string, string>, run: Run) {
+  const put = uploadToR2({ url, headers, file, onProgress: (bytesSent) => run.report({ bytesSent }) });
+  run.token.abort = put.abort;
+  await put.promise;
+  run.token.abort = undefined;
+  run.live();
+}
+
+async function confirmReady(uploadId: string, run: Run): Promise<boolean> {
+  let result: UploadResult = await completeUpload(uploadId);
+  run.live();
+  for (let polls = 0; result.status === "PROCESSING" && polls < MAX_POLLS; polls++) {
+    run.report({ status: "processing" });
+    await wait(POLL_INTERVAL_MS);
+    run.live();
+    result = await getUpload(uploadId);
+    run.live();
+  }
+  return result.status === "READY";
 }
