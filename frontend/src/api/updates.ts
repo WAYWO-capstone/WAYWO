@@ -1,6 +1,11 @@
 // Project updates: the history timeline on a project.
 import { api, ApiError, unwrap } from "@/api/client";
-import type { UpdateType } from "@/api/models";
+import type {
+  ProjectUpdate,
+  UpdateReferenceCreate,
+  UpdateSort,
+  UpdateType,
+} from "@/api/models";
 
 export const UPDATE_PAGE_SIZE = 20;
 
@@ -8,15 +13,41 @@ const updatePath = (projectId: string, updateId: string) => ({
   path: { project_id: projectId, update_id: updateId },
 });
 
-export function getProjectHistory(projectId: string, offset = 0) {
+export function getProjectHistory(
+  projectId: string,
+  offset = 0,
+  filter?: UpdateType[],
+  sort: UpdateSort = "date_desc",
+) {
   return unwrap(
     api.GET("/projects/{project_id}/updates", {
       params: {
         path: { project_id: projectId },
-        query: { limit: UPDATE_PAGE_SIZE, offset },
+        query: {
+          limit: UPDATE_PAGE_SIZE,
+          offset,
+          filter,
+          sort,
+        },
       },
     }),
   );
+}
+
+export async function getAllProjectUpdates(projectId: string): Promise<ProjectUpdate[]> {
+  const updates: ProjectUpdate[] = [];
+  let offset = 0;
+  let total: number | undefined;
+
+  while (total === undefined || offset < total) {
+    const page = await getProjectHistory(projectId, offset);
+    updates.push(...page.items);
+    total = page.total;
+    if (page.items.length === 0) break;
+    offset += page.items.length;
+  }
+
+  return updates;
 }
 
 // The API has no endpoint for reading one update yet, so look through the
@@ -32,10 +63,27 @@ export async function getProjectUpdate(projectId: string, updateId: string) {
   }
 }
 
+export interface NewProjectUpdate {
+  title: string;
+  body: string;
+  type: UpdateType;
+  references: UpdateReferenceCreate[];
+}
+
+export function createProjectUpdate(projectId: string, update: NewProjectUpdate) {
+  return unwrap(
+    api.POST("/projects/{project_id}/updates", {
+      params: { path: { project_id: projectId } },
+      body: update,
+    }),
+  );
+}
+
 export interface ProjectUpdateChanges {
   title?: string;
   body?: string;
   type?: UpdateType;
+  references?: UpdateReferenceCreate[];
 }
 
 export function updateProjectUpdate(projectId: string, updateId: string, changes: ProjectUpdateChanges) {

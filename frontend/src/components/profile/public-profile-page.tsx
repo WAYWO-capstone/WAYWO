@@ -1,6 +1,8 @@
+import { Link } from "@tanstack/react-router";
 import type { ReactNode } from "react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { ProfileProjects, type ProfileProject } from "@/components/profile/profile-projects";
+import { useCurrentProfile } from "@/lib/auth";
 import { cn } from "@/lib/utils";
 
 export interface CreatorProfile {
@@ -33,7 +35,10 @@ export function PublicProfilePage({
     projects,
   followAction,
 }: PublicProfilePageProps) {
+  const currentProfile = useCurrentProfile();
   const name = profile.displayName?.trim() || profile.username;
+  const isOwnProfile =
+    currentProfile.data?.username.toLowerCase() === profile.username.toLowerCase();
   // Hide counts that have not been provided.
   const stats = [
     { label: "projects", value: projects?.length ?? profile.projectCount },
@@ -50,14 +55,34 @@ export function PublicProfilePage({
           <ProfileAvatar username={name} src={profile.pictureUrl} className="size-20 sm:size-22" />
           <div className="min-w-0 flex-1 basis-40 pt-0.5">
             <h1 id="profile-name" className="text-2xl font-bold wrap-anywhere sm:text-3xl">{name}</h1>
-            <p className="mt-2 max-w-2xl text-sm leading-relaxed whitespace-pre-wrap wrap-anywhere sm:text-base">
-              {profile.bio?.trim() ? profile.bio : "This user hasn’t added a bio yet."}
-            </p>
+            {!!profile.bio?.trim() && <p className="mt-2 max-w-2xl text-sm leading-relaxed whitespace-pre-wrap wrap-anywhere sm:text-base">
+                {profile.bio}
+            </p>}
             {stats.length > 0 && (
               <dl className="mt-4 flex flex-wrap gap-x-5 gap-y-2 text-sm">
                 {stats.map(({ label, value }, index) => (
                   <div key={label} className={cn("flex gap-1.5", index > 0 && "border-l border-brand-mahogany/40 pl-5")}>
-                    <dt className="order-2">{label}</dt>
+                    <dt className="order-2">
+                      {label === "following" ? (
+                        isOwnProfile ? (
+                          <Link
+                            to="/profile"
+                            search={{ section: "following" }}
+                            className="hover:text-brand-rust hover:underline"
+                          >
+                            {label}
+                          </Link>
+                        ) : (
+                          <Link
+                            to="/profile/$username/following"
+                            params={{ username: profile.username }}
+                            className="hover:text-brand-rust hover:underline"
+                          >
+                            {label}
+                          </Link>
+                        )
+                      ) : label}
+                    </dt>
                     <dd className="order-1 font-bold">{value.toLocaleString()}</dd>
                   </div>
                 ))}

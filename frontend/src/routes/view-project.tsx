@@ -15,14 +15,19 @@ import { PartialStatusChangeError, statusChangeError, statusChangeSteps } from "
 
 
 export const Route = createFileRoute("/view-project")({
-  validateSearch: (search: Record<string, unknown>) => ({
+  validateSearch: (
+    search: Record<string, unknown>,
+  ): { projectId: string | undefined; updateId?: string } => ({
     projectId: typeof search.projectId === "string" ? search.projectId : undefined,
+    ...(typeof search.updateId === "string"
+      ? { updateId: search.updateId }
+      : {}),
   }),
   component: ViewProjectPage,
 });
 
 function ViewProjectPage() {
-  const { projectId } = Route.useSearch();
+  const { projectId, updateId } = Route.useSearch();
   const queryClient = useQueryClient();
   const navigate = useNavigate();
   const projectQuery = useQuery({
@@ -77,6 +82,7 @@ function ViewProjectPage() {
   return (
     <ProjectDetail
       project={project}
+      targetUpdateId={updateId}
       isPreview={!projectId}
       previewUpdates={previewUpdates}
       isOwner={isOwner}

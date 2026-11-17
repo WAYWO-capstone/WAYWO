@@ -1,13 +1,16 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
 import { CircleAlert, LoaderCircle } from "lucide-react";
 
-import { AccountProfilePage } from "@/components/profile/account-profile-page";
+import { AccountProfilePage, type ProfileSection } from "@/components/profile/account-profile-page";
 import { Button } from "@/components/ui/button";
 import { ApiError } from "@/api/client";
 import { useCurrentProfile, useLogout } from "@/lib/auth";
 import { isAuthenticated } from "@/lib/token-store";
 
 export const Route = createFileRoute("/profile/")({
+  validateSearch: (search: Record<string, unknown>): { section?: ProfileSection } => ({
+    section: isProfileSection(search.section) ? search.section : undefined,
+  }),
   beforeLoad: ({ location }) => {
     if (!isAuthenticated()) {
       throw redirect({ to: "/login", search: { redirect: location.href } });
@@ -17,6 +20,7 @@ export const Route = createFileRoute("/profile/")({
 });
 
 function ProfilePage() {
+  const { section } = Route.useSearch();
   const profile = useCurrentProfile();
   const logout = useLogout();
 
@@ -55,5 +59,10 @@ function ProfilePage() {
     );
   }
 
-  return <AccountProfilePage profile={profile.data} onLogout={logout} />;
+  return <AccountProfilePage profile={profile.data} onLogout={logout} section={section} />;
+}
+
+function isProfileSection(value: unknown): value is ProfileSection {
+  return value === "saved-projects" || value === "followers" || value === "following" || value === "settings" ||
+    value === "notifications" || value === "accessibility";
 }

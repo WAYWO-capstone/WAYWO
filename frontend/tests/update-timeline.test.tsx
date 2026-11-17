@@ -1,8 +1,28 @@
 import { renderToStaticMarkup } from "react-dom/server";
-import { describe, expect, test } from "vitest";
+import type { ReactNode } from "react";
+import { describe, expect, test, vi } from "vitest";
 import { UpdateTimeline } from "@/components/projects/update-item";
 import { updateTypeStyles } from "@/components/projects/update-types";
 import type { ProjectUpdate } from "@/api/models";
+
+vi.mock("@tanstack/react-router", () => ({
+  Link: ({
+    children,
+    to,
+    search,
+    resetScroll: _resetScroll,
+    ...props
+  }: {
+    children: ReactNode;
+    to: string;
+    search?: Record<string, string>;
+    resetScroll?: boolean;
+  }) => (
+    <a href={`${to}?${new URLSearchParams(search)}`} {...props}>
+      {children}
+    </a>
+  ),
+}));
 
 function makeUpdate(overrides: Partial<ProjectUpdate> = {}): ProjectUpdate {
   return {
@@ -50,5 +70,58 @@ describe("UpdateTimeline", () => {
     const html = renderToStaticMarkup(<UpdateTimeline updates={[makeUpdate({ type: "PROBLEM" })]} />);
     expect(html).toContain("Problem");
     expect(html).toContain("bg-update-problem");
+  });
+
+  test("shows outgoing and incoming links to their target updates", () => {
+    const update = makeUpdate({
+      outgoing_references: [
+        {
+          linked_update_id: "problem-1",
+          title: "Corners are lumpy",
+          type: "PROBLEM",
+          reason: "SOLVES",
+        },
+      ],
+      incoming_references: [
+        {
+          linked_update_id: "solution-1",
+          title: "Reinforced the corners",
+          type: "SOLUTION",
+          reason: "SOLVED_BY",
+        },
+      ],
+    });
+
+    const html = renderToStaticMarkup(
+      <UpdateTimeline updates={[update]} projectId="p1" />,
+    );
+
+    expect(html).toContain("Solves");
+    expect(html).toContain("Solved by");
+    expect(html).toContain("Corners are lumpy");
+    expect(html).toContain("Reinforced the corners");
+    expect(html).toContain("bg-update-problem");
+    expect(html).toContain("bg-update-solution");
+    expect(html).toContain(
+      'href="/view-project?projectId=p1&amp;updateId=problem-1"',
+    );
+    expect(html).toContain(
+      'href="/view-project?projectId=p1&amp;updateId=solution-1"',
+    );
+    const problemLink = html.slice(
+      html.indexOf('href="/view-project?projectId=p1&amp;updateId=problem-1"'),
+      html.indexOf("</a>", html.indexOf('href="/view-project?projectId=p1&amp;updateId=problem-1"')),
+    );
+    expect(problemLink.indexOf("Solves")).toBeLessThan(
+      problemLink.indexOf("Corners are lumpy"),
+    );
+    expect(problemLink.indexOf("Corners are lumpy")).toBeLessThan(
+      problemLink.indexOf("Problem"),
+    );
+    expect(problemLink).toContain(
+      "font-semibold text-brand-garnet",
+    );
+    expect(problemLink).not.toContain("#Corners");
+    expect(html).not.toContain("Links:");
   });
 });

@@ -6,6 +6,9 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
+  /* Extra-small breakpoint for phones (below Tailwind's sm 640px). */
+  --breakpoint-xs: 26rem;
+
   --color-brand-mahogany: #3c1518;
   --color-brand-garnet: #69140e;
   --color-brand-rust: #a44200;

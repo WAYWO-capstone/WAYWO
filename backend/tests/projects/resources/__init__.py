@@ -1,0 +1,1 @@
+"""Project resource submodule tests."""

@@ -1,11 +1,12 @@
 import { useQueryClient } from "@tanstack/react-query";
-import { Link, useNavigate } from "@tanstack/react-router";
+import { Link, useBlocker, useNavigate } from "@tanstack/react-router";
 import { ArrowLeft, CircleAlert, LoaderCircle } from "lucide-react";
 import { useEffect, useState, type SubmitEvent } from "react";
 import { AutosaveIndicator, RestoredChangesNotice } from "@/components/projects/autosave-indicator";
+import { ProjectDiscardDialog } from "@/components/projects/project-discard-changes-dialog";
 import { ProjectFormFields } from "@/components/projects/project-form-fields";
 import { Button } from "@/components/ui/button";
-import { updateProject } from "@/api/projects";
+import { publishProject, updateProject } from "@/api/projects";
 import type { ProjectInput, ProjectView } from "@/api/models";
 import { useAutosave } from "@/lib/autosave";
 import { restorableDraftBackup } from "@/lib/draft-backup";
@@ -62,7 +63,13 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
   const [savedAt, setSavedAt] = useState<string | null>(null);
   const [now, setNow] = useState(() => Date.now());
   const [error, setError] = useState("");
-  const [saving, setSaving] = useState<"save" | "close" | null>(null);
+  const [saving, setSaving] = useState<"save" | "close" | "publish" | null>(null);
+  const [discardDialogOpen, setDiscardDialogOpen] = useState(false);
+  const blocker = useBlocker({
+    shouldBlockFn: ({ action }) => action === "BACK",
+    withResolver: true,
+    enableBeforeUnload: false,
+  });
   const rememberFocus = useRestoreFocus(saving !== null);
   const hasChanges = autosave ? autosave.hasUnsavedChanges : JSON.stringify(projectData) !== JSON.stringify(savedData);
   const autosaveFailure = autosaveState?.status === "error" && autosaveState.error ? autosaveError(autosaveState.error) : "";
@@ -71,6 +78,11 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
     const timer = setInterval(() => setNow(Date.now()), 30_000);
     return () => clearInterval(timer);
   }, []);
+
+  function changeDiscardDialog(open: boolean) {
+    if (!open && blocker.status === "blocked") blocker.reset();
+    setDiscardDialogOpen(open);
+  }
 
   function change(next: ProjectInput) {
     setProjectData(next);
@@ -84,23 +96,30 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
     setShowRestored(false);
   }
 
-  // Changes already autosaved stay saved; Cancel drops the ones that aren't yet.
-  function cancel() {
-    autosave?.discard();
-    void navigate({ to: "/view-project", search: { projectId: project.id } });
+  async function confirmCancel() {
+    if (autosave) {
+      autosave.update(savedData);
+      if (!(await autosave.flush())) {
+        throw autosaveState?.error ?? new Error("Could not discard the project changes.");
+      }
+    }
+    if (blocker.status === "blocked") blocker.reset();
+    await navigate({ to: "/view-project", search: { projectId: project.id } });
   }
 
   async function submit(event: SubmitEvent<HTMLFormElement>) {
     event.preventDefault();
     setError("");
-    const shouldClose = (event.submitter as HTMLButtonElement | null)?.value === "close";
+    const intent = (event.submitter as HTMLButtonElement | null)?.value;
+    const shouldClose = intent === "close";
+    const shouldPublish = intent === "publish";
     // Spaces pass the browser's required check but not the backend's.
     if (!hasRequiredFields(projectData)) {
       setError("Fill in the title, summary and category before saving.");
       return;
     }
     rememberFocus();
-    setSaving(shouldClose ? "close" : "save");
+    setSaving(shouldPublish ? "publish" : shouldClose ? "close" : "save");
     try {
       if (autosave) {
         // Saves right away instead of waiting for the next autosave.
@@ -111,12 +130,13 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
         setSavedAt(new Date().toISOString());
         setNow(Date.now());
       }
+      if (shouldPublish) await publishProject(project.id);
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["project", project.id] }),
         queryClient.invalidateQueries({ queryKey: ["my-projects"] }),
       ]);
 
-      if (shouldClose) {
+      if (shouldClose || shouldPublish) {
         await navigate({ to: "/view-project", search: { projectId: project.id } });
       }
     } catch (cause) {
@@ -128,8 +148,15 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
 
   return (
     <div className="mx-auto w-full max-w-6xl flex-1 px-5 py-8 sm:px-8 sm:py-10">
-      <Link to="/projects" className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline">
-        <ArrowLeft className="size-4" aria-hidden="true" />Back to projects
+      <Link
+        to="/projects"
+        onClick={(event) => {
+          event.preventDefault();
+          setDiscardDialogOpen(true);
+        }}
+        className="inline-flex items-center gap-1.5 text-sm font-medium text-primary hover:underline"
+      >
+        <ArrowLeft className="size-4" aria-hidden="true" />Back to project
       </Link>
       <div className="mt-4 flex flex-wrap items-center justify-between gap-4">
         <h1 className="text-3xl font-bold tracking-tight sm:text-4xl">Edit project</h1>
@@ -147,16 +174,25 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
           categories={categories}
           disabled={saving !== null}
           hint={isDraft
-            ? "This draft saves automatically as you edit it. Publish it when you’re ready from the project page."
+            ? "This draft saves automatically as you edit it. Publish it when you’re ready."
             : "This project is published. Changes you save here are visible to everyone right away."}
         />
 
         {showRestored && <RestoredChangesNotice onDiscard={discardRestored} />}
         {(error || autosaveFailure) && <p role="alert" className="mt-6 flex items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive"><CircleAlert className="size-4 shrink-0" />{error || autosaveFailure}</p>}
         <div className="mt-8 flex flex-col-reverse items-stretch justify-end gap-3 border-t pt-5 sm:flex-row sm:items-center sm:gap-4">
-          <Button type="button" variant="ghost" disabled={saving !== null} onClick={cancel} className="h-11 px-5">Cancel</Button>
+          <Button type="button" variant="ghost" disabled={saving !== null} onClick={() => setDiscardDialogOpen(true)} className="h-11 px-5">Cancel</Button>
+          <ProjectDiscardDialog
+            open={discardDialogOpen || blocker.status === "blocked"}
+            onOpenChange={changeDiscardDialog}
+            onConfirm={confirmCancel}
+            deletesDraft={false}
+            destination="this project"
+          />
           <Button type="submit" name="intent" value="close" variant="outline" disabled={saving !== null || (!hasChanges && !autosave) || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "close" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save & close"}</Button>
-          <Button type="submit" name="intent" value="save" disabled={saving !== null || !hasChanges || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "save" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save changes"}</Button>
+          {isDraft
+            ? <Button type="submit" name="intent" value="publish" disabled={saving !== null || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "publish" ? <><LoaderCircle className="size-4 animate-spin" />Publishing...</> : "Publish"}</Button>
+            : <Button type="submit" name="intent" value="save" disabled={saving !== null || !hasChanges || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "save" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save changes"}</Button>}
         </div>
       </form>
     </div>

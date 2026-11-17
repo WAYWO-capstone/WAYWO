@@ -9,7 +9,10 @@ class Settings(BaseSettings):
     r2_account_id: str
     r2_access_key_id: str
     r2_secret_access_key: str
+    # Public bucket: profile pictures.
     r2_bucket_name: str
+    # Private bucket: project resources, only reachable through signed links.
+    r2_private_bucket_name: str
     r2_public_base_url: str
 
     class Config:

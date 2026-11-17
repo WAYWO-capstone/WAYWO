@@ -12,7 +12,7 @@ export type EmailUpdate = Schemas["EmailChangeRequest"];
 export type PasswordUpdate = Schemas["PasswordChangeRequest"];
 
 // Profiles
-export type PublicProfile = Schemas["ProfileResponse"];
+export type PublicProfile = Schemas["PublicProfileResponse"];
 export type AccountProfile = Schemas["AccountProfileResponse"];
 export type ProfileUpdate = Schemas["ProfileUpdate"];
 export type ProfilePictureUpload = Schemas["Body_upload_my_profile_picture_users_me_picture_post"];
@@ -20,6 +20,7 @@ export type ProfilePictureUpload = Schemas["Body_upload_my_profile_picture_users
 // Follows
 export type FollowingStatus = Schemas["FollowingStatusResponse"];
 export type CreatorFollow = Schemas["CreatorFollowResponse"];
+export type FollowingCreator = Schemas["FollowingCreatorResponse"];
 
 // Projects
 export type ProjectStatus = Schemas["ProjectStatus"];
@@ -35,5 +36,9 @@ export type OwnedProject = Schemas["ProjectRead"];
 
 // Project updates
 export type UpdateType = Schemas["UpdateType"];
+export type UpdateSort = Schemas["UpdateSort"];
+export type UpdateReferenceReason = Schemas["UpdateReferenceReason"];
+export type UpdateReferenceCreate = Schemas["UpdateReferenceCreate"];
+export type UpdateReferenceRead = Schemas["UpdateReferenceRead"];
 export type ProjectUpdate = Schemas["UpdateRead"];
 export type UpdateHistoryPage = Schemas["UpdateHistoryPage"];

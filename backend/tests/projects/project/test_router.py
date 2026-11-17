@@ -183,3 +183,73 @@ def test_completed_project_remains_accessible(
     assert as_other_user.json()["status"] == "COMPLETED"
     assert anonymous.status_code == 200
     assert published_project in [project["id"] for project in owner_published]
+
+
+def test_owner_can_update_project_and_changes_are_persisted(
+    client: TestClient, owner, category
+) -> None:
+    project_id = _create_project(client, owner, category, publish=False)
+
+    response = client.patch(
+        f"/projects/{project_id}",
+        json={
+            "title": "Updated crochet tote",
+            "summary": "A stronger everyday bag",
+            "description": "Reinforced handles and a lined interior.",
+            "category_id": str(category.id),
+        },
+        headers=owner,
+    )
+
+    assert response.status_code == 200
+    assert response.json()["title"] == "Updated crochet tote"
+    reloaded = client.get(f"/projects/{project_id}", headers=owner)
+    assert reloaded.status_code == 200
+    assert reloaded.json()["title"] == "Updated crochet tote"
+    assert reloaded.json()["summary"] == "A stronger everyday bag"
+    assert reloaded.json()["description"] == "Reinforced handles and a lined interior."
+    assert reloaded.json()["category"]["id"] == str(category.id)
+
+
+def test_rejects_invalid_project_update_without_changing_saved_data(
+    client: TestClient, owner, category
+) -> None:
+    project_id = _create_project(client, owner, category, publish=False)
+
+    response = client.patch(
+        f"/projects/{project_id}", json={"title": "   "}, headers=owner
+    )
+
+    assert response.status_code == 422
+    reloaded = client.get(f"/projects/{project_id}", headers=owner)
+    assert reloaded.json()["title"] == "Crochet tote"
+
+
+def test_rejects_project_update_by_another_user(
+    client: TestClient, owner, category
+) -> None:
+    project_id = _create_project(client, owner, category, publish=False)
+
+    response = client.patch(
+        f"/projects/{project_id}",
+        json={"title": "Not my project"},
+        headers=_auth_headers(client),
+    )
+
+    assert response.status_code == 403
+    reloaded = client.get(f"/projects/{project_id}", headers=owner)
+    assert reloaded.json()["title"] == "Crochet tote"
+
+
+def test_rejects_unauthenticated_project_update(
+    client: TestClient, owner, category
+) -> None:
+    project_id = _create_project(client, owner, category, publish=False)
+
+    response = client.patch(
+        f"/projects/{project_id}", json={"title": "Anonymous edit"}
+    )
+
+    assert response.status_code == 401
+    reloaded = client.get(f"/projects/{project_id}", headers=owner)
+    assert reloaded.json()["title"] == "Crochet tote"
