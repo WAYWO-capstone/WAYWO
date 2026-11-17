@@ -3,15 +3,27 @@ import { progressPercent } from "@/lib/uploads/progress";
 import type { UploadItem, UploadStatus } from "@/lib/uploads/types";
 import { cn } from "@/lib/utils";
 
-const STATUS_LABELS: Record<UploadStatus, string> = {
+const STATUS_LABELS: Record<Exclude<UploadStatus, "done">, string> = {
   queued: "Waiting...",
   uploading: "Uploading...",
   completing: "Checking...",
   processing: "Processing...",
   attaching: "Adding...",
-  done: "Uploaded",
   error: "Failed",
 };
+
+const SIZE_UNITS = ["B", "KB", "MB", "GB"];
+
+function formatFileSize(bytes: number): string {
+  let size = bytes;
+  let unit = 0;
+  while (size >= 1024 && unit < SIZE_UNITS.length - 1) {
+    size /= 1024;
+    unit++;
+  }
+  const rounded = unit === 0 ? size : Math.round(size * 10) / 10;
+  return `${rounded} ${SIZE_UNITS[unit]}`;
+}
 
 interface UploadRowProps {
   item: UploadItem;
@@ -29,12 +41,19 @@ export function UploadRow({ item, onRetry, onRemove }: UploadRowProps) {
   return (
     <li className="rounded-md border border-brand-clay bg-white px-3 py-2">
       <div className="flex items-center gap-2">
-        <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground" title={name}>
-          <span className={cn("font-semibold", failed ? "text-destructive" : "text-brand-garnet")}>
-            {STATUS_LABELS[item.status]}
-          </span>{" "}
-          {name}
-        </p>
+        {item.status === "done" ? (
+          <>
+            <p className="min-w-0 flex-1 truncate text-sm font-semibold text-brand-mahogany" title={name}>{name}</p>
+            <span className="shrink-0 text-xs text-muted-foreground">{formatFileSize(item.totalBytes)}</span>
+          </>
+        ) : (
+          <p className="min-w-0 flex-1 truncate text-sm text-muted-foreground" title={name}>
+            <span className={cn("font-semibold", failed ? "text-destructive" : "text-brand-garnet")}>
+              {STATUS_LABELS[item.status]}
+            </span>{" "}
+            {name}
+          </p>
+        )}
         {failed && (
           <button
             type="button"
@@ -44,7 +63,7 @@ export function UploadRow({ item, onRetry, onRemove }: UploadRowProps) {
             <RotateCw className="size-3" aria-hidden="true" />Retry
           </button>
         )}
-        {(cancellable || failed || done) && (
+        {(cancellable || failed) && (
           <button
             type="button"
             onClick={() => onRemove(item.id)}
