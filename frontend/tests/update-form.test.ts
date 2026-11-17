@@ -1,10 +1,10 @@
 // @vitest-environment jsdom
 import { afterEach, describe, expect, test, vi } from "vitest";
 import { ApiError } from "../src/api/client";
-import { getProjectUpdate } from "../src/api/updates";
+import { getAllProjectUpdates, getProjectUpdate } from "../src/api/updates";
 import { createUpdateRequestError, updateChanges, updateRequestError, validateUpdate, wasEdited } from "../src/lib/update-form";
 
-const saved = { title: "Base finished", body: "Finished the base.", type: "PROGRESS" as const };
+const saved = { title: "Base finished", body: "Finished the base.", type: "PROGRESS" as const, references: [] };
 
 describe("updateChanges", () => {
   test("is empty when nothing meaningful changed", () => {
@@ -15,6 +15,19 @@ describe("updateChanges", () => {
   test("contains only the changed fields, trimmed", () => {
     expect(updateChanges(saved, { ...saved, title: " New title " })).toEqual({ title: "New title" });
     expect(updateChanges(saved, { ...saved, type: "DECISION" })).toEqual({ type: "DECISION" });
+  });
+
+  test("sends changed references but ignores their display order", () => {
+    const references = [
+      { target_update_id: "u2", reason: "RELATED_TO" as const },
+      { target_update_id: "u1", reason: "SOLVES" as const },
+    ];
+    expect(updateChanges(
+      { ...saved, references: references.slice().reverse() },
+      { ...saved, references },
+    )).toEqual({});
+    expect(updateChanges(saved, { ...saved, references })).toEqual({ references });
+    expect(updateChanges({ ...saved, references }, saved)).toEqual({ references: [] });
   });
 });
 
@@ -32,6 +45,8 @@ describe("updateRequestError", () => {
   test("explains permission and missing-update failures", () => {
     expect(updateRequestError(new ApiError(403))).toBe("You can only change your own updates.");
     expect(updateRequestError(new ApiError(404))).toBe("This update no longer exists.");
+    expect(updateRequestError(new ApiError(404, "Referenced update not found"))).toContain("linked update");
+    expect(updateRequestError(new ApiError(422, "Solve references must link SOLUTION updates to PROBLEM updates"))).toContain("Solution");
   });
 });
 
@@ -53,6 +68,14 @@ describe("getProjectUpdate", () => {
     const fetchMock = stubHistory(ids);
 
     await expect(getProjectUpdate("p1", "u22")).resolves.toEqual({ id: "u22" });
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+  });
+
+  test("loads every page of the history for the reference picker", async () => {
+    const ids = Array.from({ length: 25 }, (_, index) => `u${index}`);
+    const fetchMock = stubHistory(ids);
+
+    await expect(getAllProjectUpdates("p1")).resolves.toHaveLength(25);
     expect(fetchMock).toHaveBeenCalledTimes(2);
   });
 

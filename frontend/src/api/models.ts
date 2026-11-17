@@ -36,5 +36,8 @@ export type OwnedProject = Schemas["ProjectRead"];
 // Project updates
 export type UpdateType = Schemas["UpdateType"];
 export type UpdateSort = Schemas["UpdateSort"];
+export type UpdateReferenceReason = Schemas["UpdateReferenceReason"];
+export type UpdateReferenceCreate = Schemas["UpdateReferenceCreate"];
+export type UpdateReferenceRead = Schemas["UpdateReferenceRead"];
 export type ProjectUpdate = Schemas["UpdateRead"];
 export type UpdateHistoryPage = Schemas["UpdateHistoryPage"];

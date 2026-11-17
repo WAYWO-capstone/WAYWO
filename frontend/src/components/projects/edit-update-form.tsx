@@ -65,6 +65,10 @@ export function EditUpdateForm({ project, update }: EditUpdateFormProps) {
       await Promise.all([
         queryClient.invalidateQueries({ queryKey: ["project-history", project.id] }),
         queryClient.invalidateQueries({ queryKey: ["project-update", project.id, update.id] }),
+        queryClient.invalidateQueries({
+          queryKey: ["project-updates-for-references", project.id],
+          refetchType: "none",
+        }),
       ]);
       if (shouldClose) await backToProject();
     } catch (cause) {
@@ -77,6 +81,8 @@ export function EditUpdateForm({ project, update }: EditUpdateFormProps) {
   return (
     <UpdateFormLayout
       projectId={project.id}
+      updateId={update.id}
+      incomingReferences={update.incoming_references ?? []}
       heading="Edit update"
       description="Make changes to this update in your project’s Activity timeline."
       values={values}
