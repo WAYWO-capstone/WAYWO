@@ -61,7 +61,7 @@ export function ProjectResources({ projectId, isOwner }: ProjectResourcesProps) 
     <section aria-labelledby="resources-heading" className="flex max-h-180 min-h-80 flex-col rounded-lg border border-border bg-background p-4">
       <h2 id="resources-heading" className="text-lg font-bold text-brand-mahogany">Resources</h2>
       {projectId && isOwner ? (
-        <OwnerResources />
+        <OwnerResources key={projectId} />
       ) : (
         <div className={listClasses}>
           <EmptyList />
