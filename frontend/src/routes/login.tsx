@@ -71,8 +71,8 @@ function LoginPage() {
       <p className="text-sm font-bold tracking-widest text-brand-rust uppercase">
         Welcome back, maker
       </p>
-      <h1 className="mt-5 text-center text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
-        Log in to <span className="text-brand-rust">WAYWO.</span>
+      <h1 className="mt-5 flex flex-wrap items-center justify-center gap-x-4 text-center text-5xl leading-none font-extrabold tracking-tight sm:text-6xl">
+        Log in to <span className="mb-4 text-7xl font-fredoka text-brand-rust font-medium">waywo</span>
       </h1>
       <p className="mt-5 text-center text-lg text-muted-foreground">
         Pick up where you left off.{" "}

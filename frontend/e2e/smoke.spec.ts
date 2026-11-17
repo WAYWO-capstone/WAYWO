@@ -16,7 +16,7 @@ test.describe("Smoke", () => {
 
     await expect(page).toHaveURL(/\/login$/);
     await expect(
-      page.getByRole("heading", { name: "Log in to WAYWO." }),
+      page.getByRole("heading", { name: "Log in to WAYWO" }),
     ).toBeVisible();
   });
 });
