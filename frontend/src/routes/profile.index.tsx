@@ -63,6 +63,6 @@ function ProfilePage() {
 }
 
 function isProfileSection(value: unknown): value is ProfileSection {
-  return value === "saved-projects" || value === "followers" || value === "settings" ||
+  return value === "saved-projects" || value === "followers" || value === "following" || value === "settings" ||
     value === "notifications" || value === "accessibility";
 }

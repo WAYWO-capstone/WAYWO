@@ -21,3 +21,12 @@ class CreatorFollowResponse(BaseModel):
     followed_id: uuid.UUID
     followed_at: datetime
     notifications_enabled: bool
+
+
+class FollowingCreatorResponse(BaseModel):
+    """A creator followed by the logged-in user."""
+
+    username: str
+    bio: str | None
+    profile_picture_link: str | None
+    followed_at: datetime

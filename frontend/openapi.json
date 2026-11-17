@@ -138,6 +138,50 @@
         "title": "EmailChangeRequest",
         "type": "object"
       },
+      "FollowingCreatorResponse": {
+        "description": "A creator followed by the logged-in user.",
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "followed_at": {
+            "format": "date-time",
+            "title": "Followed At",
+            "type": "string"
+          },
+          "profile_picture_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Picture Link"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "bio",
+          "profile_picture_link",
+          "followed_at"
+        ],
+        "title": "FollowingCreatorResponse",
+        "type": "object"
+      },
       "FollowingStatusResponse": {
         "description": "Whether the logged-in user follows a creator.",
         "properties": {
@@ -635,6 +679,54 @@
           }
         },
         "title": "ProjectUpdate",
+        "type": "object"
+      },
+      "PublicProfileResponse": {
+        "description": "Public profile details, including creator follow counts.",
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "followers_count": {
+            "title": "Followers Count",
+            "type": "integer"
+          },
+          "following_count": {
+            "title": "Following Count",
+            "type": "integer"
+          },
+          "profile_picture_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Picture Link"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "bio",
+          "profile_picture_link",
+          "followers_count",
+          "following_count"
+        ],
+        "title": "PublicProfileResponse",
         "type": "object"
       },
       "RefreshRequest": {
@@ -1573,6 +1665,37 @@
           }
         },
         "summary": "Database Test"
+      }
+    },
+    "/follows/following": {
+      "get": {
+        "description": "Return the creators followed by the logged-in user.",
+        "operationId": "list_followed_creators_follows_following_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FollowingCreatorResponse"
+                  },
+                  "title": "Response List Followed Creators Follows Following Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Followed Creators",
+        "tags": [
+          "social"
+        ]
       }
     },
     "/follows/{username}": {
@@ -2942,8 +3065,8 @@
     },
     "/users/{username}": {
       "get": {
-        "description": "Return a user's public profile.",
-        "operationId": "get_profile_users__username__get",
+        "description": "Return a user's public profile with follow counts.",
+        "operationId": "get_public_profile_users__username__get",
         "parameters": [
           {
             "in": "path",
@@ -2960,7 +3083,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileResponse"
+                  "$ref": "#/components/schemas/PublicProfileResponse"
                 }
               }
             },
@@ -2977,7 +3100,54 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Get Profile",
+        "summary": "Get Public Profile",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{username}/following": {
+      "get": {
+        "description": "Return the creators followed by a user.",
+        "operationId": "get_public_following_users__username__following_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "title": "Username",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FollowingCreatorResponse"
+                  },
+                  "title": "Response Get Public Following Users  Username  Following Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Public Following",
         "tags": [
           "users"
         ]
