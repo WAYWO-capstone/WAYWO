@@ -1,4 +1,5 @@
 import { RotateCw, X } from "lucide-react";
+import { formatFileSize } from "@/lib/uploads/format";
 import { progressPercent } from "@/lib/uploads/progress";
 import type { UploadItem, UploadStatus } from "@/lib/uploads/types";
 import { cn } from "@/lib/utils";
@@ -11,19 +12,6 @@ const STATUS_LABELS: Record<Exclude<UploadStatus, "done">, string> = {
   attaching: "Adding...",
   error: "Failed",
 };
-
-const SIZE_UNITS = ["B", "KB", "MB", "GB"];
-
-function formatFileSize(bytes: number): string {
-  let size = bytes;
-  let unit = 0;
-  while (size >= 1024 && unit < SIZE_UNITS.length - 1) {
-    size /= 1024;
-    unit++;
-  }
-  const rounded = unit === 0 ? size : Math.round(size * 10) / 10;
-  return `${rounded} ${SIZE_UNITS[unit]}`;
-}
 
 interface UploadRowProps {
   item: UploadItem;

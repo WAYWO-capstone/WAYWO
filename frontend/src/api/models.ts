@@ -42,3 +42,6 @@ export type UpdateReferenceCreate = Schemas["UpdateReferenceCreate"];
 export type UpdateReferenceRead = Schemas["UpdateReferenceRead"];
 export type ProjectUpdate = Schemas["UpdateRead"];
 export type UpdateHistoryPage = Schemas["UpdateHistoryPage"];
+
+// Project resources
+export type ProjectResource = Schemas["ResourceRead"];
