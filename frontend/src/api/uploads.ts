@@ -1,4 +1,5 @@
 // File uploads: the browser sends the file straight to R2 with a signed URL.
+import { api, publicApi, unwrap } from "@/api/client";
 import type {
   CreatedUpload,
   UploadConfig,
@@ -6,25 +7,25 @@ import type {
   UploadResult,
 } from "@/lib/uploads/api-types";
 
-function notWired(): never {
-  throw new Error("Upload API is not wired yet");
-}
+const uploadPath = (uploadId: string) => ({ path: { upload_id: uploadId } });
 
 export async function getUploadConfig(): Promise<UploadConfig> {
-  return notWired();
+  return (await unwrap(publicApi.GET("/uploads/config"))) as UploadConfig;
 }
 
-export async function createUpload(
-  _kind: UploadKind,
-  _file: File,
-): Promise<CreatedUpload> {
-  return notWired();
+export function createUpload(kind: UploadKind, file: File): Promise<CreatedUpload> {
+  return unwrap(
+    api.POST("/uploads", {
+      // Browsers leave the `type` field empty for most maker files so the backend goes by extension instead.
+      body: { kind, filename: file.name, size: file.size, mime_type: file.type },
+    }),
+  );
 }
 
-export async function completeUpload(_uploadId: string): Promise<UploadResult> {
-  return notWired();
+export function completeUpload(uploadId: string): Promise<UploadResult> {
+  return unwrap(api.POST("/uploads/{upload_id}/complete", { params: uploadPath(uploadId) }));
 }
 
-export async function getUpload(_uploadId: string): Promise<UploadResult> {
-  return notWired();
+export function getUpload(uploadId: string): Promise<UploadResult> {
+  return unwrap(api.GET("/uploads/{upload_id}", { params: uploadPath(uploadId) }));
 }
