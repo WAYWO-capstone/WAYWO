@@ -60,6 +60,13 @@ class ProfileResponse(BaseModel):
     profile_picture_link: str | None
 
 
+class PublicProfileResponse(ProfileResponse):
+    """Public profile details, including creator follow counts."""
+
+    followers_count: int
+    following_count: int
+
+
 class AccountProfileResponse(ProfileResponse):
     """Signed-in profile, including the account email."""
 

@@ -1,18 +1,29 @@
+import type { ProjectUpdate } from "@/api/models";
+import { DeleteUpdateDialog } from "@/components/projects/delete-update-dialog";
+import { scrollToUpdateInHistory } from "@/components/projects/update-history-scroll";
+import { updateReferenceReasonLabels } from "@/components/projects/update-reference-reasons";
+import { updateTypeStyles } from "@/components/projects/update-types";
+import { buttonVariants } from "@/components/ui/button";
+import {
+  formatUpdateDateAbsolute,
+  formatUpdateDateRelative,
+  wasEdited,
+} from "@/lib/update-form";
 import { Link } from "@tanstack/react-router";
 import { cn } from "cn";
 import { ChevronRight, Heart, MessageCircle } from "lucide-react";
-import type { ProjectUpdate } from "@/api/models";
-import { DeleteUpdateDialog } from "@/components/projects/delete-update-dialog";
-import { updateTypeStyles } from "@/components/projects/update-types";
-import { buttonVariants } from "@/components/ui/button";
-import { formatUpdateDate, wasEdited } from "@/lib/update-form";
 
 interface UpdateItemProps {
   update: ProjectUpdate;
+  projectId?: string;
   canManage?: boolean;
 }
 
-export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
+export function UpdateItem({
+  update,
+  projectId,
+  canManage = false,
+}: UpdateItemProps) {
   const type = updateTypeStyles[update.type];
 
   return (
@@ -22,7 +33,12 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
         className={`absolute top-1 left-[11px] size-4 -translate-x-1/2 rounded-full border border-brand-mahogany ${type.className}`}
       />
 
-      <article aria-labelledby={`update-${update.id}-title`}>
+      <article
+        id={`update-${update.id}`}
+        tabIndex={-1}
+        aria-labelledby={`update-${update.id}-title`}
+        className="rounded-md transition-colors"
+      >
         <h3 id={`update-${update.id}-title`} className="text-xl font-semibold text-brand-garnet">
           {update.title}
         </h3>
@@ -32,7 +48,13 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
             {type.label}
           </span>
           <span className="text-brand-rust">
-            {update.author.username} · <time dateTime={update.created_at}>{formatUpdateDate(update.created_at)}</time>
+            {update.author.username} ·{" "}
+            <time
+              title={formatUpdateDateAbsolute(update.created_at)}
+              dateTime={update.created_at}
+            >
+              {formatUpdateDateRelative(update.created_at)}
+            </time>
           </span>
           {!update.public && (
             <span className="rounded-full border border-border px-2 py-0.5 text-xs text-muted-foreground">Private</span>
@@ -44,6 +66,8 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
             {update.body}
           </p>
         )}
+
+        <UpdateReferenceLinks update={update} projectId={projectId} />
 
         {/* Placeholders until updates support images, likes and comments. */}
         <div aria-hidden="true" className="mt-2 flex flex-wrap gap-[19px]">
@@ -66,8 +90,14 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
 
         <div className="mt-3.5 flex flex-wrap items-center justify-between gap-3 border-t border-border pt-2.5">
           <div className="text-xs leading-5 text-brand-mahogany">
-            <p>Posted on {formatUpdateDate(update.created_at)}</p>
-            {wasEdited(update) && <p>Edited {formatUpdateDate(update.updated_at)}</p>}
+            <p title={formatUpdateDateAbsolute(update.created_at)}>
+              Posted {formatUpdateDateRelative(update.created_at)}
+            </p>
+            {wasEdited(update) && (
+              <p title={formatUpdateDateAbsolute(update.updated_at)}>
+                Edited {formatUpdateDateRelative(update.updated_at)}
+              </p>
+            )}
           </div>
           {canManage && (
             <div className="flex items-center gap-2">
@@ -88,15 +118,109 @@ export function UpdateItem({ update, canManage = false }: UpdateItemProps) {
   );
 }
 
-export function UpdateTimeline({ updates, canManage = false }: { updates: ProjectUpdate[]; canManage?: boolean }) {
+export function UpdateTimeline({
+  updates,
+  projectId,
+  canManage = false,
+}: {
+  updates: ProjectUpdate[];
+  projectId?: string;
+  canManage?: boolean;
+}) {
   return (
     <div className="relative">
       <span aria-hidden="true" className="absolute top-3 bottom-0 left-[11px] w-px -translate-x-1/2 bg-brand-rust" />
       <ol className="relative">
         {updates.map((update) => (
-          <UpdateItem key={update.id} update={update} canManage={canManage} />
+          <UpdateItem
+            key={update.id}
+            update={update}
+            projectId={projectId}
+            canManage={canManage}
+          />
         ))}
       </ol>
+    </div>
+  );
+}
+
+function UpdateReferenceLinks({
+  update,
+  projectId,
+}: {
+  update: ProjectUpdate;
+  projectId?: string;
+}) {
+  const references = [
+    ...(update.outgoing_references ?? []).map((reference) => ({
+      ...reference,
+      direction: "outgoing" as const,
+    })),
+    ...(update.incoming_references ?? []).map((reference) => ({
+      ...reference,
+      direction: "incoming" as const,
+    })),
+  ];
+
+  if (references.length === 0) return null;
+
+  return (
+    <div className="mt-3 text-sm">
+      <ul className="flex flex-wrap gap-2">
+        {references.map((reference) => {
+          const reason = updateReferenceReasonLabels[reference.reason];
+          const type = updateTypeStyles[reference.type];
+          const content = (
+            <>
+              <span>{reason}</span>
+              <span className="max-w-56 truncate font-semibold text-brand-garnet">
+                {reference.title}
+              </span>
+              <span
+                className={`rounded-[7px] px-1.5 py-0.5 text-xs font-semibold text-brand-mahogany ${type.className}`}
+              >
+                {type.label}
+              </span>
+            </>
+          );
+          const className =
+            "inline-flex max-w-full items-center gap-1.5 rounded-full border border-brand-garnet px-2.5 py-1 leading-5 text-brand-mahogany hover:bg-brand-garnet/5 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ring";
+          const key = `${reference.direction}-${reference.linked_update_id}`;
+          const accessibleLabel = `${reason} ${reference.title} ${type.label}`;
+
+          return (
+            <li key={key}>
+              {projectId ? (
+                <Link
+                  to="/view-project"
+                  search={{
+                    projectId,
+                    updateId: reference.linked_update_id,
+                  }}
+                  resetScroll={false}
+                  onClick={(event) => {
+                    if (
+                      new URLSearchParams(window.location.search).get("updateId") ===
+                        reference.linked_update_id &&
+                      scrollToUpdateInHistory(reference.linked_update_id)
+                    ) {
+                      event.preventDefault();
+                    }
+                  }}
+                  aria-label={accessibleLabel}
+                  className={className}
+                >
+                  {content}
+                </Link>
+              ) : (
+                <span className={className}>
+                  {content}
+                </span>
+              )}
+            </li>
+          );
+        })}
+      </ul>
     </div>
   );
 }

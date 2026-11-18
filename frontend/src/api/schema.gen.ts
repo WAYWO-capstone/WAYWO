@@ -132,6 +132,26 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/follows/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * List Followed Creators
+         * @description Return the creators followed by the logged-in user.
+         */
+        get: operations["list_followed_creators_follows_following_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/follows/{username}": {
         parameters: {
             query?: never;
@@ -298,6 +318,24 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/resources": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Project Resources */
+        get: operations["list_project_resources_projects__project_id__resources_get"];
+        put?: never;
+        /** Create Project Resource */
+        post: operations["create_project_resource_projects__project_id__resources_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/status": {
         parameters: {
             query?: never;
@@ -368,6 +406,77 @@ export interface paths {
         patch: operations["edit_project_update_projects__project_id__updates__update_id__patch"];
         trace?: never;
     };
+    "/uploads": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Create Upload */
+        post: operations["create_upload_uploads_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/config": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Upload Config
+         * @description The upload rules per kind, so the browser can check files before sending.
+         */
+        get: operations["get_upload_config_uploads_config_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** Get Upload */
+        get: operations["get_upload_uploads__upload_id__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/uploads/{upload_id}/complete": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Complete Upload */
+        post: operations["complete_upload_uploads__upload_id__complete_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/users/me": {
         parameters: {
             query?: never;
@@ -424,10 +533,30 @@ export interface paths {
             cookie?: never;
         };
         /**
-         * Get Profile
-         * @description Return a user's public profile.
+         * Get Public Profile
+         * @description Return a user's public profile with follow counts.
          */
-        get: operations["get_profile_users__username__get"];
+        get: operations["get_public_profile_users__username__get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
+    "/users/{username}/following": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /**
+         * Get Public Following
+         * @description Return the creators followed by a user.
+         */
+        get: operations["get_public_following_users__username__following_get"];
         put?: never;
         post?: never;
         delete?: never;
@@ -503,6 +632,23 @@ export interface components {
              * Format: email
              */
             email: string;
+        };
+        /**
+         * FollowingCreatorResponse
+         * @description A creator followed by the logged-in user.
+         */
+        FollowingCreatorResponse: {
+            /** Bio */
+            bio: string | null;
+            /**
+             * Followed At
+             * Format: date-time
+             */
+            followed_at: string;
+            /** Profile Picture Link */
+            profile_picture_link: string | null;
+            /** Username */
+            username: string;
         };
         /**
          * FollowingStatusResponse
@@ -678,12 +824,66 @@ export interface components {
             title?: string | null;
         };
         /**
+         * PublicProfileResponse
+         * @description Public profile details, including creator follow counts.
+         */
+        PublicProfileResponse: {
+            /** Bio */
+            bio: string | null;
+            /** Followers Count */
+            followers_count: number;
+            /** Following Count */
+            following_count: number;
+            /** Profile Picture Link */
+            profile_picture_link: string | null;
+            /** Username */
+            username: string;
+        };
+        /**
          * RefreshRequest
          * @description Refresh token payload.
          */
         RefreshRequest: {
             /** Refresh Token */
             refresh_token: string;
+        };
+        /** ResourceCreate */
+        ResourceCreate: {
+            /** Title */
+            title?: string | null;
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+        };
+        /** ResourceRead */
+        ResourceRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Description */
+            description: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /**
+             * Project Id
+             * Format: uuid
+             */
+            project_id: string;
+            /** Size */
+            size: number;
+            /** Title */
+            title: string;
         };
         /** TagRead */
         TagRead: {
@@ -716,6 +916,8 @@ export interface components {
             body: string;
             /** Public */
             public?: boolean | null;
+            /** References */
+            references?: components["schemas"]["UpdateReferenceCreate"][];
             /** Title */
             title: string;
             /** @default PROGRESS */
@@ -727,6 +929,8 @@ export interface components {
             body?: string | null;
             /** Public */
             public?: boolean | null;
+            /** References */
+            references?: components["schemas"]["UpdateReferenceCreate"][] | null;
             /** Title */
             title?: string | null;
             type?: components["schemas"]["UpdateType"] | null;
@@ -762,6 +966,10 @@ export interface components {
              * Format: uuid
              */
             id: string;
+            /** Incoming References */
+            incoming_references?: components["schemas"]["UpdateReferenceRead"][];
+            /** Outgoing References */
+            outgoing_references?: components["schemas"]["UpdateReferenceRead"][];
             /**
              * Project Id
              * Format: uuid
@@ -778,11 +986,113 @@ export interface components {
              */
             updated_at: string;
         };
+        /** UpdateReferenceCreate */
+        UpdateReferenceCreate: {
+            /** @default RELATED_TO */
+            reason: components["schemas"]["UpdateReferenceReason"];
+            /**
+             * Target Update Id
+             * Format: uuid
+             */
+            target_update_id: string;
+        };
+        /**
+         * UpdateReferenceDisplayReason
+         * @enum {string}
+         */
+        UpdateReferenceDisplayReason: "SOLVES" | "SOLVED_BY" | "PARTIALLY_SOLVES" | "PARTIALLY_SOLVED_BY" | "RELATED_TO";
+        /** UpdateReferenceRead */
+        UpdateReferenceRead: {
+            /**
+             * Linked Update Id
+             * Format: uuid
+             */
+            linked_update_id: string;
+            reason: components["schemas"]["UpdateReferenceDisplayReason"];
+            /** Title */
+            title: string;
+            type: components["schemas"]["UpdateType"];
+        };
+        /**
+         * UpdateReferenceReason
+         * @enum {string}
+         */
+        UpdateReferenceReason: "SOLVES" | "PARTIALLY_SOLVES" | "RELATED_TO";
+        /**
+         * UpdateSort
+         * @enum {string}
+         */
+        UpdateSort: "date_asc" | "date_desc";
         /**
          * UpdateType
          * @enum {string}
          */
         UpdateType: "PROGRESS" | "DECISION" | "PROBLEM" | "SOLUTION";
+        /** UploadCreate */
+        UploadCreate: {
+            /** Filename */
+            filename: string;
+            kind: components["schemas"]["UploadKind"];
+            /**
+             * Mime Type
+             * @default
+             */
+            mime_type: string;
+            /** Size */
+            size: number;
+        };
+        /** UploadCreated */
+        UploadCreated: {
+            /**
+             * Expires At
+             * Format: date-time
+             */
+            expires_at: string;
+            /** Headers */
+            headers: {
+                [key: string]: string;
+            };
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+            /** Url */
+            url: string;
+        };
+        /**
+         * UploadKind
+         * @enum {string}
+         */
+        UploadKind: "PICTURE" | "RESOURCE";
+        /** UploadKindConfigRead */
+        UploadKindConfigRead: {
+            /** Allowed Extensions */
+            allowed_extensions: string[];
+            /** Allowed Mime */
+            allowed_mime: string[];
+            /** Max Size */
+            max_size: number;
+        };
+        /** UploadRead */
+        UploadRead: {
+            /** Filename */
+            filename: string;
+            kind: components["schemas"]["UploadKind"];
+            /** Size */
+            size: number;
+            status: components["schemas"]["UploadStatus"];
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+        };
+        /**
+         * UploadStatus
+         * @enum {string}
+         */
+        UploadStatus: "PENDING" | "PROCESSING" | "READY" | "FAILED";
         /**
          * UserCreate
          * @description Payload used to create a user account.
@@ -1039,6 +1349,26 @@ export interface operations {
                 };
                 content: {
                     "application/json": unknown;
+                };
+            };
+        };
+    };
+    list_followed_creators_follows_following_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowingCreatorResponse"][];
                 };
             };
         };
@@ -1423,6 +1753,72 @@ export interface operations {
             };
         };
     };
+    list_project_resources_projects__project_id__resources_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    create_project_resource_projects__project_id__resources_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ResourceCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ResourceRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     update_project_status_projects__project_id__status_patch: {
         parameters: {
             query?: never;
@@ -1494,6 +1890,8 @@ export interface operations {
             query?: {
                 limit?: number;
                 offset?: number;
+                filter?: components["schemas"]["UpdateType"][] | null;
+                sort?: components["schemas"]["UpdateSort"];
             };
             header?: never;
             path: {
@@ -1624,6 +2022,123 @@ export interface operations {
             };
         };
     };
+    create_upload_uploads_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UploadCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadCreated"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_upload_config_uploads_config_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": {
+                        [key: string]: components["schemas"]["UploadKindConfigRead"];
+                    };
+                };
+            };
+        };
+    };
+    get_upload_uploads__upload_id__get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    complete_upload_uploads__upload_id__complete_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                upload_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UploadRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
     get_my_profile_users_me_get: {
         parameters: {
             query?: never;
@@ -1728,7 +2243,7 @@ export interface operations {
             };
         };
     };
-    get_profile_users__username__get: {
+    get_public_profile_users__username__get: {
         parameters: {
             query?: never;
             header?: never;
@@ -1745,7 +2260,38 @@ export interface operations {
                     [name: string]: unknown;
                 };
                 content: {
-                    "application/json": components["schemas"]["ProfileResponse"];
+                    "application/json": components["schemas"]["PublicProfileResponse"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    get_public_following_users__username__following_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                username: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["FollowingCreatorResponse"][];
                 };
             };
             /** @description Validation Error */

@@ -20,6 +20,7 @@ jobs:
       R2_ACCESS_KEY_ID: ci-test-access-key
       R2_SECRET_ACCESS_KEY: ci-test-secret-key
       R2_BUCKET_NAME: ci-test-bucket
+      R2_PRIVATE_BUCKET_NAME: ci-test-private-bucket
       R2_PUBLIC_BASE_URL: https://example.invalid/ci-test
 
     services:
@@ -102,6 +103,7 @@ jobs:
       R2_ACCESS_KEY_ID: ci-test-access-key
       R2_SECRET_ACCESS_KEY: ci-test-secret-key
       R2_BUCKET_NAME: ci-test-bucket
+      R2_PRIVATE_BUCKET_NAME: ci-test-private-bucket
       R2_PUBLIC_BASE_URL: https://example.invalid/ci-test
 
     steps:

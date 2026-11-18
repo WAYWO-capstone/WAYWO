@@ -2,8 +2,10 @@
 
 import uuid
 
+from sqlalchemy import func, select
 from sqlalchemy.orm import Session
 
+from app.accounts.users.models import Profile, User
 from app.social.models import CreatorFollow
 
 
@@ -28,3 +30,28 @@ class SocialRepository:
     def delete_creator_follow(self, follow: CreatorFollow) -> None:
         self._session.delete(follow)
         self._session.flush()
+
+    def get_follower_count(self, user_id: uuid.UUID) -> int:
+        statement = select(func.count()).select_from(CreatorFollow).where(
+            CreatorFollow.followed_id == user_id
+        )
+        return self._session.scalar(statement) or 0
+
+    def get_following_count(self, user_id: uuid.UUID) -> int:
+        statement = select(func.count()).select_from(CreatorFollow).where(
+            CreatorFollow.follower_id == user_id
+        )
+        return self._session.scalar(statement) or 0
+
+    def list_followed_creators(
+        self,
+        follower_id: uuid.UUID,
+    ) -> list[tuple[User, Profile | None, CreatorFollow]]:
+        statement = (
+            select(User, Profile, CreatorFollow)
+            .join(CreatorFollow, CreatorFollow.followed_id == User.id)
+            .outerjoin(Profile, Profile.user_id == User.id)
+            .where(CreatorFollow.follower_id == follower_id)
+            .order_by(User.username)
+        )
+        return list(self._session.execute(statement).all())

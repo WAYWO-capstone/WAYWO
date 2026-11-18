@@ -1,0 +1,25 @@
+/* Styles shared by the site header's buttons and menus. */
+
+@reference "../../index.css";
+
+@layer components {
+  /* Square icon button, e.g. the search and hamburger buttons. */
+  .header-icon-button {
+    @apply inline-flex size-10 shrink-0 cursor-pointer items-center justify-center rounded-lg outline-none hover:bg-accent focus-visible:ring-2 focus-visible:ring-ring;
+  }
+
+  /* Dropdown box of a header menu. Width is set by each menu. */
+  .header-menu-popup {
+    @apply rounded-xl border bg-background p-1.5 text-foreground shadow-lg outline-none;
+  }
+
+  /* Divider line between groups of menu rows. */
+  .header-menu-separator {
+    @apply my-1.5 h-px bg-border;
+  }
+
+  /* Row in a header dropdown menu. Text size is set by each menu. */
+  .header-menu-item {
+    @apply flex cursor-pointer items-center gap-2 rounded-lg px-3 outline-none select-none data-highlighted:bg-accent data-highlighted:text-accent-foreground;
+  }
+}

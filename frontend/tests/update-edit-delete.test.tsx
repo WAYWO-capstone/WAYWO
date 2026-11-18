@@ -39,6 +39,10 @@ function json(body: unknown, status = 200) {
   return new Response(JSON.stringify(body), { status });
 }
 
+function historyResponse(items: ProjectUpdate[] = []) {
+  return json({ items, total: items.length, limit: 20, offset: 0 });
+}
+
 // The requests that change data, as [method, path, parsed body].
 async function writes(fetchMock: ReturnType<typeof vi.fn>) {
   const sent = fetchMock.mock.calls
@@ -61,7 +65,7 @@ let fetchMock: ReturnType<typeof vi.fn>;
 
 beforeEach(() => {
   navigate.mockReset();
-  fetchMock = vi.fn();
+  fetchMock = vi.fn(async () => historyResponse());
   vi.stubGlobal("fetch", fetchMock);
 });
 
@@ -84,7 +88,7 @@ describe("update card", () => {
 
   test("shows the edited date only after an edit", () => {
     renderWithQueries(<UpdateTimeline updates={[makeUpdate()]} />);
-    expect(screen.getByText(/^Posted on/)).toBeTruthy();
+    expect(screen.getByText(/^Posted/)).toBeTruthy();
     expect(screen.queryByText(/^Edited/)).toBeNull();
     cleanup();
 
@@ -129,7 +133,7 @@ describe("deleting an update", () => {
     const dialog = await openDialog();
     fireEvent.click(within(dialog).getByRole("button", { name: "Delete update" }));
 
-    await screen.findByText("No updates yet.");
+    await screen.findByText("No updates were found.");
     expect(await writes(fetchMock)).toEqual([["DELETE", "/api/projects/p1/updates/u1", undefined]]);
   });
 
@@ -160,8 +164,32 @@ describe("editing an update", () => {
     expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
   });
 
+  test("shows incoming relationships read-only", () => {
+    const update = makeUpdate({
+      incoming_references: [{
+        linked_update_id: "solution-1",
+        title: "Reinforced the support",
+        type: "SOLUTION",
+        reason: "SOLVED_BY",
+      }],
+    });
+    renderWithQueries(<EditUpdateForm project={project} update={update} />);
+
+    expect(screen.getByRole("heading", { name: "Linked updates" })).toBeTruthy();
+    expect(screen.getByRole("heading", { name: "Links to this update" })).toBeTruthy();
+    expect(screen.getByText("Reinforced the support")).toBeTruthy();
+    expect(screen.getByText("Solved by")).toBeTruthy();
+    expect(screen.getByText("Solution", { selector: "span" }).className).toContain("bg-update-solution");
+    expect(screen.queryByRole("button", { name: /remove link to reinforced/i })).toBeNull();
+    expect((screen.getByRole("button", { name: "Save changes" }) as HTMLButtonElement).disabled).toBe(true);
+  });
+
   test("Save changes sends only the changed fields and stays on the page", async () => {
-    fetchMock.mockImplementation(async () => json(makeUpdate({ title: "New title", type: "DECISION" })));
+    fetchMock.mockImplementation(async (request: Request) =>
+      request.method === "PATCH"
+        ? json(makeUpdate({ title: "New title", type: "DECISION" }))
+        : historyResponse(),
+    );
     renderForm();
 
     fireEvent.change(screen.getByLabelText(/Update title/), { target: { value: "  New title " } });
@@ -175,7 +203,11 @@ describe("editing an update", () => {
   });
 
   test("Save & close returns to the project", async () => {
-    fetchMock.mockImplementation(async () => json(makeUpdate({ body: "More detail." })));
+    fetchMock.mockImplementation(async (request: Request) =>
+      request.method === "PATCH"
+        ? json(makeUpdate({ body: "More detail." }))
+        : historyResponse(),
+    );
     renderForm();
 
     fireEvent.change(screen.getByLabelText(/Detailed content/), { target: { value: "More detail." } });
@@ -185,18 +217,33 @@ describe("editing an update", () => {
     expect(await writes(fetchMock)).toEqual([["PATCH", "/api/projects/p1/updates/u1", { body: "More detail." }]]);
   });
 
-  test("does not send blank required fields", () => {
+  test("does not send blank required fields", async () => {
     renderForm();
 
     fireEvent.change(screen.getByLabelText(/Detailed content/), { target: { value: "   " } });
     fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
 
-    expect(screen.getByRole("alert").textContent).toContain("Fill in the title and content");
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(screen.getByText("Add a description")).toBeTruthy();
+    expect(document.activeElement).toBe(screen.getByLabelText(/Detailed content/));
+    expect(await writes(fetchMock)).toEqual([]);
+  });
+
+  test("uses the same title rule as creating an update", async () => {
+    renderForm();
+
+    fireEvent.change(screen.getByLabelText(/Update title/), { target: { value: "ab" } });
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    expect(screen.getByText("Title needs at least 3 characters")).toBeTruthy();
+    expect(await writes(fetchMock)).toEqual([]);
   });
 
   test("keeps what was typed and explains when the server refuses", async () => {
-    fetchMock.mockImplementation(async () => json({ detail: "You do not own this update" }, 403));
+    fetchMock.mockImplementation(async (request: Request) =>
+      request.method === "PATCH"
+        ? json({ detail: "You do not own this update" }, 403)
+        : historyResponse(),
+    );
     renderForm();
 
     fireEvent.change(screen.getByLabelText(/Update title/), { target: { value: "New title" } });
@@ -212,7 +259,33 @@ describe("editing an update", () => {
     fireEvent.change(screen.getByLabelText(/Update title/), { target: { value: "New title" } });
     fireEvent.click(screen.getByRole("button", { name: "Cancel" }));
 
-    expect(fetchMock).not.toHaveBeenCalled();
+    expect(fetchMock.mock.calls.some(([request]) => (request as Request).method !== "GET")).toBe(false);
     expect(navigate).toHaveBeenCalledWith({ to: "/view-project", search: { projectId: "p1" } });
+  });
+
+  test("removing all references sends an empty replacement list", async () => {
+    const target = makeUpdate({ id: "target-1", title: "A problem", type: "PROBLEM" });
+    const linked = makeUpdate({
+      type: "SOLUTION",
+      outgoing_references: [{
+        linked_update_id: target.id,
+        title: target.title,
+        type: target.type,
+        reason: "RELATED_TO",
+      }],
+    });
+    fetchMock.mockImplementation(async (request: Request) => {
+      if (request.method === "PATCH") return json(makeUpdate({ type: "SOLUTION" }));
+      return historyResponse([linked, target]);
+    });
+    renderWithQueries(<EditUpdateForm project={project} update={linked} />);
+
+    fireEvent.click(await screen.findByRole("button", { name: "Remove link to A problem" }));
+    fireEvent.click(screen.getByRole("button", { name: "Save changes" }));
+
+    await screen.findByRole("status");
+    expect(await writes(fetchMock)).toEqual([
+      ["PATCH", "/api/projects/p1/updates/u1", { references: [] }],
+    ]);
   });
 });

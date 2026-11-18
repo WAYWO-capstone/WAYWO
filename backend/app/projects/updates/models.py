@@ -1,13 +1,53 @@
 import uuid
 from datetime import datetime
 
-from sqlalchemy import DateTime, Enum, ForeignKey
-from sqlalchemy.orm import Mapped, mapped_column
+from sqlalchemy import CheckConstraint, DateTime, Enum, ForeignKey
+from sqlalchemy.orm import Mapped, mapped_column, relationship
 
+from app.core.base import Base
 from app.core.common import utcnow
 from app.feed_items.feed_item.enums import FeedItemType
 from app.feed_items.feed_item.models import FeedItem
-from app.projects.updates.enums import UpdateType
+from app.projects.updates.enums import UpdateReferenceReason, UpdateType
+
+
+class UpdateReference(Base):
+    __tablename__ = "update_references"
+    __table_args__ = (
+        CheckConstraint(
+            "update_id != referenced_update_id",
+            name="ck_update_references_not_self",
+        ),
+    )
+
+    update_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("updates.id", ondelete="CASCADE"), primary_key=True
+    )
+    referenced_update_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("updates.id", ondelete="CASCADE"),
+        primary_key=True,
+        index=True,
+    )
+    reason: Mapped[UpdateReferenceReason] = mapped_column(
+        Enum(
+            UpdateReferenceReason,
+            name="update_reference_reason",
+            native_enum=False,
+            create_constraint=True,
+            length=30,
+        ),
+        default=UpdateReferenceReason.RELATED_TO,
+        server_default=UpdateReferenceReason.RELATED_TO.value,
+    )
+
+    source: Mapped["Update"] = relationship(
+        back_populates="outgoing_references",
+        foreign_keys=[update_id],
+    )
+    target: Mapped["Update"] = relationship(
+        back_populates="incoming_references",
+        foreign_keys=[referenced_update_id],
+    )
 
 
 class Update(FeedItem):
@@ -34,6 +74,20 @@ class Update(FeedItem):
     )
     updated_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), default=utcnow, onupdate=utcnow
+    )
+
+    outgoing_references: Mapped[list[UpdateReference]] = relationship(
+        back_populates="source",
+        foreign_keys=[UpdateReference.update_id],
+        order_by=UpdateReference.referenced_update_id,
+        cascade="all, delete-orphan",
+        passive_deletes=True,
+    )
+    incoming_references: Mapped[list[UpdateReference]] = relationship(
+        back_populates="target",
+        foreign_keys=[UpdateReference.referenced_update_id],
+        order_by=UpdateReference.update_id,
+        passive_deletes=True,
     )
 
     __mapper_args__ = {"polymorphic_identity": FeedItemType.UPDATE}

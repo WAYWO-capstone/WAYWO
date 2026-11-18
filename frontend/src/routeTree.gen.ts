@@ -10,19 +10,28 @@
 
 import { Route as rootRouteImport } from './routes/__root'
 import { Route as IndexRouteImport } from './routes/index'
+import { Route as AddUpdateRouteImport } from './routes/add-update'
 import { Route as CreateProjectRouteImport } from './routes/create-project'
 import { Route as EditProjectRouteImport } from './routes/edit-project'
 import { Route as EditUpdateRouteImport } from './routes/edit-update'
+import { Route as ExploreRouteImport } from './routes/explore'
+import { Route as HomeRouteImport } from './routes/home'
 import { Route as LoginRouteImport } from './routes/login'
 import { Route as ProjectsRouteImport } from './routes/projects'
 import { Route as RegisterRouteImport } from './routes/register'
 import { Route as ViewProjectRouteImport } from './routes/view-project'
 import { Route as ProfileIndexRouteImport } from './routes/profile.index'
 import { Route as ProfileUsernameRouteImport } from './routes/profile.$username'
+import { Route as ProfileUsernameFollowingRouteImport } from './routes/profile.$username.following'
 
 const IndexRoute = IndexRouteImport.update({
   id: '/',
   path: '/',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const AddUpdateRoute = AddUpdateRouteImport.update({
+  id: '/add-update',
+  path: '/add-update',
   getParentRoute: () => rootRouteImport,
 } as any)
 const CreateProjectRoute = CreateProjectRouteImport.update({
@@ -38,6 +47,16 @@ const EditProjectRoute = EditProjectRouteImport.update({
 const EditUpdateRoute = EditUpdateRouteImport.update({
   id: '/edit-update',
   path: '/edit-update',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const ExploreRoute = ExploreRouteImport.update({
+  id: '/explore',
+  path: '/explore',
+  getParentRoute: () => rootRouteImport,
+} as any)
+const HomeRoute = HomeRouteImport.update({
+  id: '/home',
+  path: '/home',
   getParentRoute: () => rootRouteImport,
 } as any)
 const LoginRoute = LoginRouteImport.update({
@@ -70,93 +89,126 @@ const ProfileUsernameRoute = ProfileUsernameRouteImport.update({
   path: '/profile/$username',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ProfileUsernameFollowingRoute =
+  ProfileUsernameFollowingRouteImport.update({
+    id: '/following',
+    path: '/following',
+    getParentRoute: () => ProfileUsernameRoute,
+  } as any)
 
 export interface FileRoutesByFullPath {
   '/': typeof IndexRoute
+  '/add-update': typeof AddUpdateRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
+  '/explore': typeof ExploreRoute
+  '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
   '/view-project': typeof ViewProjectRoute
-  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/$username': typeof ProfileUsernameRouteWithChildren
   '/profile/': typeof ProfileIndexRoute
+  '/profile/$username/following': typeof ProfileUsernameFollowingRoute
 }
 export interface FileRoutesByTo {
   '/': typeof IndexRoute
+  '/add-update': typeof AddUpdateRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
+  '/explore': typeof ExploreRoute
+  '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
   '/view-project': typeof ViewProjectRoute
-  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/$username': typeof ProfileUsernameRouteWithChildren
   '/profile': typeof ProfileIndexRoute
+  '/profile/$username/following': typeof ProfileUsernameFollowingRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
   '/': typeof IndexRoute
+  '/add-update': typeof AddUpdateRoute
   '/create-project': typeof CreateProjectRoute
   '/edit-project': typeof EditProjectRoute
   '/edit-update': typeof EditUpdateRoute
+  '/explore': typeof ExploreRoute
+  '/home': typeof HomeRoute
   '/login': typeof LoginRoute
   '/projects': typeof ProjectsRoute
   '/register': typeof RegisterRoute
   '/view-project': typeof ViewProjectRoute
-  '/profile/$username': typeof ProfileUsernameRoute
+  '/profile/$username': typeof ProfileUsernameRouteWithChildren
   '/profile/': typeof ProfileIndexRoute
+  '/profile/$username/following': typeof ProfileUsernameFollowingRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
   fullPaths:
     | '/'
+    | '/add-update'
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
+    | '/explore'
+    | '/home'
     | '/login'
     | '/projects'
     | '/register'
     | '/view-project'
     | '/profile/$username'
     | '/profile/'
+    | '/profile/$username/following'
   fileRoutesByTo: FileRoutesByTo
   to:
     | '/'
+    | '/add-update'
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
+    | '/explore'
+    | '/home'
     | '/login'
     | '/projects'
     | '/register'
     | '/view-project'
     | '/profile/$username'
     | '/profile'
+    | '/profile/$username/following'
   id:
     | '__root__'
     | '/'
+    | '/add-update'
     | '/create-project'
     | '/edit-project'
     | '/edit-update'
+    | '/explore'
+    | '/home'
     | '/login'
     | '/projects'
     | '/register'
     | '/view-project'
     | '/profile/$username'
     | '/profile/'
+    | '/profile/$username/following'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
   IndexRoute: typeof IndexRoute
+  AddUpdateRoute: typeof AddUpdateRoute
   CreateProjectRoute: typeof CreateProjectRoute
   EditProjectRoute: typeof EditProjectRoute
   EditUpdateRoute: typeof EditUpdateRoute
+  ExploreRoute: typeof ExploreRoute
+  HomeRoute: typeof HomeRoute
   LoginRoute: typeof LoginRoute
   ProjectsRoute: typeof ProjectsRoute
   RegisterRoute: typeof RegisterRoute
   ViewProjectRoute: typeof ViewProjectRoute
-  ProfileUsernameRoute: typeof ProfileUsernameRoute
+  ProfileUsernameRoute: typeof ProfileUsernameRouteWithChildren
   ProfileIndexRoute: typeof ProfileIndexRoute
 }
 
@@ -167,6 +219,13 @@ declare module '@tanstack/react-router' {
       path: '/'
       fullPath: '/'
       preLoaderRoute: typeof IndexRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/add-update': {
+      id: '/add-update'
+      path: '/add-update'
+      fullPath: '/add-update'
+      preLoaderRoute: typeof AddUpdateRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/create-project': {
@@ -188,6 +247,20 @@ declare module '@tanstack/react-router' {
       path: '/edit-update'
       fullPath: '/edit-update'
       preLoaderRoute: typeof EditUpdateRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/explore': {
+      id: '/explore'
+      path: '/explore'
+      fullPath: '/explore'
+      preLoaderRoute: typeof ExploreRouteImport
+      parentRoute: typeof rootRouteImport
+    }
+    '/home': {
+      id: '/home'
+      path: '/home'
+      fullPath: '/home'
+      preLoaderRoute: typeof HomeRouteImport
       parentRoute: typeof rootRouteImport
     }
     '/login': {
@@ -232,19 +305,41 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ProfileUsernameRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/profile/$username/following': {
+      id: '/profile/$username/following'
+      path: '/following'
+      fullPath: '/profile/$username/following'
+      preLoaderRoute: typeof ProfileUsernameFollowingRouteImport
+      parentRoute: typeof ProfileUsernameRoute
+    }
   }
 }
 
+interface ProfileUsernameRouteChildren {
+  ProfileUsernameFollowingRoute: typeof ProfileUsernameFollowingRoute
+}
+
+const ProfileUsernameRouteChildren: ProfileUsernameRouteChildren = {
+  ProfileUsernameFollowingRoute: ProfileUsernameFollowingRoute,
+}
+
+const ProfileUsernameRouteWithChildren = ProfileUsernameRoute._addFileChildren(
+  ProfileUsernameRouteChildren,
+)
+
 const rootRouteChildren: RootRouteChildren = {
   IndexRoute: IndexRoute,
+  AddUpdateRoute: AddUpdateRoute,
   CreateProjectRoute: CreateProjectRoute,
   EditProjectRoute: EditProjectRoute,
   EditUpdateRoute: EditUpdateRoute,
+  ExploreRoute: ExploreRoute,
+  HomeRoute: HomeRoute,
   LoginRoute: LoginRoute,
   ProjectsRoute: ProjectsRoute,
   RegisterRoute: RegisterRoute,
   ViewProjectRoute: ViewProjectRoute,
-  ProfileUsernameRoute: ProfileUsernameRoute,
+  ProfileUsernameRoute: ProfileUsernameRouteWithChildren,
   ProfileIndexRoute: ProfileIndexRoute,
 }
 export const routeTree = rootRouteImport

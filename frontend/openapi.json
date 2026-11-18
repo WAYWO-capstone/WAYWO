@@ -138,6 +138,50 @@
         "title": "EmailChangeRequest",
         "type": "object"
       },
+      "FollowingCreatorResponse": {
+        "description": "A creator followed by the logged-in user.",
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "followed_at": {
+            "format": "date-time",
+            "title": "Followed At",
+            "type": "string"
+          },
+          "profile_picture_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Picture Link"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "bio",
+          "profile_picture_link",
+          "followed_at"
+        ],
+        "title": "FollowingCreatorResponse",
+        "type": "object"
+      },
       "FollowingStatusResponse": {
         "description": "Whether the logged-in user follows a creator.",
         "properties": {
@@ -637,6 +681,54 @@
         "title": "ProjectUpdate",
         "type": "object"
       },
+      "PublicProfileResponse": {
+        "description": "Public profile details, including creator follow counts.",
+        "properties": {
+          "bio": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Bio"
+          },
+          "followers_count": {
+            "title": "Followers Count",
+            "type": "integer"
+          },
+          "following_count": {
+            "title": "Following Count",
+            "type": "integer"
+          },
+          "profile_picture_link": {
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Profile Picture Link"
+          },
+          "username": {
+            "title": "Username",
+            "type": "string"
+          }
+        },
+        "required": [
+          "username",
+          "bio",
+          "profile_picture_link",
+          "followers_count",
+          "following_count"
+        ],
+        "title": "PublicProfileResponse",
+        "type": "object"
+      },
       "RefreshRequest": {
         "description": "Refresh token payload.",
         "properties": {
@@ -649,6 +741,83 @@
           "refresh_token"
         ],
         "title": "RefreshRequest",
+        "type": "object"
+      },
+      "ResourceCreate": {
+        "properties": {
+          "title": {
+            "anyOf": [
+              {
+                "maxLength": 200,
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Title"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id"
+        ],
+        "title": "ResourceCreate",
+        "type": "object"
+      },
+      "ResourceRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "description": {
+            "title": "Description",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "project_id": {
+            "format": "uuid",
+            "title": "Project Id",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "project_id",
+          "title",
+          "description",
+          "created_at",
+          "filename",
+          "mime_type",
+          "size"
+        ],
+        "title": "ResourceRead",
         "type": "object"
       },
       "TagRead": {
@@ -695,6 +864,7 @@
         "type": "object"
       },
       "UpdateCreate": {
+        "additionalProperties": false,
         "properties": {
           "body": {
             "title": "Body",
@@ -710,6 +880,14 @@
               }
             ],
             "title": "Public"
+          },
+          "references": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateReferenceCreate"
+            },
+            "maxItems": 50,
+            "title": "References",
+            "type": "array"
           },
           "title": {
             "maxLength": 200,
@@ -730,6 +908,7 @@
         "type": "object"
       },
       "UpdateEdit": {
+        "additionalProperties": false,
         "properties": {
           "body": {
             "anyOf": [
@@ -752,6 +931,21 @@
               }
             ],
             "title": "Public"
+          },
+          "references": {
+            "anyOf": [
+              {
+                "items": {
+                  "$ref": "#/components/schemas/UpdateReferenceCreate"
+                },
+                "maxItems": 50,
+                "type": "array"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "References"
           },
           "title": {
             "anyOf": [
@@ -835,6 +1029,20 @@
             "title": "Id",
             "type": "string"
           },
+          "incoming_references": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateReferenceRead"
+            },
+            "title": "Incoming References",
+            "type": "array"
+          },
+          "outgoing_references": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateReferenceRead"
+            },
+            "title": "Outgoing References",
+            "type": "array"
+          },
           "project_id": {
             "format": "uuid",
             "title": "Project Id",
@@ -872,6 +1080,79 @@
         "title": "UpdateRead",
         "type": "object"
       },
+      "UpdateReferenceCreate": {
+        "properties": {
+          "reason": {
+            "$ref": "#/components/schemas/UpdateReferenceReason",
+            "default": "RELATED_TO"
+          },
+          "target_update_id": {
+            "format": "uuid",
+            "title": "Target Update Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "target_update_id"
+        ],
+        "title": "UpdateReferenceCreate",
+        "type": "object"
+      },
+      "UpdateReferenceDisplayReason": {
+        "enum": [
+          "SOLVES",
+          "SOLVED_BY",
+          "PARTIALLY_SOLVES",
+          "PARTIALLY_SOLVED_BY",
+          "RELATED_TO"
+        ],
+        "title": "UpdateReferenceDisplayReason",
+        "type": "string"
+      },
+      "UpdateReferenceRead": {
+        "properties": {
+          "linked_update_id": {
+            "format": "uuid",
+            "title": "Linked Update Id",
+            "type": "string"
+          },
+          "reason": {
+            "$ref": "#/components/schemas/UpdateReferenceDisplayReason"
+          },
+          "title": {
+            "title": "Title",
+            "type": "string"
+          },
+          "type": {
+            "$ref": "#/components/schemas/UpdateType"
+          }
+        },
+        "required": [
+          "linked_update_id",
+          "title",
+          "type",
+          "reason"
+        ],
+        "title": "UpdateReferenceRead",
+        "type": "object"
+      },
+      "UpdateReferenceReason": {
+        "enum": [
+          "SOLVES",
+          "PARTIALLY_SOLVES",
+          "RELATED_TO"
+        ],
+        "title": "UpdateReferenceReason",
+        "type": "string"
+      },
+      "UpdateSort": {
+        "enum": [
+          "date_asc",
+          "date_desc"
+        ],
+        "title": "UpdateSort",
+        "type": "string"
+      },
       "UpdateType": {
         "enum": [
           "PROGRESS",
@@ -880,6 +1161,149 @@
           "SOLUTION"
         ],
         "title": "UpdateType",
+        "type": "string"
+      },
+      "UploadCreate": {
+        "properties": {
+          "filename": {
+            "maxLength": 255,
+            "minLength": 1,
+            "title": "Filename",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/UploadKind"
+          },
+          "mime_type": {
+            "default": "",
+            "maxLength": 255,
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "size": {
+            "exclusiveMinimum": 0.0,
+            "title": "Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "kind",
+          "filename",
+          "size"
+        ],
+        "title": "UploadCreate",
+        "type": "object"
+      },
+      "UploadCreated": {
+        "properties": {
+          "expires_at": {
+            "format": "date-time",
+            "title": "Expires At",
+            "type": "string"
+          },
+          "headers": {
+            "additionalProperties": {
+              "type": "string"
+            },
+            "title": "Headers",
+            "type": "object"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "title": "Upload Id",
+            "type": "string"
+          },
+          "url": {
+            "title": "Url",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "url",
+          "headers",
+          "expires_at"
+        ],
+        "title": "UploadCreated",
+        "type": "object"
+      },
+      "UploadKind": {
+        "enum": [
+          "PICTURE",
+          "RESOURCE"
+        ],
+        "title": "UploadKind",
+        "type": "string"
+      },
+      "UploadKindConfigRead": {
+        "properties": {
+          "allowed_extensions": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Extensions",
+            "type": "array"
+          },
+          "allowed_mime": {
+            "items": {
+              "type": "string"
+            },
+            "title": "Allowed Mime",
+            "type": "array"
+          },
+          "max_size": {
+            "title": "Max Size",
+            "type": "integer"
+          }
+        },
+        "required": [
+          "max_size",
+          "allowed_mime",
+          "allowed_extensions"
+        ],
+        "title": "UploadKindConfigRead",
+        "type": "object"
+      },
+      "UploadRead": {
+        "properties": {
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "kind": {
+            "$ref": "#/components/schemas/UploadKind"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "status": {
+            "$ref": "#/components/schemas/UploadStatus"
+          },
+          "upload_id": {
+            "format": "uuid",
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id",
+          "kind",
+          "filename",
+          "size",
+          "status"
+        ],
+        "title": "UploadRead",
+        "type": "object"
+      },
+      "UploadStatus": {
+        "enum": [
+          "PENDING",
+          "PROCESSING",
+          "READY",
+          "FAILED"
+        ],
+        "title": "UploadStatus",
         "type": "string"
       },
       "UserCreate": {
@@ -1241,6 +1665,37 @@
           }
         },
         "summary": "Database Test"
+      }
+    },
+    "/follows/following": {
+      "get": {
+        "description": "Return the creators followed by the logged-in user.",
+        "operationId": "list_followed_creators_follows_following_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FollowingCreatorResponse"
+                  },
+                  "title": "Response List Followed Creators Follows Following Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Followed Creators",
+        "tags": [
+          "social"
+        ]
       }
     },
     "/follows/{username}": {
@@ -1814,6 +2269,114 @@
         ]
       }
     },
+    "/projects/{project_id}/resources": {
+      "get": {
+        "operationId": "list_project_resources_projects__project_id__resources_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ResourceRead"
+                  },
+                  "title": "Response List Project Resources Projects  Project Id  Resources Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Project Resources",
+        "tags": [
+          "project resources"
+        ]
+      },
+      "post": {
+        "operationId": "create_project_resource_projects__project_id__resources_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/ResourceCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ResourceRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Project Resource",
+        "tags": [
+          "project resources"
+        ]
+      }
+    },
     "/projects/{project_id}/status": {
       "patch": {
         "operationId": "update_project_status_projects__project_id__status_patch",
@@ -1955,6 +2518,34 @@
               "minimum": 0,
               "title": "Offset",
               "type": "integer"
+            }
+          },
+          {
+            "in": "query",
+            "name": "filter",
+            "required": false,
+            "schema": {
+              "anyOf": [
+                {
+                  "items": {
+                    "$ref": "#/components/schemas/UpdateType"
+                  },
+                  "type": "array"
+                },
+                {
+                  "type": "null"
+                }
+              ],
+              "title": "Filter"
+            }
+          },
+          {
+            "in": "query",
+            "name": "sort",
+            "required": false,
+            "schema": {
+              "$ref": "#/components/schemas/UpdateSort",
+              "default": "date_desc"
             }
           }
         ],
@@ -2164,6 +2755,177 @@
         ]
       }
     },
+    "/uploads": {
+      "post": {
+        "operationId": "create_upload_uploads_post",
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UploadCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadCreated"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Create Upload",
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/uploads/config": {
+      "get": {
+        "description": "The upload rules per kind, so the browser can check files before sending.",
+        "operationId": "get_upload_config_uploads_config_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "additionalProperties": {
+                    "$ref": "#/components/schemas/UploadKindConfigRead"
+                  },
+                  "propertyNames": {
+                    "$ref": "#/components/schemas/UploadKind"
+                  },
+                  "title": "Response Get Upload Config Uploads Config Get",
+                  "type": "object"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "summary": "Get Upload Config",
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/uploads/{upload_id}": {
+      "get": {
+        "operationId": "get_upload_uploads__upload_id__get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Upload Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Get Upload",
+        "tags": [
+          "media"
+        ]
+      }
+    },
+    "/uploads/{upload_id}/complete": {
+      "post": {
+        "operationId": "complete_upload_uploads__upload_id__complete_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "upload_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Upload Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UploadRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Complete Upload",
+        "tags": [
+          "media"
+        ]
+      }
+    },
     "/users/me": {
       "get": {
         "description": "Return the logged-in user's profile, including their email.",
@@ -2303,8 +3065,8 @@
     },
     "/users/{username}": {
       "get": {
-        "description": "Return a user's public profile.",
-        "operationId": "get_profile_users__username__get",
+        "description": "Return a user's public profile with follow counts.",
+        "operationId": "get_public_profile_users__username__get",
         "parameters": [
           {
             "in": "path",
@@ -2321,7 +3083,7 @@
             "content": {
               "application/json": {
                 "schema": {
-                  "$ref": "#/components/schemas/ProfileResponse"
+                  "$ref": "#/components/schemas/PublicProfileResponse"
                 }
               }
             },
@@ -2338,7 +3100,54 @@
             "description": "Validation Error"
           }
         },
-        "summary": "Get Profile",
+        "summary": "Get Public Profile",
+        "tags": [
+          "users"
+        ]
+      }
+    },
+    "/users/{username}/following": {
+      "get": {
+        "description": "Return the creators followed by a user.",
+        "operationId": "get_public_following_users__username__following_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "username",
+            "required": true,
+            "schema": {
+              "title": "Username",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/FollowingCreatorResponse"
+                  },
+                  "title": "Response Get Public Following Users  Username  Following Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "summary": "Get Public Following",
         "tags": [
           "users"
         ]
