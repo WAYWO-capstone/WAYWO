@@ -14,7 +14,7 @@ WAYWO is a collaborative platform for makers to document and share the complete 
 
 | Release | Demo |
 |---|---|
-| Release 1 | _Coming soon_ |
+| Release 1 | [Video](https://drive.google.com/file/d/1bFKJmXOSMMmYRMsF4bv4mBWLYxQL7XHV/view?usp=sharing) |
 
 ---
 
