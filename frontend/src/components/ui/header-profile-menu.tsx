@@ -77,6 +77,7 @@ export function HeaderProfileMenu() {
         </DropdownMenuGroup>
 
         <DropdownMenuItem className="flex items-center gap-2">
+          {/*TODO link to projects page + load page correctly once saved projects are added*/}
           {/*<Link to="/projects" className="flex items-center gap-2 w-full">*/}
           <Bookmark aria-hidden="true" className="size-4" />
           Saved projects
