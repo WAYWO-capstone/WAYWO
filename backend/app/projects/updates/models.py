@@ -9,6 +9,7 @@ from app.core.common import utcnow
 from app.feed_items.feed_item.enums import FeedItemType
 from app.feed_items.feed_item.models import FeedItem
 from app.projects.updates.enums import UpdateReferenceReason, UpdateType
+from app.projects.updates.media.models import UpdateMedia
 
 
 class UpdateReference(Base):
@@ -87,6 +88,11 @@ class Update(FeedItem):
         back_populates="target",
         foreign_keys=[UpdateReference.referenced_update_id],
         order_by=UpdateReference.update_id,
+        passive_deletes=True,
+    )
+    media: Mapped[list["UpdateMedia"]] = relationship(
+        back_populates="update",
+        cascade="all, delete-orphan",
         passive_deletes=True,
     )
 

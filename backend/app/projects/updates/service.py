@@ -17,6 +17,8 @@ from app.projects.updates.exceptions import (
     UpdateNotFoundError,
     UpdateNotOwnedError,
 )
+from app.projects.updates.media.schemas import UpdateMediaRead
+from app.projects.updates.media.service import UpdateMediaService
 from app.projects.updates.models import Update, UpdateReference
 from app.projects.updates.repository import UpdateRepository
 from app.projects.updates.schemas import (
@@ -34,9 +36,11 @@ class UpdateService:
         self,
         repository: UpdateRepository,
         project_repository: ProjectRepository,
+        media_service: UpdateMediaService | None = None,
     ):
         self._repo = repository
         self._project_repo = project_repository
+        self._media_service = media_service
 
     def create_project_update(
         self,
@@ -68,6 +72,10 @@ class UpdateService:
             for target, reason in references
         ]
         row = self._repo.add(update)
+        created = row[0]
+        if self._media_service is not None:
+            for upload_id in data.media_upload_ids:
+                self._media_service.attach_to_update(created, author_id, upload_id)
         return self._to_read(row, author_id)
 
     def edit_project_update(
@@ -132,6 +140,8 @@ class UpdateService:
         author_id: uuid.UUID,
     ) -> None:
         update = self._get_owned_update(project_id, update_id, author_id)
+        if self._media_service is not None:
+            self._media_service.release_for_update(update)
         self._repo.delete(update)
 
     def list_project_updates(
@@ -257,11 +267,23 @@ class UpdateService:
             for reference in update.incoming_references
             if reference.source.public or reference.source.author_id == viewer_id
         ]
+        media_reads = [
+            UpdateMediaRead(
+                id=media.id,
+                update_id=media.update_id,
+                filename=media.file_asset.filename,
+                mime_type=media.file_asset.mime_type,
+                size=media.file_asset.size_bytes,
+                created_at=media.created_at,
+            )
+            for media in getattr(update, "media", [])
+        ]
         return UpdateRead(
             id=update.id,
             project_id=update.project_id,
             outgoing_references=outgoing_reads,
             incoming_references=incoming_reads,
+            media=media_reads,
             author_id=update.author_id,
             title=update.title,
             body=update.body,

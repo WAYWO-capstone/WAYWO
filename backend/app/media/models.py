@@ -5,7 +5,6 @@ from datetime import datetime
 
 # Pylint does not recognize SQLAlchemy's generic mapped annotations.
 # pylint: disable=unsubscriptable-object
-
 from sqlalchemy import BigInteger, Boolean, DateTime, Enum, ForeignKey, String
 from sqlalchemy.orm import Mapped, mapped_column
 

@@ -1,6 +1,7 @@
 import uuid
 from collections.abc import Callable, Iterator
 from typing import Any
+from unittest.mock import MagicMock
 
 import pytest
 from fastapi import FastAPI
@@ -12,9 +13,22 @@ from sqlalchemy.pool import StaticPool
 from app.accounts.users.models import Profile, User
 from app.core.base import Base
 from app.core.database import get_session
-from app.projects.project.dependencies import get_current_user_id
+from app.media.enums import UploadKind, UploadStatus
+from app.media.models import FileAsset
+from app.media.repository import FileAssetRepository
+from app.media.service import UploadService
+from app.projects.project.dependencies import (
+    get_current_user_id,
+    get_optional_current_user_id,
+)
 from app.projects.project.enums import ProjectStatus
 from app.projects.project.models import Category, Project
+from app.projects.project.repository import ProjectRepository
+from app.projects.updates.media.dependencies import get_update_media_service
+from app.projects.updates.media.repository import UpdateMediaRepository
+from app.projects.updates.media.router import router as media_router
+from app.projects.updates.media.service import UpdateMediaService
+from app.projects.updates.repository import UpdateRepository
 from app.projects.updates.router import router as updates_router
 from tests.projects.updates.helpers import post_update
 
@@ -54,6 +68,7 @@ def api(engine: Engine) -> Iterator[FastAPI]:
     """A fresh app per test, so dependency overrides never leak between tests."""
     app = FastAPI()
     app.include_router(updates_router, prefix="/projects")
+    app.include_router(media_router, prefix="/projects")
 
     def override_get_session() -> Iterator[Session]:
         with Session(engine, expire_on_commit=False) as session:
@@ -65,12 +80,34 @@ def api(engine: Engine) -> Iterator[FastAPI]:
                 raise
 
     app.dependency_overrides[get_session] = override_get_session
+    def override_update_media_service() -> Iterator[UpdateMediaService]:
+        with Session(engine, expire_on_commit=False) as session:
+            try:
+                upload_service = UploadService(
+                    FileAssetRepository(session),
+                    MagicMock(),
+                )
+                yield UpdateMediaService(
+                    UpdateMediaRepository(session),
+                    UpdateRepository(session),
+                    ProjectRepository(session),
+                    upload_service,
+                )
+                session.commit()
+            except Exception:
+                session.rollback()
+                raise
+
+    app.dependency_overrides[get_update_media_service] = (
+        override_update_media_service
+    )
     yield app
     app.dependency_overrides.clear()
 
 
 def authenticate_as(api: FastAPI, user: User) -> None:
     api.dependency_overrides[get_current_user_id] = lambda: user.id
+    api.dependency_overrides[get_optional_current_user_id] = lambda: user.id
 
 
 @pytest.fixture
@@ -151,6 +188,44 @@ def owner(make_user: Callable[[str], User]) -> User:
 @pytest.fixture
 def project(make_project: Callable[[User], Project], owner: User) -> Project:
     return make_project(owner)
+
+
+@pytest.fixture
+def make_asset(db: Session) -> Callable[..., FileAsset]:
+    def _make_asset(
+        owner: User,
+        *,
+        kind: UploadKind = UploadKind.RESOURCE,
+        status: UploadStatus = UploadStatus.READY,
+        attached: bool = False,
+        filename: str = "update.pdf",
+    ) -> FileAsset:
+        asset = FileAsset(
+            owner_id=owner.id,
+            kind=kind,
+            filename=filename,
+            mime_type="application/pdf",
+            size_bytes=2048,
+            storage_key=f"resources/{owner.id}/{uuid.uuid4()}",
+            status=status,
+            attached=attached,
+        )
+        db.add(asset)
+        db.commit()
+        return asset
+
+    return _make_asset
+
+
+@pytest.fixture
+def make_owned_asset(
+    owner: User,
+    make_asset: Callable[..., FileAsset],
+) -> Callable[..., FileAsset]:
+    def _make_owned_asset(**kwargs: Any) -> FileAsset:
+        return make_asset(owner, **kwargs)
+
+    return _make_owned_asset
 
 
 @pytest.fixture
