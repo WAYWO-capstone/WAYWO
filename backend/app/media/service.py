@@ -15,8 +15,9 @@ from PIL import Image, UnidentifiedImageError
 
 from app.core.common import utcnow
 from app.core.config import settings
-from app.media.enums import UploadStatus
+from app.media.enums import UploadKind, UploadStatus
 from app.media.exceptions import (
+    MediaAttachmentUnavailableError,
     UnsupportedImageError,
     UploadNotFoundError,
     UploadNotReceivedError,
@@ -256,6 +257,26 @@ class UploadService:
             size=asset.size_bytes,
             status=asset.status,
         )
+
+    def claim_attachable_asset(
+        self,
+        owner_id: uuid.UUID,
+        upload_id: uuid.UUID,
+    ) -> FileAsset:
+        """Lock and claim a verified resource upload for a project or update."""
+        asset = self._repo.get_for_update(upload_id)
+        if (
+            asset is None
+            or asset.owner_id != owner_id
+            or asset.kind != UploadKind.RESOURCE
+            or asset.status != UploadStatus.READY
+            or asset.attached
+        ):
+            raise MediaAttachmentUnavailableError(upload_id)
+
+        asset.attached = True
+        return asset
+
 
 
 @lru_cache
