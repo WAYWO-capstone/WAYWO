@@ -1,10 +1,8 @@
 import uuid
 
-from app.media.enums import UploadKind, UploadStatus
-from app.media.repository import FileAssetRepository
+from app.media.service import UploadService
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
-from app.projects.resources.exceptions import ResourceUploadUnavailableError
 from app.projects.resources.models import ProjectResource
 from app.projects.resources.repository import ResourceRepository
 from app.projects.resources.schemas import ResourceCreate, ResourceRead
@@ -15,11 +13,11 @@ class ResourceService:
         self,
         repository: ResourceRepository,
         project_repository: ProjectRepository,
-        asset_repository: FileAssetRepository,
+        upload_service: UploadService,
     ):
         self._repo = repository
         self._project_repo = project_repository
-        self._asset_repo = asset_repository
+        self._upload_service = upload_service
 
     def create(
         self,
@@ -34,17 +32,7 @@ class ResourceService:
         if project.author_id != user_id:
             raise ProjectNotOwnedError(project_id)
 
-        asset = self._asset_repo.get_for_update(data.upload_id)
-        if (
-            asset is None
-            or asset.owner_id != user_id
-            or asset.kind != UploadKind.RESOURCE
-            or asset.status != UploadStatus.READY
-            or asset.attached
-        ):
-            raise ResourceUploadUnavailableError(data.upload_id)
-
-        asset.attached = True
+        asset = self._upload_service.claim_attachable_asset(user_id, data.upload_id)
         resource = self._repo.add(
             ProjectResource(
                 project_id=project_id,
