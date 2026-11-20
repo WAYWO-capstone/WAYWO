@@ -278,7 +278,6 @@ class UploadService:
         return asset
 
 
-
 @lru_cache
 def get_object_storage() -> ObjectStorage:
     """Return the shared Cloudflare client."""
