@@ -18,6 +18,7 @@ MODEL_MODULES = (
     "app.projects.project.models",
     "app.projects.resources.models",
     "app.projects.tutorials.models",
+    "app.projects.updates.media.models",
     "app.projects.updates.models",
     "app.social.models",
 )
