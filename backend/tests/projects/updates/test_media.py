@@ -32,11 +32,10 @@ def test_create_update_with_media_upload_ids(
     client: TestClient,
     engine,
     project: Project,
-    owner: User,
-    make_asset,
+    make_owned_asset,
     payload,
 ):
-    asset = make_asset(owner, filename="first.pdf")
+    asset = make_owned_asset(filename="first.pdf")
 
     response = client.post(
         f"/projects/{project.id}/updates",
@@ -64,15 +63,14 @@ def test_owner_can_attach_media_to_existing_update(
     client: TestClient,
     engine,
     project: Project,
-    owner: User,
-    make_asset,
+    make_owned_asset,
     payload,
 ):
     created = client.post(
         f"/projects/{project.id}/updates",
         json=payload,
     ).json()
-    asset = make_asset(owner, filename="bracket.pdf")
+    asset = make_owned_asset(filename="bracket.pdf")
 
     response = attach_media(client, project, created, asset.id)
 
@@ -211,13 +209,14 @@ def test_an_upload_can_only_be_attached_once(
 def test_non_owner_cannot_attach_media(
     api,
     project: Project,
-    owner: User,
     make_user,
-    make_asset,
+    make_owned_asset,
     payload,
 ):
-    api.dependency_overrides[get_current_user_id] = lambda: owner.id
-    api.dependency_overrides[get_optional_current_user_id] = lambda: owner.id
+    api.dependency_overrides[get_current_user_id] = lambda: project.author_id
+    api.dependency_overrides[get_optional_current_user_id] = (
+        lambda: project.author_id
+    )
     with TestClient(api) as owner_client:
         create_response = owner_client.post(
             f"/projects/{project.id}/updates",
@@ -226,7 +225,7 @@ def test_non_owner_cannot_attach_media(
         assert create_response.status_code == 201
         created = create_response.json()
 
-    asset = make_asset(owner)
+    asset = make_owned_asset()
     intruder = make_user("intruder")
     api.dependency_overrides[get_current_user_id] = lambda: intruder.id
     api.dependency_overrides[get_optional_current_user_id] = lambda: intruder.id
@@ -244,11 +243,10 @@ def test_deleting_update_cascades_media(
     client: TestClient,
     engine,
     project: Project,
-    owner: User,
-    make_asset,
+    make_owned_asset,
     payload,
 ):
-    asset = make_asset(owner)
+    asset = make_owned_asset()
     created = client.post(
         f"/projects/{project.id}/updates",
         json={**payload, "media_upload_ids": [str(asset.id)]},

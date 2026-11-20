@@ -160,5 +160,3 @@ def delete_project_update(
             status.HTTP_403_FORBIDDEN, "You do not own this update"
         ) from exc
     return Response(status_code=status.HTTP_204_NO_CONTENT)
-
-
