@@ -10,6 +10,7 @@ from app.projects.updates.enums import (
     UpdateSort,
     UpdateType,
 )
+from app.projects.updates.media.schemas import UpdateMediaRead
 
 
 class UpdateReferenceCreate(BaseModel):
@@ -26,6 +27,10 @@ class UpdateCreate(BaseModel):
     public: bool | None = None
     references: list[UpdateReferenceCreate] = Field(
         default_factory=list, max_length=50
+    )
+    media_upload_ids: list[uuid.UUID] = Field(
+        default_factory=list,
+        max_length=20,
     )
 
     @field_validator("title")
@@ -83,6 +88,7 @@ class UpdateRead(BaseModel):
     project_id: uuid.UUID
     outgoing_references: list[UpdateReferenceRead] = Field(default_factory=list)
     incoming_references: list[UpdateReferenceRead] = Field(default_factory=list)
+    media: list[UpdateMediaRead] = Field(default_factory=list)
     author_id: uuid.UUID
     title: str
     body: str

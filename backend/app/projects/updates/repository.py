@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session, selectinload
 
 from app.accounts.users.models import Profile, User
 from app.projects.updates.enums import UpdateSort
+from app.projects.updates.media.models import UpdateMedia
 from app.projects.updates.models import Update, UpdateReference
 from app.projects.updates.schemas import UpdateListOptions
 
@@ -95,6 +96,7 @@ class UpdateRepository:
         rows = self._session.execute(
             select(Update, User.username, Profile.profile_picture_link)
             .options(
+                selectinload(Update.media).joinedload(UpdateMedia.file_asset),
                 selectinload(Update.outgoing_references).joinedload(
                     UpdateReference.target
                 ),

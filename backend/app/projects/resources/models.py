@@ -3,7 +3,6 @@ from datetime import datetime
 
 # Pylint does not recognize SQLAlchemy's generic mapped annotations.
 # pylint: disable=unsubscriptable-object
-
 from sqlalchemy import DateTime, ForeignKey, String, Text
 from sqlalchemy.orm import Mapped, mapped_column, relationship
 
