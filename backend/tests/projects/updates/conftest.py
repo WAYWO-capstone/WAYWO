@@ -218,6 +218,17 @@ def make_asset(db: Session) -> Callable[..., FileAsset]:
 
 
 @pytest.fixture
+def make_owned_asset(
+    owner: User,
+    make_asset: Callable[..., FileAsset],
+) -> Callable[..., FileAsset]:
+    def _make_owned_asset(**kwargs: Any) -> FileAsset:
+        return make_asset(owner, **kwargs)
+
+    return _make_owned_asset
+
+
+@pytest.fixture
 def payload() -> dict[str, Any]:
     return {
         "title": "First milestone",
