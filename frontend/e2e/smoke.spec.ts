@@ -9,6 +9,17 @@ test.describe("Smoke", () => {
     await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
   });
 
+  test("/api requests reach the backend through the Vite proxy", async ({
+    request,
+  }) => {
+    const response = await request.get("/api/");
+
+    expect(response.status()).toBe(200);
+    expect(await response.json()).toEqual({
+      message: "WAYWO backend is running!",
+    });
+  });
+
   test("header Log in link opens the login page", async ({ page }) => {
     await page.goto("/");
 

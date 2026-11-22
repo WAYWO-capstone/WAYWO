@@ -29,10 +29,21 @@ export default defineConfig({
     { name: "webkit", use: { ...devices["Desktop Safari"] } },
   ],
 
-  webServer: {
-    command: "bun run dev --port 5173 --strictPort",
-    url: BASE_URL,
-    reuseExistingServer: !isCI,
-    timeout: 120_000,
-  },
+  webServer: [
+    {
+      // Backend. /database-test only returns 200 once Postgres is reachable,
+      // so the run waits on a working DB, not just a booted process.
+      command: "uvicorn app.main:app --port 8000",
+      cwd: "../backend",
+      url: "http://localhost:8000/database-test",
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+    {
+      command: "bun run dev --port 5173 --strictPort",
+      url: BASE_URL,
+      reuseExistingServer: !isCI,
+      timeout: 120_000,
+    },
+  ],
 });
