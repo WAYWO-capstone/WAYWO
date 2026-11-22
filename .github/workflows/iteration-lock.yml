@@ -57,8 +57,12 @@ jobs:
       - name: Apply ruleset enforcement
         env:
           GH_TOKEN: ${{ secrets.ADMIN_TOKEN }}
-          RULESET_ID: ${{ vars.RULESET_ID }}
+          RULESET_ID: ${{ vars.RULESET_BRANCH_LOCK_ID }}
         run: |
+          if [ -z "$RULESET_ID" ]; then
+            echo "::error::Repository variable RULESET_BRANCH_LOCK_ID is not set"
+            exit 1
+          fi
           gh api -X PUT "repos/${{ github.repository }}/rulesets/$RULESET_ID" \
             -f enforcement="${{ steps.decide.outputs.state }}" \
             --jq '"Ruleset \(.name) is now \(.enforcement)"'
