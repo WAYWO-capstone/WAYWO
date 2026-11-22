@@ -1,0 +1,50 @@
+# Keeps the project board in step with sub-tasks, user stories and acceptance tests.
+#  - sub-task In progress            -> its user story In progress
+#  - all sub-tasks of a story closed -> story In review
+#  - user story Done / closed        -> its acceptance tests to Acceptance Tests
+#  - new issue                       -> added to the board in Backlog
+name: Board sync
+
+on:
+  issues:
+    types: [opened, reopened, closed, edited, labeled]
+  schedule:
+    - cron: "17 */6 * * *" # every 6 hours (00:17, 06:17, 12:17, 18:17 UTC)
+  workflow_dispatch:
+    inputs:
+      add_all_open_issues:
+        description: "Also add every open issue in the repo to the board (one-time catch-up)"
+        type: boolean
+        default: false
+
+permissions:
+  contents: read
+
+concurrency:
+  group: board-sync
+  cancel-in-progress: false
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+
+      - uses: actions/github-script@v8
+        env:
+          PROJECT_OWNER: ${{ vars.PROJECT_OWNER }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+        with:
+          github-token: ${{ secrets.PROJECT_ADMIN }}
+          script: |
+            const board = require('./.github/scripts/board.js')({ github, context, core });
+            if (context.eventName === 'issues' && context.payload.action === 'opened') {
+              await board.addNewIssue(context.payload.issue);
+            }
+            if (context.eventName === 'workflow_dispatch' && String(context.payload.inputs?.add_all_open_issues) === 'true') {
+              await board.addAllOpenIssues();
+            }
+            await board.sync();

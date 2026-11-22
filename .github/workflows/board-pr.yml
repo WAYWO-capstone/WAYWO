@@ -1,0 +1,37 @@
+# Moves pull requests across the project board.
+#  - PR opened                           -> PR in In progress, and the issues it closes -> In review
+#  - review requested / review submitted -> PR in In review
+#  - PR merged -> Done is left to the project's built-in "Pull request merged" workflow.
+name: Board - pull requests
+
+on:
+  pull_request_target:
+    types: [opened, reopened, ready_for_review, review_requested, edited]
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: read
+
+jobs:
+  board:
+    # Secrets aren't available to review events on PRs from forks.
+    if: github.event_name == 'pull_request_target' || github.event.pull_request.head.repo.full_name == github.repository
+    runs-on: ubuntu-latest
+    steps:
+      # Always run the script from the default branch, never from the PR's own code.
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.event.repository.default_branch }}
+          sparse-checkout: .github/scripts
+
+      - uses: actions/github-script@v8
+        env:
+          PROJECT_OWNER: ${{ vars.PROJECT_OWNER }}
+          PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
+        with:
+          github-token: ${{ secrets.PROJECT_ADMIN }}
+          script: |
+            const board = require('./.github/scripts/board.js')({ github, context, core });
+            await board.handlePullRequest();
+            await board.sync();
