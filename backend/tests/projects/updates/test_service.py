@@ -11,6 +11,7 @@ from app.projects.project.repository import ProjectRepository
 from app.projects.updates.enums import UpdateType
 from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
 from app.projects.updates.repository import UpdateRepository
+from app.projects.updates.media.service import UpdateMediaService
 from app.projects.updates.schemas import (
     UpdateCreate,
     UpdateEdit,
@@ -35,7 +36,8 @@ def project_repository() -> MagicMock:
 def service(
     repository: MagicMock, project_repository: MagicMock
 ) -> UpdateService:
-    return UpdateService(repository, project_repository)
+    media_service = MagicMock(spec=UpdateMediaService)
+    return UpdateService(repository, project_repository, media_service)
 
 
 @pytest.fixture
@@ -67,6 +69,7 @@ def make_update(project_id: uuid.UUID, title: str = "First cut"):
         update_type=UpdateType.PROGRESS,
         outgoing_references=[],
         incoming_references=[],
+        media=[],
         public=True,
         created_at=now,
         updated_at=now,

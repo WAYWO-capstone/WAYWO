@@ -37,7 +37,7 @@ class UpdateMediaService:
         media = UpdateMedia(update_id=update.id, file_asset=asset)
         update.media.append(media)
         media = self._repo.add(media)
-        return self._to_read(media)
+        return UpdateMediaRead.from_model(media)
 
     def attach(
         self,
@@ -56,9 +56,15 @@ class UpdateMediaService:
         viewer_id: uuid.UUID | None,
     ) -> list[UpdateMediaRead]:
         update = self._get_visible_update(project_id, update_id, viewer_id)
-        return [self._to_read(media) for media in self._repo.list_for_update(update.id)]
+        return [
+            UpdateMediaRead.from_model(media)
+            for media in self._repo.list_for_update(update.id)
+        ]
 
     def release_for_update(self, update: "Update") -> None:
+        # TODO: Define and implement a deletion cleanup policy for media:
+        # decide whether R2 objects and FileAsset rows should be deleted,
+        # and cover update deletion and project cascade deletion consistently.
         for media in self._repo.list_for_update(update.id):
             media.file_asset.attached = False
 
@@ -95,14 +101,3 @@ class UpdateMediaService:
             raise UpdateNotFoundError(update_id)
         return update
 
-    @staticmethod
-    def _to_read(media: UpdateMedia) -> UpdateMediaRead:
-        asset = media.file_asset
-        return UpdateMediaRead(
-            id=media.id,
-            update_id=media.update_id,
-            filename=asset.filename,
-            mime_type=asset.mime_type,
-            size=asset.size_bytes,
-            created_at=media.created_at,
-        )

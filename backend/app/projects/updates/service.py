@@ -36,7 +36,7 @@ class UpdateService:
         self,
         repository: UpdateRepository,
         project_repository: ProjectRepository,
-        media_service: UpdateMediaService | None = None,
+        media_service: UpdateMediaService,
     ):
         self._repo = repository
         self._project_repo = project_repository
@@ -73,9 +73,8 @@ class UpdateService:
         ]
         row = self._repo.add(update)
         created = row[0]
-        if self._media_service is not None:
-            for upload_id in data.media_upload_ids:
-                self._media_service.attach_to_update(created, author_id, upload_id)
+        for upload_id in data.media_upload_ids:
+            self._media_service.attach_to_update(created, author_id, upload_id)
         return self._to_read(row, author_id)
 
     def edit_project_update(
@@ -140,8 +139,7 @@ class UpdateService:
         author_id: uuid.UUID,
     ) -> None:
         update = self._get_owned_update(project_id, update_id, author_id)
-        if self._media_service is not None:
-            self._media_service.release_for_update(update)
+        self._media_service.release_for_update(update)
         self._repo.delete(update)
 
     def list_project_updates(
@@ -268,15 +266,8 @@ class UpdateService:
             if reference.source.public or reference.source.author_id == viewer_id
         ]
         media_reads = [
-            UpdateMediaRead(
-                id=media.id,
-                update_id=media.update_id,
-                filename=media.file_asset.filename,
-                mime_type=media.file_asset.mime_type,
-                size=media.file_asset.size_bytes,
-                created_at=media.created_at,
-            )
-            for media in getattr(update, "media", [])
+            UpdateMediaRead.from_model(media)
+            for media in update.media
         ]
         return UpdateRead(
             id=update.id,
