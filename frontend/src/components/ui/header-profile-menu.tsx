@@ -4,7 +4,8 @@ import { Bookmark, LogOut, Settings, UserRound } from "lucide-react";
 import { ProfileAvatar } from "@/components/profile/profile-avatar";
 import { useCurrentProfile, useLogout } from "@/lib/auth";
 
-import { Button, buttonVariants } from "./button";
+import { cn } from "cn";
+import { buttonVariants } from "./button";
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -14,7 +15,6 @@ import {
   DropdownMenuTrigger,
 } from "./dropdown-menu";
 import "./header.css";
-import { cn } from "cn";
 
 export function HeaderProfileMenu() {
   const profile = useCurrentProfile();
