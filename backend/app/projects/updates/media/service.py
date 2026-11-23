@@ -62,9 +62,9 @@ class UpdateMediaService:
         ]
 
     def release_for_update(self, update: "Update") -> None:
-        # TODO: Define and implement a deletion cleanup policy for media:
+        # Media cleanup policy remains to be defined:
         # decide whether R2 objects and FileAsset rows should be deleted,
-        # and cover update deletion and project cascade deletion consistently.
+        # and handle update and project cascade deletion consistently.
         for media in self._repo.list_for_update(update.id):
             media.file_asset.attached = False
 
@@ -100,4 +100,3 @@ class UpdateMediaService:
         ):
             raise UpdateNotFoundError(update_id)
         return update
-
