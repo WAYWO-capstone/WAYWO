@@ -33,6 +33,13 @@ class UpdateCreate(BaseModel):
         max_length=20,
     )
 
+    @field_validator("media_upload_ids")
+    @classmethod
+    def remove_duplicate_media_upload_ids(
+        cls, values: list[uuid.UUID]
+    ) -> list[uuid.UUID]:
+        return list(dict.fromkeys(values))
+
     @field_validator("title")
     @classmethod
     def title_must_not_be_blank(cls, value: str) -> str:

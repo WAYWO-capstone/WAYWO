@@ -59,6 +59,27 @@ def test_create_update_with_media_upload_ids(
     assert media_row.update_id == saved_update.id
 
 
+def test_duplicate_media_upload_ids_are_attached_once(
+    client: TestClient,
+    project: Project,
+    make_owned_asset,
+    payload,
+):
+    asset = make_owned_asset(filename="duplicate.pdf")
+
+    response = client.post(
+        f"/projects/{project.id}/updates",
+        json={
+            **payload,
+            "media_upload_ids": [str(asset.id), str(asset.id)],
+        },
+    )
+
+    assert response.status_code == 201
+    body = response.json()
+    assert len(body["media"]) == 1
+
+
 def test_owner_can_attach_media_to_existing_update(
     client: TestClient,
     engine,
