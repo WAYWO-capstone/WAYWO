@@ -74,13 +74,7 @@ export function HeaderProfileMenu() {
           <p className="text-md font-medium">
             {profile.data?.username || "You"}
           </p>
-          <DropdownMenuItem
-            className={cn(
-              "w-full",
-              buttonVariants({ variant: "outline", className: "rounded-2xl" }),
-            )}
-            render={renderMyProfileButton}
-          />
+          <DropdownMenuItem render={renderMyProfileButton} />
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
 
