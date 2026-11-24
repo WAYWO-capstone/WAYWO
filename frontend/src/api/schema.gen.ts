@@ -406,6 +406,24 @@ export interface paths {
         patch: operations["edit_project_update_projects__project_id__updates__update_id__patch"];
         trace?: never;
     };
+    "/projects/{project_id}/updates/{update_id}/media": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List Update Media */
+        get: operations["list_update_media_projects__project_id__updates__update_id__media_get"];
+        put?: never;
+        /** Attach Update Media */
+        post: operations["attach_update_media_projects__project_id__updates__update_id__media_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/uploads": {
         parameters: {
             query?: never;
@@ -914,6 +932,8 @@ export interface components {
         UpdateCreate: {
             /** Body */
             body: string;
+            /** Media Upload Ids */
+            media_upload_ids?: string[];
             /** Public */
             public?: boolean | null;
             /** References */
@@ -946,6 +966,38 @@ export interface components {
             /** Total */
             total: number;
         };
+        /** UpdateMediaCreate */
+        UpdateMediaCreate: {
+            /**
+             * Upload Id
+             * Format: uuid
+             */
+            upload_id: string;
+        };
+        /** UpdateMediaRead */
+        UpdateMediaRead: {
+            /**
+             * Created At
+             * Format: date-time
+             */
+            created_at: string;
+            /** Filename */
+            filename: string;
+            /**
+             * Id
+             * Format: uuid
+             */
+            id: string;
+            /** Mime Type */
+            mime_type: string;
+            /** Size */
+            size: number;
+            /**
+             * Update Id
+             * Format: uuid
+             */
+            update_id: string;
+        };
         /** UpdateRead */
         UpdateRead: {
             author: components["schemas"]["ProjectAuthorRead"];
@@ -968,6 +1020,8 @@ export interface components {
             id: string;
             /** Incoming References */
             incoming_references?: components["schemas"]["UpdateReferenceRead"][];
+            /** Media */
+            media?: components["schemas"]["UpdateMediaRead"][];
             /** Outgoing References */
             outgoing_references?: components["schemas"]["UpdateReferenceRead"][];
             /**
@@ -2009,6 +2063,74 @@ export interface operations {
                 };
                 content: {
                     "application/json": components["schemas"]["UpdateRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    list_update_media_projects__project_id__updates__update_id__media_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                update_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateMediaRead"][];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    attach_update_media_projects__project_id__updates__update_id__media_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+                update_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["UpdateMediaCreate"];
+            };
+        };
+        responses: {
+            /** @description Successful Response */
+            201: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["UpdateMediaRead"];
                 };
             };
             /** @description Validation Error */

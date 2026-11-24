@@ -3,6 +3,7 @@ from typing import Annotated
 
 from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
 
+from app.media.exceptions import MediaAttachmentUnavailableError
 from app.projects.project.dependencies import get_current_user_id
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.updates.dependencies import get_update_service
@@ -71,6 +72,11 @@ def create_project_update(
     except ProjectNotOwnedError as exc:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this project"
+        ) from exc
+    except MediaAttachmentUnavailableError as exc:
+        raise HTTPException(
+            status.HTTP_409_CONFLICT,
+            "This file can't be added to the update. Try uploading it again.",
         ) from exc
     except (
         ReferencedUpdateNotFoundError,
