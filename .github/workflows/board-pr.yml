@@ -1,12 +1,13 @@
 # Moves pull requests across the project board.
 #  - PR opened                           -> PR in In progress, and the issues it closes -> In review
 #  - review requested / review submitted -> PR in In review
-#  - PR merged -> Done is left to the project's built-in "Pull request merged" workflow.
+#  - PR merged                           -> PR and the issues it closes in Done; those issues are closed
+#    (works for PRs into iteration-* branches, where GitHub itself ignores "Closes #12").
 name: Board - pull requests
 
 on:
   pull_request_target:
-    types: [opened, reopened, ready_for_review, review_requested, edited]
+    types: [opened, reopened, ready_for_review, review_requested, edited, closed]
   pull_request_review:
     types: [submitted]
 
@@ -30,7 +31,7 @@ jobs:
           PROJECT_OWNER: ${{ vars.PROJECT_OWNER }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
         with:
-          github-token: ${{ secrets.PROJECT_ADMIN }}
+          github-token: ${{ secrets.ADMIN_TOKEN }}
           script: |
             const board = require('./.github/scripts/board.js')({ github, context, core });
             await board.handlePullRequest();

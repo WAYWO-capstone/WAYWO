@@ -38,7 +38,7 @@ jobs:
           PROJECT_OWNER: ${{ vars.PROJECT_OWNER }}
           PROJECT_NUMBER: ${{ vars.PROJECT_NUMBER }}
         with:
-          github-token: ${{ secrets.PROJECT_ADMIN }}
+          github-token: ${{ secrets.ADMIN_TOKEN }}
           script: |
             const board = require('./.github/scripts/board.js')({ github, context, core });
             if (context.eventName === 'issues' && context.payload.action === 'opened') {

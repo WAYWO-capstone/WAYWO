@@ -12,10 +12,12 @@
 //   4. New issue opened                               -> added to the board in Backlog.
 //   5. PR opened                                      -> PR in In progress; the issues it closes go to In review.
 //      Review requested / review submitted            -> PR in In review.
+//      PR merged                                      -> PR and the issues it closes go to Done; those issues are closed.
 //
-// Left to GitHub's built-in project workflows (project -> menu -> Workflows):
-//   "Pull request merged" -> Done, and "Item closed" -> Done. Merging a PR that says "Closes #12"
-//   closes issue #12, so the PR and its issues all land in Done without this script.
+// "The issues it closes" are read from the PR description ("Closes #12", "Fixes #12", "Resolves #12"), not from
+// GitHub's own linking: GitHub only honours those keywords on PRs into the default branch, and our PRs go into
+// iteration-* branches. Closing issues needs the ADMIN_TOKEN secret to have write access to issues.
+// GitHub's built-in "Item closed" -> Done project workflow still covers issues closed by hand.
 //
 // Status only ever moves forward through the column order (except a reopened PR),
 // so the automation never drags a card backwards that someone moved by hand.
@@ -100,7 +102,7 @@ module.exports = ({ github, context, core }) => {
     } catch (err) {
       throw new Error(
         `Could not open project #${CONFIG.projectNumber} owned by ${owner}. ` +
-          `Check PROJECT_OWNER / PROJECT_NUMBER and that the PROJECT_ADMIN secret has the "project" scope. (${err.message})`,
+          `Check PROJECT_OWNER / PROJECT_NUMBER and that the ADMIN_TOKEN secret has Projects read and write access. (${err.message})`,
       );
     }
     if (!p) throw new Error(`Project #${CONFIG.projectNumber} not found for ${owner}.`);
@@ -317,6 +319,30 @@ module.exports = ({ github, context, core }) => {
 
   // ---------- rule 5: pull requests ----------
 
+  // "Closes #12", "fixes: #12", "Resolved owner/repo#12". Same keywords as .github/workflows/pr-links-issue.yml.
+  const CLOSING = /\b(?:close[sd]?|fix(?:e[sd])?|resolve[sd]?):?\s+(?:([\w.-]+)\/([\w.-]+))?#(\d+)/gi;
+
+  // Issues (not PRs) in this repo that the PR description says it closes.
+  async function linkedIssues(pr) {
+    const { owner, repo } = context.repo;
+    const numbers = new Set();
+    for (const m of (pr.body ?? '').matchAll(CLOSING)) {
+      const sameRepo = !m[1] || (m[1].toLowerCase() === owner.toLowerCase() && m[2].toLowerCase() === repo.toLowerCase());
+      if (sameRepo) numbers.add(Number(m[3]));
+    }
+    const issues = [];
+    for (const number of numbers) {
+      try {
+        const { data } = await github.rest.issues.get({ owner, repo, issue_number: number });
+        if (data.pull_request) continue; // "#N" pointed at a PR, not an issue
+        issues.push({ id: data.node_id, number: data.number, title: data.title, state: data.state });
+      } catch (err) {
+        core.warning(`PR #${pr.number} says it closes #${number}, but that issue couldn't be loaded; skipped. (${err.message})`);
+      }
+    }
+    return issues;
+  }
+
   async function handlePullRequest() {
     const { eventName, payload } = context;
     const pr = payload.pull_request;
@@ -330,19 +356,44 @@ module.exports = ({ github, context, core }) => {
       return;
     }
 
+    // Merged: the PR and the issues it closes go to Done, and those issues are closed.
+    // (A PR closed without merging is left where it is.)
+    if (action === 'closed') {
+      if (!pr.merged) return;
+      await setStatus(rec, C.done, { why: `PR merged into ${pr.base.ref}` });
+      const failed = [];
+      for (const issue of await linkedIssues(pr)) {
+        const issueRec = await ensureItem(issue);
+        await setStatus(issueRec, C.done, { why: `PR #${pr.number} merged` });
+        if (issue.state !== 'open') continue;
+        try {
+          await github.rest.issues.update({
+            ...context.repo,
+            issue_number: issue.number,
+            state: 'closed',
+            state_reason: 'completed',
+          });
+          core.info(`Closed #${issue.number} (PR #${pr.number} merged)`);
+        } catch (err) {
+          failed.push(`#${issue.number} (${err.message})`);
+        }
+      }
+      if (failed.length) {
+        core.setFailed(
+          `Could not close ${failed.join(', ')}. The ADMIN_TOKEN secret needs write access to issues in this repository ` +
+            `(classic token: "repo" scope; fine-grained token: Issues → Read and write).`,
+        );
+      }
+      return;
+    }
+
     if (action === 'reopened') await setStatus(rec, C.inProgress, { force: true, why: 'PR reopened' });
     if (action === 'opened' || action === 'ready_for_review') await setStatus(rec, C.inProgress, { why: 'PR opened' });
     if (action === 'review_requested') await setStatus(rec, C.inReview, { why: 'review requested' });
 
     // Issues this PR will close ("Closes #12") go to In review. Rule 1 then moves their story to In progress.
     if (['opened', 'reopened', 'ready_for_review', 'edited'].includes(action)) {
-      const res = await gql(
-        `query($id: ID!) { node(id: $id) { ... on PullRequest {
-          closingIssuesReferences(first: 20) { nodes { id number title } }
-        } } }`,
-        { id: pr.node_id },
-      );
-      for (const issue of res.node.closingIssuesReferences.nodes) {
+      for (const issue of await linkedIssues(pr)) {
         const issueRec = await ensureItem(issue);
         await setStatus(issueRec, C.inReview, { why: `PR #${pr.number} closes it` });
       }
