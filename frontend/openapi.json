@@ -870,6 +870,15 @@
             "title": "Body",
             "type": "string"
           },
+          "media_upload_ids": {
+            "items": {
+              "format": "uuid",
+              "type": "string"
+            },
+            "maxItems": 20,
+            "title": "Media Upload Ids",
+            "type": "array"
+          },
           "public": {
             "anyOf": [
               {
@@ -1005,6 +1014,61 @@
         "title": "UpdateHistoryPage",
         "type": "object"
       },
+      "UpdateMediaCreate": {
+        "properties": {
+          "upload_id": {
+            "format": "uuid",
+            "title": "Upload Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "upload_id"
+        ],
+        "title": "UpdateMediaCreate",
+        "type": "object"
+      },
+      "UpdateMediaRead": {
+        "properties": {
+          "created_at": {
+            "format": "date-time",
+            "title": "Created At",
+            "type": "string"
+          },
+          "filename": {
+            "title": "Filename",
+            "type": "string"
+          },
+          "id": {
+            "format": "uuid",
+            "title": "Id",
+            "type": "string"
+          },
+          "mime_type": {
+            "title": "Mime Type",
+            "type": "string"
+          },
+          "size": {
+            "title": "Size",
+            "type": "integer"
+          },
+          "update_id": {
+            "format": "uuid",
+            "title": "Update Id",
+            "type": "string"
+          }
+        },
+        "required": [
+          "id",
+          "update_id",
+          "filename",
+          "mime_type",
+          "size",
+          "created_at"
+        ],
+        "title": "UpdateMediaRead",
+        "type": "object"
+      },
       "UpdateRead": {
         "properties": {
           "author": {
@@ -1034,6 +1098,13 @@
               "$ref": "#/components/schemas/UpdateReferenceRead"
             },
             "title": "Incoming References",
+            "type": "array"
+          },
+          "media": {
+            "items": {
+              "$ref": "#/components/schemas/UpdateMediaRead"
+            },
+            "title": "Media",
             "type": "array"
           },
           "outgoing_references": {
@@ -2752,6 +2823,134 @@
         "summary": "Edit Project Update",
         "tags": [
           "project updates"
+        ]
+      }
+    },
+    "/projects/{project_id}/updates/{update_id}/media": {
+      "get": {
+        "operationId": "list_update_media_projects__project_id__updates__update_id__media_get",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "update_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Update Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/UpdateMediaRead"
+                  },
+                  "title": "Response List Update Media Projects  Project Id  Updates  Update Id  Media Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List Update Media",
+        "tags": [
+          "update media"
+        ]
+      },
+      "post": {
+        "operationId": "attach_update_media_projects__project_id__updates__update_id__media_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          },
+          {
+            "in": "path",
+            "name": "update_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Update Id",
+              "type": "string"
+            }
+          }
+        ],
+        "requestBody": {
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/UpdateMediaCreate"
+              }
+            }
+          },
+          "required": true
+        },
+        "responses": {
+          "201": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/UpdateMediaRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Attach Update Media",
+        "tags": [
+          "update media"
         ]
       }
     },

@@ -32,3 +32,11 @@ class UploadNotReceivedError(Exception):
     def __init__(self, upload_id: uuid.UUID):
         super().__init__(f"Upload {upload_id} has not reached storage")
         self.upload_id = upload_id
+
+
+class MediaAttachmentUnavailableError(Exception):
+    """The upload cannot be attached to a project or update."""
+
+    def __init__(self, upload_id: uuid.UUID):
+        super().__init__(f"Upload {upload_id} cannot be attached")
+        self.upload_id = upload_id
