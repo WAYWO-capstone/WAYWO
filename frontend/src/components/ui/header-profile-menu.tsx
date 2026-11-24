@@ -43,26 +43,6 @@ export function HeaderProfileMenu() {
     }
   };
 
-  const renderMyProfileButton = () => {
-    if (profile.data) {
-      return (
-        <Link
-          to={"/profile/$username"}
-          params={{ username: profile.data.username }}
-          className={cn(
-            buttonVariants({ variant: "outline", className: "rounded-2xl" }),
-            "w-full",
-          )}
-        >
-          <UserRound aria-hidden="true" className="size-4" />
-          My profile
-        </Link>
-      );
-    } else {
-      return <></>;
-    }
-  };
-
   return (
     <DropdownMenu>
       <DropdownMenuTrigger aria-label="Open profile menu" role="button">
@@ -74,17 +54,39 @@ export function HeaderProfileMenu() {
           <p className="text-md font-medium">
             {profile.data?.username || "You"}
           </p>
-          <DropdownMenuItem render={renderMyProfileButton} />
+          {profile.data && (
+            <DropdownMenuItem
+              className={cn(
+                buttonVariants({
+                  variant: "outline",
+                  className: "rounded-2xl",
+                }),
+                "w-full",
+              )}
+              render={
+                <Link
+                  to={"/profile/$username"}
+                  params={{ username: profile.data.username }}
+                >
+                  <UserRound aria-hidden="true" className="size-4" />
+                  My profile
+                </Link>
+              }
+            />
+          )}
         </DropdownMenuGroup>
         <DropdownMenuSeparator />
 
         <DropdownMenuGroup>
-          <DropdownMenuItem className="flex items-center gap-2">
-            <Link to="/profile" className="flex items-center gap-2 w-full">
-              <Settings aria-hidden="true" className="size-4" />
-              User settings
-            </Link>
-          </DropdownMenuItem>
+          <DropdownMenuItem
+            className="flex items-center gap-2 w-full"
+            render={
+              <Link to="/profile">
+                <Settings aria-hidden="true" className="size-4" />
+                User settings
+              </Link>
+            }
+          />
         </DropdownMenuGroup>
 
         <DropdownMenuItem className="flex items-center gap-2">
