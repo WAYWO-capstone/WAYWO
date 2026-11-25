@@ -363,7 +363,8 @@ def test_archived_project_status_cannot_change_until_restored(
     )
 
     assert response.status_code == 409
-    assert client.get(f"/projects/{published_project}", headers=owner).json()["status"] == "ARCHIVED"
+    project = client.get(f"/projects/{published_project}", headers=owner).json()
+    assert project["status"] == "ARCHIVED"
 
 
 def test_rejects_archiving_another_users_project(
