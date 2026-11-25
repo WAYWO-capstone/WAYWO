@@ -124,7 +124,6 @@ class ProjectService:
             project.tags = self._repo.get_or_create_tags(changes.pop("tags"))
         for field, value in changes.items():
             setattr(project, field, value)
-            setattr(project, field, value)
 
     def save_draft(
         self, project_id: uuid.UUID, author_id: uuid.UUID, data: ProjectUpdate
