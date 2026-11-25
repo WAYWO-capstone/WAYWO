@@ -19,6 +19,7 @@ export const previewProject: ProjectView = {
   last_autosaved_at: null,
   published_at: "2026-05-13T12:00:00Z",
   completed_at: null,
+  archived_at: null,
   author: { username: "Anna Ji", profile_picture_link: null },
   is_owner: false,
 };
