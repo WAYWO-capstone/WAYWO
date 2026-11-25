@@ -401,6 +401,27 @@ class TestUpdateStatus:
         repository.update.assert_not_called()
 
 
+    def test_rejects_status_change_on_archived_project(
+        self, service, repository, project, author_id
+    ):
+        project.status = ProjectStatus.ARCHIVED
+        project.public = False
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="restored"):
+            service.update_status(
+                project.id,
+                author_id,
+                ProjectStatusUpdate(status=ProjectStatus.ACTIVE),
+            )
+
+        repository.update.assert_not_called()
+
+    def test_rejects_archiving_through_status_endpoint(self):
+        with pytest.raises(ValueError, match="ACTIVE or COMPLETED"):
+            ProjectStatusUpdate(status=ProjectStatus.ARCHIVED)
+
+
 class TestPublishProject:
     @pytest.fixture
     def project(self, author_id):
@@ -442,7 +463,7 @@ class TestPublishProject:
         repository.update.assert_not_called()
 
 
-class TestUnpublishProject:
+class TestArchiveProject:
     @pytest.fixture
     def project(self, author_id):
         return Project(
@@ -453,40 +474,152 @@ class TestUnpublishProject:
             category_id=uuid.uuid4(),
         )
 
-    def test_unpublishes_active_project_as_private_draft(
-        self, service, repository, project, author_id
+    @pytest.mark.parametrize(
+        "status", [ProjectStatus.ACTIVE, ProjectStatus.COMPLETED]
+    )
+    def test_archives_published_project_and_keeps_its_history(
+        self, service, repository, project, author_id, status
+    ):
+        published_at = datetime.now(timezone.utc)
+        completed_at = published_at if status == ProjectStatus.COMPLETED else None
+        project.status = status
+        project.public = True
+        project.published_at = published_at
+        project.completed_at = completed_at
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        result = service.archive_project(project.id, author_id)
+
+        assert result is project
+        assert project.status == ProjectStatus.ARCHIVED
+        assert project.public is False
+        assert project.archived_at is not None
+        assert project.published_at == published_at
+        assert project.completed_at == completed_at
+        repository.update.assert_called_once_with(project)
+
+    @pytest.mark.parametrize(
+        "status", [ProjectStatus.DRAFT, ProjectStatus.ARCHIVED]
+    )
+    def test_rejects_archiving_unpublished_project(
+        self, service, repository, project, author_id, status
+    ):
+        project.status = status
+        project.public = False
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="archived"):
+            service.archive_project(project.id, author_id)
+
+        repository.update.assert_not_called()
+
+    def test_rejects_archiving_another_users_project(
+        self, service, repository, project
     ):
         project.status = ProjectStatus.ACTIVE
         project.public = True
-        project.published_at = datetime.now(timezone.utc)
         repository.get.return_value = project
-        repository.update.side_effect = lambda value: value
 
-        result = service.unpublish_project(project.id, author_id)
+        with pytest.raises(ProjectNotOwnedError):
+            service.archive_project(project.id, uuid.uuid4())
 
-        assert result is project
-        assert project.status == ProjectStatus.DRAFT
-        assert project.public is False
-        assert project.published_at is None
-        repository.update.assert_called_once_with(project)
+        repository.update.assert_not_called()
 
-    def test_unpublishes_completed_project_as_private_draft(
+    def test_rejects_missing_project(self, service, repository, author_id):
+        repository.get.return_value = None
+
+        with pytest.raises(ProjectNotFoundError):
+            service.archive_project(uuid.uuid4(), author_id)
+
+
+class TestRestoreProject:
+    @pytest.fixture
+    def project(self, author_id):
+        return Project(
+            author_id=author_id,
+            title="Archived project",
+            summary="An archived summary",
+            description="An archived description",
+            category_id=uuid.uuid4(),
+            status=ProjectStatus.ARCHIVED,
+            public=False,
+            published_at=datetime.now(timezone.utc),
+            archived_at=datetime.now(timezone.utc),
+        )
+
+    def test_restores_active_project_as_public(
         self, service, repository, project, author_id
     ):
-        project.status = ProjectStatus.COMPLETED
-        project.public = True
-        project.completed_at = datetime.now(timezone.utc)
+        published_at = project.published_at
         repository.get.return_value = project
         repository.update.side_effect = lambda value: value
 
-        result = service.unpublish_project(project.id, author_id)
+        result = service.restore_project(project.id, author_id)
 
         assert result is project
-        assert project.status == ProjectStatus.DRAFT
-        assert project.public is False
-        assert project.published_at is None
-        assert project.completed_at is None
+        assert project.status == ProjectStatus.ACTIVE
+        assert project.public is True
+        assert project.archived_at is None
+        assert project.published_at == published_at
         repository.update.assert_called_once_with(project)
+
+    def test_restores_completed_project_as_completed(
+        self, service, repository, project, author_id
+    ):
+        completed_at = datetime.now(timezone.utc)
+        project.completed_at = completed_at
+        repository.get.return_value = project
+        repository.update.side_effect = lambda value: value
+
+        service.restore_project(project.id, author_id)
+
+        assert project.status == ProjectStatus.COMPLETED
+        assert project.completed_at == completed_at
+        assert project.public is True
+
+    @pytest.mark.parametrize(
+        "status",
+        [ProjectStatus.DRAFT, ProjectStatus.ACTIVE, ProjectStatus.COMPLETED],
+    )
+    def test_rejects_restoring_project_that_is_not_archived(
+        self, service, repository, project, author_id, status
+    ):
+        project.status = status
+        repository.get.return_value = project
+
+        with pytest.raises(InvalidProjectStatusTransitionError, match="restored"):
+            service.restore_project(project.id, author_id)
+
+        repository.update.assert_not_called()
+
+    def test_rejects_restoring_another_users_project(
+        self, service, repository, project
+    ):
+        repository.get.return_value = project
+
+        with pytest.raises(ProjectNotOwnedError):
+            service.restore_project(project.id, uuid.uuid4())
+
+        repository.update.assert_not_called()
+
+
+class TestAcceptsInteractions:
+    @pytest.mark.parametrize(
+        ("status", "public", "expected"),
+        [
+            (ProjectStatus.DRAFT, False, False),
+            (ProjectStatus.ACTIVE, True, True),
+            (ProjectStatus.COMPLETED, True, True),
+            (ProjectStatus.ARCHIVED, False, False),
+        ],
+    )
+    def test_only_published_public_projects_accept_interactions(
+        self, status, public, expected
+    ):
+        project = Project(status=status, public=public)
+
+        assert project.accepts_interactions is expected
 
 
 class TestDeleteProject:

@@ -10,7 +10,7 @@ from sqlalchemy.orm import Mapped, mapped_column, relationship
 from app.core.base import Base
 from app.feed_items.feed_item.models import FeedItem
 from app.feed_items.feed_item.enums import FeedItemType
-from app.projects.project.enums import ProjectStatus
+from app.projects.project.enums import PUBLISHED_STATUSES, ProjectStatus
 
 project_tags = Table(
     "project_tags",
@@ -62,8 +62,20 @@ class Project(FeedItem):
     completed_at: Mapped[datetime | None] = mapped_column(
         DateTime(timezone=True), default=None
     )
+    archived_at: Mapped[datetime | None] = mapped_column(
+        DateTime(timezone=True), default=None
+    )
 
     category: Mapped[Category] = relationship(lazy="selectin")
     tags: Mapped[list[Tag]] = relationship(secondary=project_tags, lazy="selectin")
 
     __mapper_args__ = {"polymorphic_identity": FeedItemType.PROJECT}
+
+    @property
+    def accepts_interactions(self) -> bool:
+        """Whether people can like or comment on this project.
+
+        Drafts never can. Archived projects keep the likes and comments they
+        already have but take no new ones, since only their owner can see them.
+        """
+        return self.public and self.status in PUBLISHED_STATUSES
