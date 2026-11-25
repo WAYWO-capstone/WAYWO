@@ -1,0 +1,24 @@
+# Fails the PR check if the description doesn't say which issue it closes.
+# Without "Closes #12", the board automation can't move the task, and the task
+# won't close itself when the PR merges.
+name: PR links an issue
+
+on:
+  pull_request:
+    types: [opened, edited, reopened, synchronize]
+
+permissions:
+  pull-requests: read
+
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/github-script@v8
+        with:
+          script: |
+            const body = context.payload.pull_request.body || '';
+            const linked = /\b(close[sd]?|fix(e[sd])?|resolve[sd]?)\s+([\w.-]+\/[\w.-]+)?#\d+/i.test(body);
+            if (!linked) {
+              core.setFailed('Add "Closes #<issue number>" to the PR description so the task moves on the board and closes when this PR merges.');
+            }
