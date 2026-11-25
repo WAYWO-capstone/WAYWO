@@ -6,7 +6,6 @@ import { ApiError } from "@/api/client";
 import {
   getProject,
   publishProject,
-  unpublishProject,
   updateProjectStatus,
 } from "@/api/projects";
 import type { ProjectView } from "@/api/models";
@@ -45,8 +44,7 @@ function ViewProjectPage() {
           if (step.type === "publish") {
             await publishProject(projectId);
             published = true;
-          } else if (step.type === "unpublish") await unpublishProject(projectId);
-          else await updateProjectStatus(projectId, step.status);
+          } else await updateProjectStatus(projectId, step.status);
         }
       } catch (cause) {
         if (published) throw new PartialStatusChangeError("Published, but the status was not updated", { cause });

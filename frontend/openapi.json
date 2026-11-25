@@ -381,6 +381,18 @@
       },
       "ProjectDetailRead": {
         "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
           "author": {
             "$ref": "#/components/schemas/ProjectAuthorRead"
           },
@@ -483,6 +495,7 @@
           "last_autosaved_at",
           "published_at",
           "completed_at",
+          "archived_at",
           "author",
           "is_owner"
         ],
@@ -491,6 +504,18 @@
       },
       "ProjectRead": {
         "properties": {
+          "archived_at": {
+            "anyOf": [
+              {
+                "format": "date-time",
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ],
+            "title": "Archived At"
+          },
           "author_id": {
             "format": "uuid",
             "title": "Author Id",
@@ -585,7 +610,8 @@
           "created_at",
           "last_autosaved_at",
           "published_at",
-          "completed_at"
+          "completed_at",
+          "archived_at"
         ],
         "title": "ProjectRead",
         "type": "object"
@@ -594,7 +620,8 @@
         "enum": [
           "DRAFT",
           "ACTIVE",
-          "COMPLETED"
+          "COMPLETED",
+          "ARCHIVED"
         ],
         "title": "ProjectStatus",
         "type": "string"
@@ -1973,6 +2000,36 @@
         ]
       }
     },
+    "/projects/mine/archived": {
+      "get": {
+        "operationId": "list_my_archived_projects_projects_mine_archived_get",
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "items": {
+                    "$ref": "#/components/schemas/ProjectRead"
+                  },
+                  "title": "Response List My Archived Projects Projects Mine Archived Get",
+                  "type": "array"
+                }
+              }
+            },
+            "description": "Successful Response"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "List My Archived Projects",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/projects/mine/drafts": {
       "get": {
         "operationId": "list_my_drafts_projects_mine_drafts_get",
@@ -2171,6 +2228,54 @@
           }
         ],
         "summary": "Update Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
+    "/projects/{project_id}/archive": {
+      "post": {
+        "operationId": "archive_project_projects__project_id__archive_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Archive Project",
         "tags": [
           "projects"
         ]
@@ -2448,6 +2553,54 @@
         ]
       }
     },
+    "/projects/{project_id}/restore": {
+      "post": {
+        "operationId": "restore_project_projects__project_id__restore_post",
+        "parameters": [
+          {
+            "in": "path",
+            "name": "project_id",
+            "required": true,
+            "schema": {
+              "format": "uuid",
+              "title": "Project Id",
+              "type": "string"
+            }
+          }
+        ],
+        "responses": {
+          "200": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ProjectRead"
+                }
+              }
+            },
+            "description": "Successful Response"
+          },
+          "422": {
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/HTTPValidationError"
+                }
+              }
+            },
+            "description": "Validation Error"
+          }
+        },
+        "security": [
+          {
+            "HTTPBearer": []
+          }
+        ],
+        "summary": "Restore Project",
+        "tags": [
+          "projects"
+        ]
+      }
+    },
     "/projects/{project_id}/status": {
       "patch": {
         "operationId": "update_project_status_projects__project_id__status_patch",
@@ -2501,54 +2654,6 @@
           }
         ],
         "summary": "Update Project Status",
-        "tags": [
-          "projects"
-        ]
-      }
-    },
-    "/projects/{project_id}/unpublish": {
-      "post": {
-        "operationId": "unpublish_project_projects__project_id__unpublish_post",
-        "parameters": [
-          {
-            "in": "path",
-            "name": "project_id",
-            "required": true,
-            "schema": {
-              "format": "uuid",
-              "title": "Project Id",
-              "type": "string"
-            }
-          }
-        ],
-        "responses": {
-          "200": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/ProjectRead"
-                }
-              }
-            },
-            "description": "Successful Response"
-          },
-          "422": {
-            "content": {
-              "application/json": {
-                "schema": {
-                  "$ref": "#/components/schemas/HTTPValidationError"
-                }
-              }
-            },
-            "description": "Validation Error"
-          }
-        },
-        "security": [
-          {
-            "HTTPBearer": []
-          }
-        ],
-        "summary": "Unpublish Project",
         "tags": [
           "projects"
         ]

@@ -59,12 +59,6 @@ export function publishProject(projectId: string) {
   return unwrap(api.POST("/projects/{project_id}/publish", { params: projectPath(projectId) }));
 }
 
-export function unpublishProject(projectId: string) {
-  return unwrap(
-    api.POST("/projects/{project_id}/unpublish", { params: projectPath(projectId) }),
-  );
-}
-
 export function updateProjectStatus(projectId: string, status: ProjectStatus) {
   return unwrap(
     api.PATCH("/projects/{project_id}/status", {

@@ -47,6 +47,14 @@ def list_my_published_projects(
     return service.list_published_by_author(current_user_id)
 
 
+@router.get("/mine/archived", response_model=list[ProjectRead])
+def list_my_archived_projects(
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    return service.list_archived_by_author(current_user_id)
+
+
 @router.get("/{project_id}", response_model=ProjectDetailRead)
 def get_project(
     project_id: uuid.UUID,
@@ -156,14 +164,30 @@ def publish_project(
         raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
 
 
-@router.post("/{project_id}/unpublish", response_model=ProjectRead)
-def unpublish_project(
+@router.post("/{project_id}/archive", response_model=ProjectRead)
+def archive_project(
     project_id: uuid.UUID,
     current_user_id: uuid.UUID = Depends(get_current_user_id),
     service: ProjectService = Depends(get_project_service),
 ):
     try:
-        return service.unpublish_project(project_id, current_user_id)
+        return service.archive_project(project_id, current_user_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
+    except ProjectNotOwnedError as exc:
+        raise HTTPException(status.HTTP_403_FORBIDDEN, str(exc)) from exc
+    except InvalidProjectStatusTransitionError as exc:
+        raise HTTPException(status.HTTP_409_CONFLICT, str(exc)) from exc
+
+
+@router.post("/{project_id}/restore", response_model=ProjectRead)
+def restore_project(
+    project_id: uuid.UUID,
+    current_user_id: uuid.UUID = Depends(get_current_user_id),
+    service: ProjectService = Depends(get_project_service),
+):
+    try:
+        return service.restore_project(project_id, current_user_id)
     except ProjectNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, str(exc)) from exc
     except ProjectNotOwnedError as exc:

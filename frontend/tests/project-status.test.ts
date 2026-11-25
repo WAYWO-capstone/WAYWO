@@ -42,11 +42,6 @@ describe("statusChangeSteps", () => {
       { type: "set-status", status: "COMPLETED" },
     ]);
   });
-
-  test("unpublishes a published project to return it to draft", () => {
-    expect(statusChangeSteps("ACTIVE", "DRAFT")).toEqual([{ type: "unpublish" }]);
-    expect(statusChangeSteps("COMPLETED", "DRAFT")).toEqual([{ type: "unpublish" }]);
-  });
 });
 
 describe("statusChangeError", () => {
