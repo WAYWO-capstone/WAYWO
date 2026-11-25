@@ -214,6 +214,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/mine/archived": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        /** List My Archived Projects */
+        get: operations["list_my_archived_projects_projects_mine_archived_get"];
+        put?: never;
+        post?: never;
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/mine/drafts": {
         parameters: {
             query?: never;
@@ -265,6 +282,23 @@ export interface paths {
         head?: never;
         /** Update Project */
         patch: operations["update_project_projects__project_id__patch"];
+        trace?: never;
+    };
+    "/projects/{project_id}/archive": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Archive Project */
+        post: operations["archive_project_projects__project_id__archive_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
         trace?: never;
     };
     "/projects/{project_id}/autosave": {
@@ -336,6 +370,23 @@ export interface paths {
         patch?: never;
         trace?: never;
     };
+    "/projects/{project_id}/restore": {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        get?: never;
+        put?: never;
+        /** Restore Project */
+        post: operations["restore_project_projects__project_id__restore_post"];
+        delete?: never;
+        options?: never;
+        head?: never;
+        patch?: never;
+        trace?: never;
+    };
     "/projects/{project_id}/status": {
         parameters: {
             query?: never;
@@ -351,23 +402,6 @@ export interface paths {
         head?: never;
         /** Update Project Status */
         patch: operations["update_project_status_projects__project_id__status_patch"];
-        trace?: never;
-    };
-    "/projects/{project_id}/unpublish": {
-        parameters: {
-            query?: never;
-            header?: never;
-            path?: never;
-            cookie?: never;
-        };
-        get?: never;
-        put?: never;
-        /** Unpublish Project */
-        post: operations["unpublish_project_projects__project_id__unpublish_post"];
-        delete?: never;
-        options?: never;
-        head?: never;
-        patch?: never;
         trace?: never;
     };
     "/projects/{project_id}/updates": {
@@ -746,6 +780,8 @@ export interface components {
         };
         /** ProjectDetailRead */
         ProjectDetailRead: {
+            /** Archived At */
+            archived_at: string | null;
             author: components["schemas"]["ProjectAuthorRead"];
             /**
              * Author Id
@@ -785,6 +821,8 @@ export interface components {
         };
         /** ProjectRead */
         ProjectRead: {
+            /** Archived At */
+            archived_at: string | null;
             /**
              * Author Id
              * Format: uuid
@@ -823,7 +861,7 @@ export interface components {
          * ProjectStatus
          * @enum {string}
          */
-        ProjectStatus: "DRAFT" | "ACTIVE" | "COMPLETED";
+        ProjectStatus: "DRAFT" | "ACTIVE" | "COMPLETED" | "ARCHIVED";
         /** ProjectStatusUpdate */
         ProjectStatusUpdate: {
             status: components["schemas"]["ProjectStatus"];
@@ -1571,6 +1609,26 @@ export interface operations {
             };
         };
     };
+    list_my_archived_projects_projects_mine_archived_get: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path?: never;
+            cookie?: never;
+        };
+        requestBody?: never;
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"][];
+                };
+            };
+        };
+    };
     list_my_drafts_projects_mine_drafts_get: {
         parameters: {
             query?: never;
@@ -1685,6 +1743,37 @@ export interface operations {
                 "application/json": components["schemas"]["ProjectUpdate"];
             };
         };
+        responses: {
+            /** @description Successful Response */
+            200: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["ProjectRead"];
+                };
+            };
+            /** @description Validation Error */
+            422: {
+                headers: {
+                    [name: string]: unknown;
+                };
+                content: {
+                    "application/json": components["schemas"]["HTTPValidationError"];
+                };
+            };
+        };
+    };
+    archive_project_projects__project_id__archive_post: {
+        parameters: {
+            query?: never;
+            header?: never;
+            path: {
+                project_id: string;
+            };
+            cookie?: never;
+        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -1873,7 +1962,7 @@ export interface operations {
             };
         };
     };
-    update_project_status_projects__project_id__status_patch: {
+    restore_project_projects__project_id__restore_post: {
         parameters: {
             query?: never;
             header?: never;
@@ -1882,11 +1971,7 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody: {
-            content: {
-                "application/json": components["schemas"]["ProjectStatusUpdate"];
-            };
-        };
+        requestBody?: never;
         responses: {
             /** @description Successful Response */
             200: {
@@ -1908,7 +1993,7 @@ export interface operations {
             };
         };
     };
-    unpublish_project_projects__project_id__unpublish_post: {
+    update_project_status_projects__project_id__status_patch: {
         parameters: {
             query?: never;
             header?: never;
@@ -1917,7 +2002,11 @@ export interface operations {
             };
             cookie?: never;
         };
-        requestBody?: never;
+        requestBody: {
+            content: {
+                "application/json": components["schemas"]["ProjectStatusUpdate"];
+            };
+        };
         responses: {
             /** @description Successful Response */
             200: {
