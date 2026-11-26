@@ -79,11 +79,8 @@ class UpdateMediaService:
         self._upload_service.delete_asset(media.file_asset)
 
     def release_for_update(self, update: "Update") -> None:
-        # Media cleanup policy remains to be defined:
-        # decide whether R2 objects and FileAsset rows should be deleted,
-        # and handle update and project cascade deletion consistently.
         for media in self._repo.list_for_update(update.id):
-            media.file_asset.attached = False
+            self._upload_service.delete_asset(media.file_asset)
 
     def _get_owned_update(
         self,
