@@ -277,6 +277,14 @@ class UploadService:
         asset.attached = True
         return asset
 
+    def delete_asset(self, asset: FileAsset) -> None:
+        """Delete an asset's stored object and database record."""
+        self._storage.delete_object(
+            UPLOAD_KINDS[asset.kind].bucket,
+            asset.storage_key,
+        )
+        self._repo.delete(asset)
+
 
 @lru_cache
 def get_object_storage() -> ObjectStorage:

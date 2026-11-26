@@ -4,7 +4,11 @@ from typing import TYPE_CHECKING
 from app.media.service import UploadService
 from app.projects.project.exceptions import ProjectNotFoundError
 from app.projects.project.repository import ProjectRepository
-from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
+from app.projects.updates.exceptions import (
+    UpdateMediaNotFoundError,
+    UpdateNotFoundError,
+    UpdateNotOwnedError,
+)
 from app.projects.updates.media.models import UpdateMedia
 from app.projects.updates.media.repository import UpdateMediaRepository
 from app.projects.updates.media.schemas import UpdateMediaRead
@@ -60,6 +64,19 @@ class UpdateMediaService:
             UpdateMediaRead.from_model(media)
             for media in self._repo.list_for_update(update.id)
         ]
+
+    def delete(
+        self,
+        project_id: uuid.UUID,
+        update_id: uuid.UUID,
+        media_id: uuid.UUID,
+        owner_id: uuid.UUID,
+    ) -> None:
+        update = self._get_owned_update(project_id, update_id, owner_id)
+        media = self._repo.get_for_update(update.id, media_id)
+        if media is None:
+            raise UpdateMediaNotFoundError(media_id)
+        self._upload_service.delete_asset(media.file_asset)
 
     def release_for_update(self, update: "Update") -> None:
         # Media cleanup policy remains to be defined:
