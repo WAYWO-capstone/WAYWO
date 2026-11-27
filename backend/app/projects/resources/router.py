@@ -9,9 +9,17 @@ from app.projects.project.dependencies import (
     get_optional_current_user_id,
 )
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
-from app.projects.resources.dependencies import get_resource_service
-from app.projects.resources.schemas import ResourceCreate, ResourceRead
-from app.projects.resources.service import ResourceService
+from app.projects.resources.dependencies import (
+    get_resource_link_service,
+    get_resource_service,
+)
+from app.projects.resources.schemas import (
+    ResourceCreate,
+    ResourceLinkCreate,
+    ResourceLinkRead,
+    ResourceRead,
+)
+from app.projects.resources.service import ResourceLinkService, ResourceService
 
 router = APIRouter(tags=["project resources"])
 
@@ -48,6 +56,42 @@ def list_project_resources(
     viewer_id: Annotated[uuid.UUID | None, Depends(get_optional_current_user_id)],
     service: Annotated[ResourceService, Depends(get_resource_service)],
 ) -> list[ResourceRead]:
+    try:
+        return service.list(project_id, viewer_id)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found") from exc
+
+
+@router.post(
+    "/{project_id}/resources/links",
+    response_model=ResourceLinkRead,
+    status_code=status.HTTP_201_CREATED,
+)
+def create_project_resource_link(
+    project_id: uuid.UUID,
+    payload: ResourceLinkCreate,
+    user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    service: Annotated[ResourceLinkService, Depends(get_resource_link_service)],
+) -> ResourceLinkRead:
+    try:
+        return service.create(project_id, user_id, payload)
+    except ProjectNotFoundError as exc:
+        raise HTTPException(status.HTTP_404_NOT_FOUND, "Project not found") from exc
+    except ProjectNotOwnedError as exc:
+        raise HTTPException(
+            status.HTTP_403_FORBIDDEN, "You do not own this project"
+        ) from exc
+
+
+@router.get(
+    "/{project_id}/resources/links",
+    response_model=list[ResourceLinkRead],
+)
+def list_project_resource_links(
+    project_id: uuid.UUID,
+    viewer_id: Annotated[uuid.UUID | None, Depends(get_optional_current_user_id)],
+    service: Annotated[ResourceLinkService, Depends(get_resource_link_service)],
+) -> list[ResourceLinkRead]:
     try:
         return service.list(project_id, viewer_id)
     except ProjectNotFoundError as exc:

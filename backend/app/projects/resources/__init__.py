@@ -1,1 +1,1 @@
-"""Project resources submodule: files attached to a project."""
+"""Project resources submodule: files and external links attached to a project."""

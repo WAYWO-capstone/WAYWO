@@ -3,9 +3,14 @@ import uuid
 from app.media.service import UploadService
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
-from app.projects.resources.models import ProjectResource
-from app.projects.resources.repository import ResourceRepository
-from app.projects.resources.schemas import ResourceCreate, ResourceRead
+from app.projects.resources.models import ProjectResource, ProjectResourceLink
+from app.projects.resources.repository import ResourceLinkRepository, ResourceRepository
+from app.projects.resources.schemas import (
+    ResourceCreate,
+    ResourceLinkCreate,
+    ResourceLinkRead,
+    ResourceRead,
+)
 
 
 class ResourceService:
@@ -52,11 +57,12 @@ class ResourceService:
         existence isn't leaked.
         """
         project = self._project_repo.get(project_id)
-        if project is None or not (
-            project.public or project.author_id == viewer_id
-        ):
+        if project is None or not (project.public or project.author_id == viewer_id):
             raise ProjectNotFoundError(project_id)
-        return [self._to_read(resource) for resource in self._repo.list_for_project(project_id)]
+        return [
+            self._to_read(resource)
+            for resource in self._repo.list_for_project(project_id)
+        ]
 
     @staticmethod
     def _to_read(resource: ProjectResource) -> ResourceRead:
@@ -70,4 +76,53 @@ class ResourceService:
             filename=asset.filename,
             mime_type=asset.mime_type,
             size=asset.size_bytes,
+        )
+
+
+class ResourceLinkService:
+    def __init__(
+        self,
+        repository: ResourceLinkRepository,
+        project_repository: ProjectRepository,
+    ):
+        self._repo = repository
+        self._project_repo = project_repository
+
+    def create(
+        self,
+        project_id: uuid.UUID,
+        user_id: uuid.UUID,
+        data: ResourceLinkCreate,
+    ) -> ResourceLinkRead:
+        project = self._project_repo.get(project_id)
+        if project is None:
+            raise ProjectNotFoundError(project_id)
+        if project.author_id != user_id:
+            raise ProjectNotOwnedError(project_id)
+
+        link = self._repo.add(
+            ProjectResourceLink(
+                project_id=project_id,
+                title=data.title,
+                url=str(data.url),
+            )
+        )
+        return self._to_read(link)
+
+    def list(
+        self, project_id: uuid.UUID, viewer_id: uuid.UUID | None
+    ) -> list[ResourceLinkRead]:
+        project = self._project_repo.get(project_id)
+        if project is None or not (project.public or project.author_id == viewer_id):
+            raise ProjectNotFoundError(project_id)
+        return [self._to_read(link) for link in self._repo.list_for_project(project_id)]
+
+    @staticmethod
+    def _to_read(link: ProjectResourceLink) -> ResourceLinkRead:
+        return ResourceLinkRead(
+            id=link.id,
+            project_id=link.project_id,
+            title=link.title,
+            url=link.url,
+            created_at=link.created_at,
         )

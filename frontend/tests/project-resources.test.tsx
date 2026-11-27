@@ -3,8 +3,13 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ApiError } from "@/api/client";
-import type { ProjectResource } from "@/api/models";
-import { attachResource, getProjectResources } from "@/api/resources";
+import type { ProjectResource, ProjectResourceLink } from "@/api/models";
+import {
+  attachResource,
+  createProjectResourceLink,
+  getProjectResourceLinks,
+  getProjectResources,
+} from "@/api/resources";
 import { completeUpload, createUpload, getUploadConfig } from "@/api/uploads";
 import { ProjectResources } from "@/components/projects/resources/project-resources";
 import type { UploadConfig } from "@/lib/uploads/api-types";
@@ -20,6 +25,8 @@ vi.mock("@/api/uploads", () => ({
 vi.mock("@/api/resources", () => ({
   getProjectResources: vi.fn(),
   attachResource: vi.fn(),
+  getProjectResourceLinks: vi.fn(),
+  createProjectResourceLink: vi.fn(),
 }));
 
 vi.mock("@/lib/uploads/r2-upload", async (importOriginal) => ({
@@ -46,6 +53,17 @@ function resource(changes: Partial<ProjectResource> = {}): ProjectResource {
   };
 }
 
+function resourceLink(changes: Partial<ProjectResourceLink> = {}): ProjectResourceLink {
+  return {
+    id: "l1",
+    project_id: "p1",
+    title: "Build tutorial",
+    url: "https://example.com/tutorial",
+    created_at: "2026-11-15T12:00:00Z",
+    ...changes,
+  };
+}
+
 function renderPanel(props: { projectId?: string; isOwner: boolean }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
@@ -55,10 +73,19 @@ function renderPanel(props: { projectId?: string; isOwner: boolean }) {
   );
 }
 
-const addFile = () => screen.queryByRole("button", { name: /add file/i });
+const addFile = () => screen.queryByRole("button", { name: "Add file" });
+const uploadDropzone = () => screen.queryByRole("button", { name: /drag and drop files here/i });
 
-const waitForEnabledDropzone = () =>
-  waitFor(() => expect(addFile()).toHaveProperty("disabled", false));
+async function openUploadArea() {
+  const addFileButton = addFile();
+  if (addFileButton) fireEvent.click(addFileButton);
+  expect(await screen.findByRole("button", { name: /drag and drop files here/i })).toBeTruthy();
+}
+
+async function waitForEnabledDropzone() {
+  await openUploadArea();
+  await waitFor(() => expect(uploadDropzone()).toHaveProperty("disabled", false));
+}
 
 function chooseFiles(container: HTMLElement, files: File[]) {
   const input = container.querySelector('input[type="file"]') as HTMLInputElement;
@@ -85,6 +112,7 @@ function uploadsSucceed() {
 beforeEach(() => {
   vi.mocked(getUploadConfig).mockResolvedValue(config);
   vi.mocked(getProjectResources).mockResolvedValue([]);
+  vi.mocked(getProjectResourceLinks).mockResolvedValue([]);
 });
 
 afterEach(() => {
@@ -96,7 +124,10 @@ describe("ProjectResources", () => {
   test("shows the dropzone to the owner once the rules load", async () => {
     renderPanel({ projectId: "p1", isOwner: true });
     expect(await screen.findByText("No files yet.")).toBeTruthy();
+    expect(uploadDropzone()).toBeNull();
+    expect(addFile()).toBeTruthy();
     await waitForEnabledDropzone();
+    expect(uploadDropzone()).toBeTruthy();
   });
 
   test("hides the dropzone from other users", async () => {
@@ -116,8 +147,9 @@ describe("ProjectResources", () => {
   test("explains when the upload rules can't be loaded", async () => {
     vi.mocked(getUploadConfig).mockRejectedValue(new Error("down"));
     renderPanel({ projectId: "p1", isOwner: true });
+    await openUploadArea();
     expect(await screen.findByText("Uploads are unavailable right now. Try again later.")).toBeTruthy();
-    expect(addFile()).toHaveProperty("disabled", true);
+    expect(uploadDropzone()).toHaveProperty("disabled", true);
   });
 
   test("lists rejected files and starts uploading the valid ones", async () => {
@@ -153,6 +185,123 @@ describe("ProjectResources", () => {
     expect(await screen.findByText("Could not load files. Try again later.")).toBeTruthy();
   });
 
+  test("lists external links as safe, titled links", async () => {
+    vi.mocked(getProjectResourceLinks).mockResolvedValue([resourceLink()]);
+    renderPanel({ projectId: "p1", isOwner: false });
+
+    const link = await screen.findByRole("link", { name: "Build tutorial" });
+    expect(link.getAttribute("href")).toBe("https://example.com/tutorial");
+    expect(link.getAttribute("target")).toBe("_blank");
+    expect(link.getAttribute("rel")).toBe("noopener noreferrer");
+    expect(getProjectResourceLinks).toHaveBeenCalledWith("p1");
+  });
+
+  test("separates external links from files and places them after the owner's upload control", async () => {
+    renderPanel({ projectId: "p1", isOwner: true });
+
+    const addFileButton = await screen.findByRole("button", { name: "Add file" });
+    const linksHeading = await screen.findByRole("heading", { name: "External links" });
+    const linksSection = linksHeading.parentElement?.parentElement;
+
+    expect(linksSection?.className).toContain("border-t");
+    expect(
+      addFileButton.compareDocumentPosition(linksHeading) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
+  test("shows a clear error when external links can't be loaded", async () => {
+    vi.mocked(getProjectResourceLinks).mockRejectedValue(new Error("down"));
+    renderPanel({ projectId: "p1", isOwner: false });
+
+    expect(
+      await screen.findByText("Could not load external links. Try again later."),
+    ).toBeTruthy();
+  });
+
+  test("lets the owner add an external link and clears the form", async () => {
+    vi.mocked(createProjectResourceLink).mockResolvedValue(resourceLink());
+    vi.mocked(getProjectResourceLinks).mockResolvedValueOnce([]).mockResolvedValue([resourceLink()]);
+    const view = renderPanel({ projectId: "p1", isOwner: true });
+
+    expect(screen.queryByLabelText("Link title")).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+    fireEvent.change(screen.getByLabelText("Link title"), {
+      target: { value: "Build tutorial" },
+    });
+    fireEvent.change(screen.getByLabelText("URL"), {
+      target: { value: "https://example.com/tutorial" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save link" }));
+
+    await waitFor(() => expect(screen.queryByLabelText("Link title")).toBeNull());
+    expect(createProjectResourceLink).toHaveBeenCalledWith(
+      "p1",
+      "Build tutorial",
+      "https://example.com/tutorial",
+    );
+    expect(view.container.querySelector("#resource-link-form")).toBeNull();
+    expect(await screen.findByLabelText("1 resource")).toBeTruthy();
+  });
+
+  test("cancel collapses the external link form without creating a link", () => {
+    renderPanel({ projectId: "p1", isOwner: true });
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+    fireEvent.change(screen.getByLabelText("Link title"), { target: { value: "Draft" } });
+    fireEvent.click(
+      within(screen.getByRole("form", { name: "Add external link" })).getByRole("button", { name: "Cancel" }),
+    );
+
+    expect(screen.queryByLabelText("Link title")).toBeNull();
+    expect(createProjectResourceLink).not.toHaveBeenCalled();
+  });
+
+  test("shows the combined file and link count", async () => {
+    vi.mocked(getProjectResources).mockResolvedValue([resource(), resource({ id: "r2" })]);
+    vi.mocked(getProjectResourceLinks).mockResolvedValue([resourceLink()]);
+    renderPanel({ projectId: "p1", isOwner: false });
+
+    expect(await screen.findByLabelText("3 resources")).toBeTruthy();
+  });
+
+  test.each([
+    ["", "https://example.com", "Enter a title for this link."],
+    ["Build tutorial", "javascript:alert(1)", "Links must start with http:// or https://."],
+    ["Build tutorial", "not a url", "Enter a valid HTTP or HTTPS URL."],
+  ])("rejects unsafe or incomplete link URLs: %s", async (title, value, message) => {
+    renderPanel({ projectId: "p1", isOwner: true });
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+
+    fireEvent.change(screen.getByLabelText("Link title"), {
+      target: { value: title },
+    });
+    fireEvent.change(screen.getByLabelText("URL"), { target: { value } });
+    fireEvent.click(screen.getByRole("button", { name: "Save link" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain(message);
+    expect(createProjectResourceLink).not.toHaveBeenCalled();
+  });
+
+  test.each([
+    [403, "You must own this project to add a link."],
+    [422, "Enter a title and a valid HTTP or HTTPS URL."],
+  ])("shows a clear error when adding a link returns %s", async (status, message) => {
+    vi.mocked(createProjectResourceLink).mockRejectedValue(
+      new ApiError(status, "Request rejected"),
+    );
+    renderPanel({ projectId: "p1", isOwner: true });
+    fireEvent.click(screen.getByRole("button", { name: "Add link" }));
+
+    fireEvent.change(screen.getByLabelText("Link title"), {
+      target: { value: "Build tutorial" },
+    });
+    fireEvent.change(screen.getByLabelText("URL"), {
+      target: { value: "https://example.com/tutorial" },
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Save link" }));
+
+    expect((await screen.findByRole("alert")).textContent).toContain(message);
+  });
+
   test("attaches a finished upload to this project and shows it in the saved files", async () => {
     uploadsSucceed();
     vi.mocked(attachResource).mockResolvedValue(resource());
@@ -165,6 +314,7 @@ describe("ProjectResources", () => {
 
     const saved = await screen.findByRole("list", { name: "Saved files" });
     expect(within(saved).getByText("Bracket.STL")).toBeTruthy();
+    expect(await screen.findByLabelText("1 resource")).toBeTruthy();
     expect(createUpload).toHaveBeenCalledWith("RESOURCE", file);
     expect(uploadToR2).toHaveBeenCalledWith(
       expect.objectContaining({ url: "https://r2.example/signed", headers: { "Content-Type": "application/octet-stream" } }),
