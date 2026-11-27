@@ -1,7 +1,15 @@
 import uuid
+from dataclasses import dataclass
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Response,
+    status,
+)
 
 from app.media.exceptions import MediaAttachmentUnavailableError
 from app.projects.project.dependencies import (
@@ -19,6 +27,24 @@ from app.projects.updates.media.schemas import UpdateMediaCreate, UpdateMediaRea
 from app.projects.updates.media.service import UpdateMediaService
 
 router = APIRouter(tags=["update media"])
+
+
+@dataclass
+class DeleteUpdateMediaContext:
+    user_id: uuid.UUID
+    background_tasks: BackgroundTasks
+    service: UpdateMediaService
+
+
+def get_delete_update_media_context(
+    user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    background_tasks: BackgroundTasks,
+    service: Annotated[
+        UpdateMediaService,
+        Depends(get_update_media_service),
+    ],
+) -> DeleteUpdateMediaContext:
+    return DeleteUpdateMediaContext(user_id, background_tasks, service)
 
 
 @router.get(
@@ -89,14 +115,18 @@ def delete_update_media(
     project_id: uuid.UUID,
     update_id: uuid.UUID,
     media_id: uuid.UUID,
-    user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
-    service: Annotated[
-        UpdateMediaService,
-        Depends(get_update_media_service),
+    context: Annotated[
+        DeleteUpdateMediaContext,
+        Depends(get_delete_update_media_context),
     ],
 ) -> Response:
     try:
-        service.delete(project_id, update_id, media_id, user_id)
+        location = context.service.delete(
+            project_id,
+            update_id,
+            media_id,
+            context.user_id,
+        )
     except UpdateNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Update not found") from exc
     except UpdateMediaNotFoundError as exc:
@@ -109,4 +139,5 @@ def delete_update_media(
             status.HTTP_403_FORBIDDEN,
             "You do not own this update",
         ) from exc
+    context.service.schedule_asset_cleanup(context.background_tasks, [location])
     return Response(status_code=status.HTTP_204_NO_CONTENT)
