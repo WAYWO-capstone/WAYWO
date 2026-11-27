@@ -34,5 +34,9 @@ class FileAssetRepository:
             .execution_options(populate_existing=True)
         ).one_or_none()
 
+    def delete(self, asset: FileAsset) -> None:
+        self._session.delete(asset)
+        self._session.flush()
+
     def flush(self) -> None:
         self._session.flush()

@@ -1,6 +1,9 @@
 import uuid
 
+from fastapi import BackgroundTasks
+
 from app.core.common import utcnow
+from app.media.service import StoredObjectLocation
 from app.projects.project.enums import ProjectStatus
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
@@ -143,10 +146,18 @@ class UpdateService:
         project_id: uuid.UUID,
         update_id: uuid.UUID,
         author_id: uuid.UUID,
-    ) -> None:
+    ) -> list[StoredObjectLocation]:
         update = self._get_owned_update(project_id, update_id, author_id)
-        self._media_service.release_for_update(update)
+        locations = self._media_service.release_for_update(update)
         self._repo.delete(update)
+        return locations
+
+    def schedule_asset_cleanup(
+        self,
+        background_tasks: BackgroundTasks,
+        locations: list[StoredObjectLocation],
+    ) -> None:
+        self._media_service.schedule_asset_cleanup(background_tasks, locations)
 
     def list_project_updates(
         self,

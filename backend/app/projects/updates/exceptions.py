@@ -15,6 +15,12 @@ class UpdateNotOwnedError(Exception):
         self.update_id = update_id
 
 
+class UpdateMediaNotFoundError(Exception):
+    def __init__(self, media_id: uuid.UUID):
+        super().__init__(f"Update media {media_id} does not exist")
+        self.media_id = media_id
+
+
 class ReferencedUpdateNotFoundError(Exception):
     def __init__(self, update_id: uuid.UUID):
         super().__init__(f"Referenced update {update_id} does not exist")
