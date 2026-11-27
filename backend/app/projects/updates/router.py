@@ -1,7 +1,15 @@
 import uuid
 from typing import Annotated
 
-from fastapi import APIRouter, Depends, HTTPException, Query, Response, status
+from fastapi import (
+    APIRouter,
+    BackgroundTasks,
+    Depends,
+    HTTPException,
+    Query,
+    Response,
+    status,
+)
 
 from app.media.exceptions import MediaAttachmentUnavailableError
 from app.projects.project.dependencies import get_current_user_id
@@ -149,14 +157,16 @@ def delete_project_update(
     project_id: uuid.UUID,
     update_id: uuid.UUID,
     user_id: Annotated[uuid.UUID, Depends(get_current_user_id)],
+    background_tasks: BackgroundTasks,
     service: Annotated[UpdateService, Depends(get_update_service)],
 ) -> Response:
     try:
-        service.delete_project_update(project_id, update_id, user_id)
+        locations = service.delete_project_update(project_id, update_id, user_id)
     except UpdateNotFoundError as exc:
         raise HTTPException(status.HTTP_404_NOT_FOUND, "Update not found") from exc
     except UpdateNotOwnedError as exc:
         raise HTTPException(
             status.HTTP_403_FORBIDDEN, "You do not own this update"
         ) from exc
+    service.schedule_asset_cleanup(background_tasks, locations)
     return Response(status_code=status.HTTP_204_NO_CONTENT)

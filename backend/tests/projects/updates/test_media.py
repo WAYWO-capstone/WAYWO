@@ -6,6 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.accounts.users.models import User
 from app.media.enums import UploadKind, UploadStatus
+from app.media.kinds import UPLOAD_KINDS
 from app.media.models import FileAsset
 from app.projects.project.dependencies import (
     get_current_user_id,
@@ -227,6 +228,114 @@ def test_an_upload_can_only_be_attached_once(
     assert attach_media(client, project, second, asset.id).status_code == 409
 
 
+def test_owner_can_delete_update_media_and_stored_asset(
+    client: TestClient,
+    engine,
+    project: Project,
+    make_owned_asset,
+    payload,
+):
+    asset = make_owned_asset(filename="remove-me.pdf")
+    created = client.post(
+        f"/projects/{project.id}/updates",
+        json={**payload, "media_upload_ids": [str(asset.id)]},
+    ).json()
+    media_id = created["media"][0]["id"]
+
+    response = client.delete(
+        f"/projects/{project.id}/updates/{created['id']}/media/{media_id}"
+    )
+
+    assert response.status_code == 204
+    client.app.state.object_storage.delete_object.assert_called_once_with(
+        UPLOAD_KINDS[asset.kind].bucket,
+        asset.storage_key,
+    )
+    with Session(engine) as session:
+        assert session.get(FileAsset, asset.id) is None
+        assert session.get(UpdateMedia, uuid.UUID(media_id)) is None
+
+
+def test_media_cannot_be_deleted_through_another_update(
+    client: TestClient,
+    project: Project,
+    make_owned_asset,
+    payload,
+):
+    asset = make_owned_asset()
+    first = client.post(
+        f"/projects/{project.id}/updates",
+        json={**payload, "media_upload_ids": [str(asset.id)]},
+    ).json()
+    second = client.post(
+        f"/projects/{project.id}/updates",
+        json=payload,
+    ).json()
+
+    response = client.delete(
+        f"/projects/{project.id}/updates/{second['id']}"
+        f"/media/{first['media'][0]['id']}"
+    )
+
+    assert response.status_code == 404
+
+
+def test_non_owner_cannot_delete_update_media(
+    api,
+    project: Project,
+    make_owned_asset,
+    make_user,
+    payload,
+):
+    api.dependency_overrides[get_current_user_id] = lambda: project.author_id
+    api.dependency_overrides[get_optional_current_user_id] = (
+        lambda: project.author_id
+    )
+    with TestClient(api) as owner_client:
+        asset = make_owned_asset()
+        created = owner_client.post(
+            f"/projects/{project.id}/updates",
+            json={**payload, "media_upload_ids": [str(asset.id)]},
+        ).json()
+
+    intruder = make_user("media-delete-intruder")
+    api.dependency_overrides[get_current_user_id] = lambda: intruder.id
+    api.dependency_overrides[get_optional_current_user_id] = lambda: intruder.id
+    with TestClient(api) as intruder_client:
+        response = intruder_client.delete(
+            f"/projects/{project.id}/updates/{created['id']}"
+            f"/media/{created['media'][0]['id']}"
+        )
+
+    assert response.status_code == 403
+
+
+def test_unauthenticated_user_cannot_delete_update_media(
+    api,
+    project: Project,
+    owner: User,
+    make_owned_asset,
+    payload,
+):
+    api.dependency_overrides[get_current_user_id] = lambda: owner.id
+    api.dependency_overrides[get_optional_current_user_id] = lambda: owner.id
+    with TestClient(api) as owner_client:
+        asset = make_owned_asset()
+        created = owner_client.post(
+            f"/projects/{project.id}/updates",
+            json={**payload, "media_upload_ids": [str(asset.id)]},
+        ).json()
+
+    api.dependency_overrides.pop(get_current_user_id)
+    with TestClient(api) as anonymous_client:
+        response = anonymous_client.delete(
+            f"/projects/{project.id}/updates/{created['id']}"
+            f"/media/{created['media'][0]['id']}"
+        )
+
+    assert response.status_code == 401
+
+
 def test_non_owner_cannot_attach_media(
     api,
     project: Project,
@@ -267,10 +376,16 @@ def test_deleting_update_cascades_media(
     make_owned_asset,
     payload,
 ):
-    asset = make_owned_asset()
+    assets = [
+        make_owned_asset(filename="first.pdf"),
+        make_owned_asset(filename="second.pdf"),
+    ]
     created = client.post(
         f"/projects/{project.id}/updates",
-        json={**payload, "media_upload_ids": [str(asset.id)]},
+        json={
+            **payload,
+            "media_upload_ids": [str(asset.id) for asset in assets],
+        },
     ).json()
 
     response = client.delete(
@@ -278,6 +393,17 @@ def test_deleting_update_cascades_media(
     )
 
     assert response.status_code == 204
+    update_id = uuid.UUID(created["id"])
+    storage = client.app.state.object_storage
+    assert storage.delete_object.call_count == len(assets)
+    assert {
+        call.args
+        for call in storage.delete_object.call_args_list
+    } == {
+        (UPLOAD_KINDS[asset.kind].bucket, asset.storage_key)
+        for asset in assets
+    }
     with Session(engine) as session:
+        assert session.get(Update, update_id) is None
         assert session.scalar(select(UpdateMedia)) is None
-        assert session.get(FileAsset, asset.id).attached is False
+        assert all(session.get(FileAsset, asset.id) is None for asset in assets)

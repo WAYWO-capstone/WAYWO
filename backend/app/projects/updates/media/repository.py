@@ -15,6 +15,20 @@ class UpdateMediaRepository:
         self._session.flush()
         return media
 
+    def get_for_update(
+        self,
+        update_id: uuid.UUID,
+        media_id: uuid.UUID,
+    ) -> UpdateMedia | None:
+        return self._session.scalars(
+            select(UpdateMedia)
+            .where(
+                UpdateMedia.update_id == update_id,
+                UpdateMedia.id == media_id,
+            )
+            .with_for_update()
+        ).one_or_none()
+
     def list_for_update(self, update_id: uuid.UUID) -> list[UpdateMedia]:
         return list(
             self._session.scalars(
