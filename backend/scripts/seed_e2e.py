@@ -6,7 +6,7 @@ Run it from backend/ once the migrations are applied ("alembic upgrade head"):
 
 You can run it as many times as you want, you'll always end up with the same
 data. It only works on databases whose name ends in "_test" or "_ci", so it
-won't wipe your dev data by accident.
+won't wipe our real data by accident.
 """
 
 import runpy
