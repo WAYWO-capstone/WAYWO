@@ -46,7 +46,17 @@ export function ProjectStatusControl({
     <div className="ml-2">
       <label className="flex items-center gap-2 text-sm font-semibold text-brand-garnet">
         <span className="sr-only">Project status</span>
-        <select
+        {status === "ARCHIVED" ? (
+          <button
+            type="button"
+            autoFocus
+            disabled={isSaving}
+            onClick={() => void onChange("ACTIVE").then(() => setEditing(false)).catch(() => undefined)}
+            className="min-h-9 rounded-full border border-[#ead7c7] bg-white px-4 py-1.5 text-sm font-medium text-brand-mahogany outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
+          >
+            Restore project
+          </button>
+        ) : <select
           aria-label="Project status"
           autoFocus
           value={status}
@@ -65,9 +75,11 @@ export function ProjectStatusControl({
           className="min-h-9 rounded-full border border-[#ead7c7] bg-white px-4 py-1.5 text-sm font-medium text-brand-mahogany outline-none focus-visible:ring-2 focus-visible:ring-ring disabled:opacity-60"
         >
           <option value="ACTIVE">Active</option>
-          <option value="DRAFT">Draft</option>
           <option value="COMPLETED">Completed</option>
+          {status === "DRAFT" && <option value="DRAFT">Draft</option>}
+          {status !== "DRAFT" && <option value="ARCHIVED">Archive project</option>}
         </select>
+        }
         {isSaving && <LoaderCircle aria-hidden="true" className="size-4 animate-spin" />}
       </label>
       {error && <p role="alert" className="mt-2 text-sm text-destructive">{error}</p>}

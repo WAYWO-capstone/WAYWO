@@ -4,17 +4,29 @@ import type { ProjectView } from "@/api/models";
 export function statusLabel(status: ProjectView["status"]) {
   if (status === "COMPLETED") return "Completed";
   if (status === "DRAFT") return "Draft";
+  if (status === "ARCHIVED") return "Archived";
   return "Active";
 }
 
 export function statusClasses(status: ProjectView["status"]) {
   if (status === "ACTIVE") return "bg-[#c9e9b9] text-[#173d18]";
   if (status === "COMPLETED") return "bg-[#d9e8f1] text-[#173d3e]";
+  if (status === "ARCHIVED") return "bg-[#e8dce8] text-[#49364b]";
   return "bg-[#f3e4c7] text-[#604a25]";
+}
+
+export function archivedAtLabel(archivedAt: string | null) {
+  if (!archivedAt) return null;
+  const date = new Date(archivedAt).toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "long",
+    day: "numeric",
+  });
+  return `Archived on ${date}`;
 }
 export type StatusChangeStep =
   | { type: "publish" }
-  | { type: "set-status"; status: Exclude<ProjectView["status"], "DRAFT"> };
+  | { type: "set-status"; status: Exclude<ProjectView["status"], "DRAFT" | "ARCHIVED"> };
 
 // Changing a project status can require multiple steps, e.g. Draft -> Completed requires publishing first, then marking completed. This function returns the steps required to change from one status to another.
 export function statusChangeSteps(
@@ -22,12 +34,13 @@ export function statusChangeSteps(
   next: ProjectView["status"],
 ): StatusChangeStep[] {
   if (current === next) return [];
-  if (next === "DRAFT") throw new Error("Published projects can't go back to draft");
+  if (next === "DRAFT" || next === "ARCHIVED") throw new Error("Use the archive action for published projects");
   if (current === "DRAFT") {
     return next === "COMPLETED"
       ? [{ type: "publish" }, { type: "set-status", status: "COMPLETED" }]
       : [{ type: "publish" }];
   }
+  if (current === "ARCHIVED") throw new Error("Restore an archived project before changing its status");
   return [{ type: "set-status", status: next }];
 }
 

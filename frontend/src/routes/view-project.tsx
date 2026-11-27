@@ -5,7 +5,9 @@ import { ProjectDetail } from "@/components/projects/project-detail";
 import { ApiError } from "@/api/client";
 import {
   getProject,
+  archiveProject,
   publishProject,
+  restoreProject,
   updateProjectStatus,
 } from "@/api/projects";
 import type { ProjectView } from "@/api/models";
@@ -38,6 +40,14 @@ function ViewProjectPage() {
   const statusMutation = useMutation({
     mutationFn: async (nextStatus: ProjectView["status"]) => {
       if (!projectId || !project) throw new Error("Project is not loaded");
+      if (nextStatus === "ARCHIVED") {
+        await archiveProject(projectId);
+        return;
+      }
+      if (project.status === "ARCHIVED") {
+        await restoreProject(projectId);
+        return;
+      }
       let published = false;
       try {
         for (const step of statusChangeSteps(project.status, nextStatus)) {

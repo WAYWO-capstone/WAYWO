@@ -21,6 +21,10 @@ export function getMyPublishedProjects() {
   return unwrap(api.GET("/projects/mine/published"));
 }
 
+export function getMyArchivedProjects() {
+  return unwrap(api.GET("/projects/mine/archived"));
+}
+
 export function createProject(data: ProjectInput, options?: { keepalive?: boolean }) {
   return unwrap(api.POST("/projects", { body: data, keepalive: options?.keepalive }));
 }
@@ -57,6 +61,14 @@ export async function deleteProject(projectId: string): Promise<void> {
 
 export function publishProject(projectId: string) {
   return unwrap(api.POST("/projects/{project_id}/publish", { params: projectPath(projectId) }));
+}
+
+export function archiveProject(projectId: string) {
+  return unwrap(api.POST("/projects/{project_id}/archive", { params: projectPath(projectId) }));
+}
+
+export function restoreProject(projectId: string) {
+  return unwrap(api.POST("/projects/{project_id}/restore", { params: projectPath(projectId) }));
 }
 
 export function updateProjectStatus(projectId: string, status: ProjectStatus) {
