@@ -1,8 +1,11 @@
 import { createFileRoute, redirect } from "@tanstack/react-router";
+import { isAuthenticated } from "@/lib/token-store";
 
-// The home page lives at /home, so send visitors of / there.
 export const Route = createFileRoute("/")({
   beforeLoad: () => {
-    throw redirect({ to: "/home", replace: true });
+    throw redirect({
+      to: isAuthenticated() ? "/home" : "/explore",
+      replace: true,
+    });
   },
 });
