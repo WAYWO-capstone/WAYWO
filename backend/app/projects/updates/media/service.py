@@ -1,10 +1,18 @@
+from __future__ import annotations
+
 import uuid
 from typing import TYPE_CHECKING
 
-from app.media.service import UploadService
+from fastapi import BackgroundTasks
+
+from app.media.service import StoredObjectLocation, UploadService
 from app.projects.project.exceptions import ProjectNotFoundError
 from app.projects.project.repository import ProjectRepository
-from app.projects.updates.exceptions import UpdateNotFoundError, UpdateNotOwnedError
+from app.projects.updates.exceptions import (
+    UpdateMediaNotFoundError,
+    UpdateNotFoundError,
+    UpdateNotOwnedError,
+)
 from app.projects.updates.media.models import UpdateMedia
 from app.projects.updates.media.repository import UpdateMediaRepository
 from app.projects.updates.media.schemas import UpdateMediaRead
@@ -29,7 +37,7 @@ class UpdateMediaService:
 
     def attach_to_update(
         self,
-        update: "Update",
+        update: Update,
         owner_id: uuid.UUID,
         upload_id: uuid.UUID,
     ) -> UpdateMediaRead:
@@ -61,19 +69,42 @@ class UpdateMediaService:
             for media in self._repo.list_for_update(update.id)
         ]
 
-    def release_for_update(self, update: "Update") -> None:
-        # Media cleanup policy remains to be defined:
-        # decide whether R2 objects and FileAsset rows should be deleted,
-        # and handle update and project cascade deletion consistently.
+    def delete(
+        self,
+        project_id: uuid.UUID,
+        update_id: uuid.UUID,
+        media_id: uuid.UUID,
+        owner_id: uuid.UUID,
+    ) -> StoredObjectLocation:
+        update = self._get_owned_update(project_id, update_id, owner_id)
+        media = self._repo.get_for_update(update.id, media_id)
+        if media is None:
+            raise UpdateMediaNotFoundError(media_id)
+        return self._upload_service.delete_asset(media.file_asset)
+
+    def release_for_update(self, update: Update) -> list[StoredObjectLocation]:
+        locations: list[StoredObjectLocation] = []
         for media in self._repo.list_for_update(update.id):
-            media.file_asset.attached = False
+            locations.append(self._upload_service.delete_asset(media.file_asset))
+        return locations
+
+    def schedule_asset_cleanup(
+        self,
+        background_tasks: BackgroundTasks,
+        locations: list[StoredObjectLocation],
+    ) -> None:
+        if locations:
+            background_tasks.add_task(
+                self._upload_service.delete_stored_objects,
+                locations,
+            )
 
     def _get_owned_update(
         self,
         project_id: uuid.UUID,
         update_id: uuid.UUID,
         owner_id: uuid.UUID,
-    ) -> "Update":
+    ) -> Update:
         update = self._update_repo.get(update_id)
         if update is None or update.project_id != project_id:
             raise UpdateNotFoundError(update_id)
@@ -86,7 +117,7 @@ class UpdateMediaService:
         project_id: uuid.UUID,
         update_id: uuid.UUID,
         viewer_id: uuid.UUID | None,
-    ) -> "Update":
+    ) -> Update:
         project = self._project_repo.get(project_id)
         if project is None or not (
             project.public or project.author_id == viewer_id

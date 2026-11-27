@@ -1,5 +1,6 @@
 """Business logic for media assets."""
 
+import logging
 import time
 import uuid
 from dataclasses import dataclass
@@ -10,7 +11,7 @@ from urllib.parse import quote
 
 import boto3
 from botocore.config import Config
-from botocore.exceptions import ClientError
+from botocore.exceptions import BotoCoreError, ClientError
 from PIL import Image, UnidentifiedImageError
 
 from app.core.common import utcnow
@@ -30,6 +31,7 @@ from app.media.schemas import UploadCreate, UploadCreated, UploadRead
 
 # How long a signed upload or download link stays valid.
 SIGNED_URL_TTL = timedelta(minutes=15)
+_logger = logging.getLogger(__name__)
 
 _IMAGE_EXTENSIONS = {
     "image/jpeg": "jpg",
@@ -63,6 +65,33 @@ def _require_real_image(content: bytes, content_type: str) -> None:
 class StoredObject:
     size: int
     content_type: str
+
+
+@dataclass(frozen=True)
+class StoredObjectLocation:
+    bucket: str
+    key: str
+
+
+def _is_retryable_storage_error(error: BotoCoreError | ClientError) -> bool:
+    if isinstance(error, ClientError):
+        response = error.response
+        status_code = response.get("ResponseMetadata", {}).get("HTTPStatusCode")
+        error_code = response.get("Error", {}).get("Code")
+        return (
+            (status_code is not None and (status_code == 429 or status_code >= 500))
+            or error_code
+            in {
+                "InternalError",
+                "RequestLimitExceeded",
+                "RequestTimeout",
+                "ServiceUnavailable",
+                "SlowDown",
+                "Throttling",
+                "ThrottlingException",
+            }
+        )
+    return True
 
 
 class ObjectStorage:
@@ -276,6 +305,36 @@ class UploadService:
 
         asset.attached = True
         return asset
+
+    def delete_asset(self, asset: FileAsset) -> StoredObjectLocation:
+        """Remove the database record and return the location to clean asynchronously."""
+        location = StoredObjectLocation(
+            bucket=UPLOAD_KINDS[asset.kind].bucket,
+            key=asset.storage_key,
+        )
+        self._repo.delete(asset)
+        return location
+
+    def delete_stored_objects(
+        self,
+        locations: list[StoredObjectLocation],
+    ) -> None:
+        """Retry each R2 deletion independently after the database commit."""
+        for location in locations:
+            for attempt in range(3):
+                try:
+                    self._storage.delete_object(location.bucket, location.key)
+                    break
+                except (BotoCoreError, ClientError) as error:
+                    if not _is_retryable_storage_error(error) or attempt == 2:
+                        _logger.exception(
+                            "Failed to delete R2 object "
+                            "(bucket=%s, key=%s)",
+                            location.bucket,
+                            location.key,
+                        )
+                        break
+                    time.sleep(0.1 * (2**attempt))
 
 
 @lru_cache

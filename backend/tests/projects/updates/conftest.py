@@ -16,7 +16,7 @@ from app.core.database import get_session
 from app.media.enums import UploadKind, UploadStatus
 from app.media.models import FileAsset
 from app.media.repository import FileAssetRepository
-from app.media.service import UploadService
+from app.media.service import UploadService, get_object_storage
 from app.projects.project.dependencies import (
     get_current_user_id,
     get_optional_current_user_id,
@@ -80,12 +80,22 @@ def api(engine: Engine) -> Iterator[FastAPI]:
                 raise
 
     app.dependency_overrides[get_session] = override_get_session
+
+    def override_object_storage():
+        storage = MagicMock()
+        app.state.object_storage = storage
+        return storage
+
+    app.dependency_overrides[get_object_storage] = override_object_storage
+
     def override_update_media_service() -> Iterator[UpdateMediaService]:
         with Session(engine, expire_on_commit=False) as session:
             try:
+                storage = MagicMock()
+                app.state.object_storage = storage
                 upload_service = UploadService(
                     FileAssetRepository(session),
-                    MagicMock(),
+                    storage,
                 )
                 yield UpdateMediaService(
                     UpdateMediaRepository(session),

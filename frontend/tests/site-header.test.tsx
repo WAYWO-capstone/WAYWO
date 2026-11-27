@@ -5,7 +5,13 @@ import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { SiteHeader } from "@/components/ui/site-header";
 
 const router = vi.hoisted(() => ({ pathname: "/home" }));
-const auth = vi.hoisted(() => ({ isAuthenticated: false, logout: vi.fn() }));
+const auth = vi.hoisted(() => ({
+  isAuthenticated: false,
+  profileData: undefined as
+    | { username: string; profile_picture_link: string | null }
+    | undefined,
+  logout: vi.fn(),
+}));
 
 vi.mock("@tanstack/react-router", () => ({
   Link: ({ children, to, ...props }: { children: ReactNode; to: string }) => (
@@ -19,13 +25,14 @@ vi.mock("@tanstack/react-router", () => ({
 
 vi.mock("@/lib/auth", () => ({
   useIsAuthenticated: () => auth.isAuthenticated,
-  useCurrentProfile: () => ({ data: undefined }),
+  useCurrentProfile: () => ({ data: auth.profileData }),
   useLogout: () => auth.logout,
 }));
 
 beforeEach(() => {
   router.pathname = "/home";
   auth.isAuthenticated = false;
+  auth.profileData = undefined;
   auth.logout.mockReset();
 });
 
@@ -59,6 +66,10 @@ describe("SiteHeader", () => {
 
   test("logged in: shows the profile menu instead of the auth links", async () => {
     auth.isAuthenticated = true;
+    auth.profileData = {
+      username: "test-user",
+      profile_picture_link: null,
+    };
     render(<SiteHeader />);
 
     expect(screen.queryByRole("link", { name: "Log in" })).toBeNull();

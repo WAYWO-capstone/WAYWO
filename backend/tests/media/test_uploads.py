@@ -4,24 +4,31 @@ from typing import Any
 from urllib.parse import parse_qs, urlparse
 
 import pytest
+from botocore.exceptions import ClientError
 from fastapi import FastAPI
 from fastapi.testclient import TestClient
 from sqlalchemy import Engine, create_engine, event
 from sqlalchemy.orm import Session
 from sqlalchemy.pool import StaticPool
 
+# Registers every model so foreign keys to users resolve in create_all.
+import app.core.models_registry  # noqa: F401  pylint: disable=unused-import
 from app.accounts.users.models import User
 from app.core.base import Base
 from app.core.config import settings
 from app.core.database import get_session
 from app.media.enums import UploadStatus
 from app.media.models import FileAsset
+from app.media.repository import FileAssetRepository
 from app.media.router import router as media_router
-from app.media.service import ObjectStorage, StoredObject, get_object_storage
+from app.media.service import (
+    ObjectStorage,
+    StoredObject,
+    StoredObjectLocation,
+    UploadService,
+    get_object_storage,
+)
 from app.projects.project.dependencies import get_current_user_id
-
-# Registers every model so foreign keys to users resolve in create_all.
-import app.core.models_registry  # noqa: F401  pylint: disable=unused-import
 
 
 class FakeStorage:
@@ -46,6 +53,75 @@ class FakeStorage:
     def put(self, bucket: str, key: str, size: int, content_type: str) -> None:
         """What the browser's PUT to R2 would leave behind."""
         self.objects[f"{bucket}/{key}"] = StoredObject(size=size, content_type=content_type)
+
+
+def test_stored_object_cleanup_retries_and_continues(db: Session) -> None:
+    class FailingStorage(FakeStorage):
+        def __init__(self) -> None:
+            super().__init__()
+            self.delete_attempts: list[tuple[str, str]] = []
+
+        def delete_object(self, bucket: str, key: str) -> None:
+            self.delete_attempts.append((bucket, key))
+            if key == "first":
+                raise ClientError(
+                    {"Error": {"Code": "InternalError", "Message": "Try again"}},
+                    "DeleteObject",
+                )
+            super().delete_object(bucket, key)
+
+    storage = FailingStorage()
+    service = UploadService(FileAssetRepository(db), storage)
+
+    service.delete_stored_objects(
+        [
+            StoredObjectLocation(bucket="private", key="first"),
+            StoredObjectLocation(bucket="private", key="second"),
+        ]
+    )
+
+    assert storage.delete_attempts == [
+        ("private", "first"),
+        ("private", "first"),
+        ("private", "first"),
+        ("private", "second"),
+    ]
+
+
+def test_stored_object_cleanup_does_not_retry_non_retryable_errors(
+    db: Session,
+) -> None:
+    class DeniedStorage(FakeStorage):
+        def __init__(self) -> None:
+            super().__init__()
+            self.delete_attempts: list[tuple[str, str]] = []
+
+        def delete_object(self, bucket: str, key: str) -> None:
+            self.delete_attempts.append((bucket, key))
+            if key == "denied":
+                raise ClientError(
+                    {
+                        "Error": {"Code": "AccessDenied", "Message": "Denied"},
+                        "ResponseMetadata": {"HTTPStatusCode": 403},
+                    },
+                    "DeleteObject",
+                )
+            super().delete_object(bucket, key)
+
+    storage = DeniedStorage()
+    service = UploadService(FileAssetRepository(db), storage)
+
+    service.delete_stored_objects(
+        [
+            StoredObjectLocation(bucket="private", key="denied"),
+            StoredObjectLocation(bucket="private", key="second"),
+        ]
+    )
+
+    assert storage.delete_attempts == [
+        ("private", "denied"),
+        ("private", "second"),
+    ]
 
 
 # --------------------------------------------------------------------------
