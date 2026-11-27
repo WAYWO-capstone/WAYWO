@@ -1,7 +1,7 @@
 import uuid
 from datetime import datetime, timezone
 
-from app.projects.project.enums import ProjectStatus
+from app.projects.project.enums import PUBLISHED_STATUSES, ProjectStatus
 from app.projects.project.exceptions import (
     CategoryNotFoundError,
     InvalidProjectStatusTransitionError,
@@ -50,6 +50,9 @@ class ProjectService:
 
     def list_published_by_author(self, author_id: uuid.UUID) -> list[Project]:
         return self._repo.list_published_by_author(author_id)
+
+    def list_archived_by_author(self, author_id: uuid.UUID) -> list[Project]:
+        return self._repo.list_archived_by_author(author_id)
 
     def create_project(self, author_id: uuid.UUID, data: ProjectCreate) -> Project:
         category = self._repo.get_category(data.category_id)
@@ -121,7 +124,6 @@ class ProjectService:
             project.tags = self._repo.get_or_create_tags(changes.pop("tags"))
         for field, value in changes.items():
             setattr(project, field, value)
-            setattr(project, field, value)
 
     def save_draft(
         self, project_id: uuid.UUID, author_id: uuid.UUID, data: ProjectUpdate
@@ -150,6 +152,10 @@ class ProjectService:
             raise ProjectNotFoundError(project_id)
         if project.author_id != author_id:
             raise ProjectNotOwnedError(project_id)
+        if project.status == ProjectStatus.ARCHIVED:
+            raise InvalidProjectStatusTransitionError(
+                project_id, "must be restored before its status can change"
+            )
         if project.status == ProjectStatus.DRAFT or not project.public:
             raise InvalidProjectStatusTransitionError(
                 project_id, "must be published before its status can change"
@@ -183,7 +189,45 @@ class ProjectService:
         project.completed_at = None
         return self._repo.update(project)
 
-    def unpublish_project(
+    def archive_project(
+        self, project_id: uuid.UUID, author_id: uuid.UUID
+    ) -> Project:
+        """Hide a published project from everyone but its owner.
+
+        Its publication dates are kept so it can be restored as it was.
+        """
+        project = self._get_owned_project(project_id, author_id)
+        if project.status not in PUBLISHED_STATUSES or not project.public:
+            raise InvalidProjectStatusTransitionError(
+                project_id,
+                "only active or completed published projects can be archived",
+            )
+
+        project.status = ProjectStatus.ARCHIVED
+        project.public = False
+        project.archived_at = datetime.now(timezone.utc)
+        return self._repo.update(project)
+
+    def restore_project(
+        self, project_id: uuid.UUID, author_id: uuid.UUID
+    ) -> Project:
+        """Publish an archived project again, with the status it had before."""
+        project = self._get_owned_project(project_id, author_id)
+        if project.status != ProjectStatus.ARCHIVED:
+            raise InvalidProjectStatusTransitionError(
+                project_id, "only archived projects can be restored"
+            )
+
+        project.status = (
+            ProjectStatus.COMPLETED
+            if project.completed_at is not None
+            else ProjectStatus.ACTIVE
+        )
+        project.public = True
+        project.archived_at = None
+        return self._repo.update(project)
+
+    def _get_owned_project(
         self, project_id: uuid.UUID, author_id: uuid.UUID
     ) -> Project:
         project = self._repo.get(project_id)
@@ -191,17 +235,4 @@ class ProjectService:
             raise ProjectNotFoundError(project_id)
         if project.author_id != author_id:
             raise ProjectNotOwnedError(project_id)
-        if project.status not in (
-            ProjectStatus.ACTIVE,
-            ProjectStatus.COMPLETED,
-        ) or not project.public:
-            raise InvalidProjectStatusTransitionError(
-                project_id,
-                "only active or completed published projects can be unpublished",
-            )
-
-        project.status = ProjectStatus.DRAFT
-        project.public = False
-        project.published_at = None
-        project.completed_at = None
-        return self._repo.update(project)
+        return project

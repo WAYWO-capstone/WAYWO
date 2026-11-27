@@ -14,8 +14,7 @@ export function statusClasses(status: ProjectView["status"]) {
 }
 export type StatusChangeStep =
   | { type: "publish" }
-  | { type: "unpublish" }
-  | { type: "set-status"; status: "ACTIVE" | "COMPLETED" };
+  | { type: "set-status"; status: Exclude<ProjectView["status"], "DRAFT"> };
 
 // Changing a project status can require multiple steps, e.g. Draft -> Completed requires publishing first, then marking completed. This function returns the steps required to change from one status to another.
 export function statusChangeSteps(
@@ -23,7 +22,7 @@ export function statusChangeSteps(
   next: ProjectView["status"],
 ): StatusChangeStep[] {
   if (current === next) return [];
-  if (next === "DRAFT") return [{ type: "unpublish" }];
+  if (next === "DRAFT") throw new Error("Published projects can't go back to draft");
   if (current === "DRAFT") {
     return next === "COMPLETED"
       ? [{ type: "publish" }, { type: "set-status", status: "COMPLETED" }]

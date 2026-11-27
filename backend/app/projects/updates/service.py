@@ -1,6 +1,7 @@
 import uuid
 
 from app.core.common import utcnow
+from app.projects.project.enums import ProjectStatus
 from app.projects.project.exceptions import ProjectNotFoundError, ProjectNotOwnedError
 from app.projects.project.repository import ProjectRepository
 from app.projects.project.schemas import ProjectAuthorRead
@@ -59,7 +60,12 @@ class UpdateService:
             title=data.title,
             body=data.body,
             update_type=data.type,
-            public=project.public and data.public is not False,
+            # Updates on an archived project keep their intended visibility:
+            # the project itself hides them until it is restored.
+            public=(
+                (project.public or project.status == ProjectStatus.ARCHIVED)
+                and data.public is not False
+            ),
         )
         references = self._get_referenced_updates(
             project_id, data.references, source_type=data.type

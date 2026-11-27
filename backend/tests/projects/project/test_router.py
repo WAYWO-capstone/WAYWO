@@ -253,3 +253,126 @@ def test_rejects_unauthenticated_project_update(
     assert response.status_code == 401
     reloaded = client.get(f"/projects/{project_id}", headers=owner)
     assert reloaded.json()["title"] == "Crochet tote"
+
+
+def test_archived_project_is_hidden_from_others_and_keeps_its_history(
+    client: TestClient, owner, published_project
+) -> None:
+    client.patch(
+        f"/projects/{published_project}/status", json={"status": "COMPLETED"}, headers=owner
+    )
+    before = client.get(f"/projects/{published_project}", headers=owner).json()
+
+    response = client.post(f"/projects/{published_project}/archive", headers=owner)
+
+    assert response.status_code == 200
+    archived = response.json()
+    assert archived["status"] == "ARCHIVED"
+    assert archived["public"] is False
+    assert archived["archived_at"] is not None
+    assert archived["published_at"] == before["published_at"]
+    assert archived["completed_at"] == before["completed_at"]
+    assert client.get(f"/projects/{published_project}", headers=owner).status_code == 200
+    assert client.get(
+        f"/projects/{published_project}", headers=_auth_headers(client)
+    ).status_code == 404
+    assert client.get(f"/projects/{published_project}").status_code == 404
+
+    published_ids = [p["id"] for p in client.get("/projects/mine/published", headers=owner).json()]
+    archived_ids = [p["id"] for p in client.get("/projects/mine/archived", headers=owner).json()]
+    draft_ids = [p["id"] for p in client.get("/projects/mine/drafts", headers=owner).json()]
+    assert published_project not in published_ids
+    assert published_project in archived_ids
+    assert published_project not in draft_ids
+
+
+def test_restoring_archived_project_publishes_it_with_its_previous_status(
+    client: TestClient, owner, published_project
+) -> None:
+    client.patch(
+        f"/projects/{published_project}/status", json={"status": "COMPLETED"}, headers=owner
+    )
+    client.post(f"/projects/{published_project}/archive", headers=owner)
+
+    response = client.post(f"/projects/{published_project}/restore", headers=owner)
+
+    assert response.status_code == 200
+    assert response.json()["status"] == "COMPLETED"
+    assert response.json()["public"] is True
+    assert response.json()["archived_at"] is None
+    as_other_user = client.get(f"/projects/{published_project}", headers=_auth_headers(client))
+    assert as_other_user.status_code == 200
+
+
+def test_owner_edits_and_updates_on_archived_project_are_hidden_until_restored(
+    client: TestClient, owner, published_project
+) -> None:
+    client.post(f"/projects/{published_project}/archive", headers=owner)
+    edit = client.patch(
+        f"/projects/{published_project}", json={"title": "Reworked tote"}, headers=owner
+    )
+    update = client.post(
+        f"/projects/{published_project}/updates",
+        json={"title": "New strap", "body": "Sewn on.", "type": "PROGRESS"},
+        headers=owner,
+    )
+    other_user = _auth_headers(client)
+
+    assert edit.status_code == 200
+    assert update.status_code == 201
+    assert client.get(f"/projects/{published_project}", headers=other_user).status_code == 404
+    assert client.get(
+        f"/projects/{published_project}/updates", headers=other_user
+    ).status_code == 404
+
+    client.post(f"/projects/{published_project}/restore", headers=owner)
+
+    project = client.get(f"/projects/{published_project}", headers=other_user).json()
+    history = client.get(f"/projects/{published_project}/updates", headers=other_user).json()
+    assert project["title"] == "Reworked tote"
+    assert update.json()["id"] in [item["id"] for item in history["items"]]
+
+
+def test_draft_cannot_be_archived(client: TestClient, owner, category) -> None:
+    project_id = _create_project(client, owner, category, publish=False)
+
+    response = client.post(f"/projects/{project_id}/archive", headers=owner)
+
+    assert response.status_code == 409
+    assert client.get(f"/projects/{project_id}", headers=owner).json()["status"] == "DRAFT"
+
+
+def test_published_project_cannot_go_back_to_draft(
+    client: TestClient, owner, published_project
+) -> None:
+    unpublish = client.post(f"/projects/{published_project}/unpublish", headers=owner)
+    restore = client.post(f"/projects/{published_project}/restore", headers=owner)
+
+    assert unpublish.status_code == 404
+    assert restore.status_code == 409
+    assert client.get(f"/projects/{published_project}", headers=owner).json()["status"] == "ACTIVE"
+
+
+def test_archived_project_status_cannot_change_until_restored(
+    client: TestClient, owner, published_project
+) -> None:
+    client.post(f"/projects/{published_project}/archive", headers=owner)
+
+    response = client.patch(
+        f"/projects/{published_project}/status", json={"status": "COMPLETED"}, headers=owner
+    )
+
+    assert response.status_code == 409
+    project = client.get(f"/projects/{published_project}", headers=owner).json()
+    assert project["status"] == "ARCHIVED"
+
+
+def test_rejects_archiving_another_users_project(
+    client: TestClient, owner, published_project
+) -> None:
+    response = client.post(
+        f"/projects/{published_project}/archive", headers=_auth_headers(client)
+    )
+
+    assert response.status_code == 403
+    assert client.get(f"/projects/{published_project}", headers=owner).json()["status"] == "ACTIVE"

@@ -6,7 +6,7 @@ from sqlalchemy.orm import Session
 
 from app.feed_items.feed_item.models import FeedItem
 from app.accounts.users.models import Profile, User
-from app.projects.project.enums import ProjectStatus
+from app.projects.project.enums import PUBLISHED_STATUSES, ProjectStatus
 from app.projects.project.models import Category, Project, Tag
 from app.projects.updates.models import Update
 
@@ -44,9 +44,20 @@ class ProjectRepository:
             .where(
                 Project.author_id == author_id,
                 Project.public.is_(True),
-                Project.status.in_((ProjectStatus.ACTIVE, ProjectStatus.COMPLETED)),
+                Project.status.in_(PUBLISHED_STATUSES),
             )
             .order_by(Project.published_at.desc())
+        )
+        return list(self._session.scalars(statement))
+
+    def list_archived_by_author(self, author_id: uuid.UUID) -> list[Project]:
+        statement = (
+            select(Project)
+            .where(
+                Project.author_id == author_id,
+                Project.status == ProjectStatus.ARCHIVED,
+            )
+            .order_by(Project.archived_at.desc())
         )
         return list(self._session.scalars(statement))
 
