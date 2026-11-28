@@ -136,7 +136,7 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
           onChange={change}
           categories={categories}
           disabled={saving !== null}
-          hint="You can mark this project completed later from the project page."
+          hint="Your changes save automatically as you write. You can mark this project completed later from the project page."
         />
 
         {showRestored && <RestoredChangesNotice onDiscard={discardRestored} />}

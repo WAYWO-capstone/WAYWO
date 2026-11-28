@@ -176,6 +176,7 @@ describe("creating a project", () => {
 
   test("creates a project as a private draft without publishing it", async () => {
     renderForm();
+    expect(screen.getByText(/Your changes save automatically as you write\./i)).toBeTruthy();
     const visibilityNote = screen.getByText(/Only you can see this project while it is a draft\. Publishing makes it public\./i);
     expect(visibilityNote.closest("aside")).toBeNull();
     expect(
