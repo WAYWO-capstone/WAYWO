@@ -62,7 +62,7 @@ function ResourceLinkRow({ link }: { link: ProjectResourceLink }) {
 
 function ResourceLinkList({ projectId, isOwner }: { projectId: string; isOwner: boolean }) {
   const [isAddingLink, setIsAddingLink] = useState(false);
-  const links = useQuery({
+  const { data, isPending } = useQuery({
     queryKey: resourceLinksKey(projectId),
     queryFn: () => getProjectResourceLinks(projectId),
   });
@@ -86,17 +86,17 @@ function ResourceLinkList({ projectId, isOwner }: { projectId: string; isOwner: 
           </button>
         )}
       </div>
-      {links.isPending ? (
+      {isPending ? (
         <p className="flex items-center gap-2 py-3 text-sm text-muted-foreground">
           <LoaderCircle className="size-4 animate-spin" aria-hidden="true" />Loading links...
         </p>
-      ) : links.isError ? (
+      ) : data === undefined ? (
         <p role="alert" className="flex items-center gap-2 py-3 text-sm text-destructive">
           <CircleAlert className="size-4" aria-hidden="true" />Could not load external links. Try again later.
         </p>
-      ) : links.data.length > 0 ? (
+      ) : data.length > 0 ? (
         <ul aria-label="External links" className="mt-2 space-y-2">
-          {links.data.map((link) => <ResourceLinkRow key={link.id} link={link} />)}
+          {data.map((link) => <ResourceLinkRow key={link.id} link={link} />)}
         </ul>
       ) : (
         <div className="flex items-center gap-3 py-5 text-sm text-muted-foreground">
@@ -127,7 +127,7 @@ function ResourceCount({ projectId }: { projectId: string }) {
     queryFn: () => getProjectResourceLinks(projectId),
   });
 
-  if (resources.isPending || links.isPending || resources.isError || links.isError) {
+  if (resources.data === undefined || links.data === undefined) {
     return <span className="rounded-full bg-brand-garnet/10 px-3 py-1.5 text-sm text-brand-garnet">Resources</span>;
   }
 
@@ -165,7 +165,7 @@ function ResourceList({
   const saved = resources.data ?? [];
 
   return (
-    <div tabIndex={0} aria-label="Project resources" className={listClasses}>
+    <div>
       <div className="flex items-center justify-between gap-3">
         <h3 className="text-sm font-bold text-brand-mahogany">Files</h3>
         {isOwner && (
@@ -241,16 +241,15 @@ function AddResourceLinkForm({
     try {
       const createdLink = await createProjectResourceLink(projectId, trimmedTitle, parsedUrl.href);
       const queryKey = resourceLinksKey(projectId);
-      await queryClient.invalidateQueries({ queryKey });
+      await queryClient.cancelQueries({ queryKey });
       queryClient.setQueryData<ProjectResourceLink[]>(queryKey, (current) => {
         const currentLinks = current ?? [];
         return currentLinks.some((link) => link.id === createdLink.id)
           ? currentLinks
           : [createdLink, ...currentLinks];
       });
-      setTitle("");
-      setUrl("");
       onCancel();
+      void queryClient.invalidateQueries({ queryKey });
     } catch (cause) {
       if (cause instanceof ApiError && cause.status === 403) {
         setError("You must own this project to add a link.");
@@ -393,16 +392,18 @@ export function ProjectResources({ projectId, isOwner }: ProjectResourcesProps) 
 
   return (
     <section aria-labelledby="resources-heading" className="flex max-h-180 min-h-80 flex-col rounded-lg border border-border bg-background p-4">
-      <div className="flex items-center justify-between gap-3">
+      <div className="flex shrink-0 items-center justify-between gap-3">
         <h2 id="resources-heading" className="text-lg font-bold text-brand-mahogany">Resources</h2>
         <ResourceCount projectId={projectId} />
       </div>
-      {isOwner ? (
-        <OwnerResources key={projectId} projectId={projectId} />
-      ) : (
-        <ResourceList projectId={projectId} isOwner={false} />
-      )}
-      <ResourceLinkList projectId={projectId} isOwner={isOwner} />
+      <div role="region" tabIndex={0} aria-label="Project resources" className={listClasses}>
+        {isOwner ? (
+          <OwnerResources key={projectId} projectId={projectId} />
+        ) : (
+          <ResourceList projectId={projectId} isOwner={false} />
+        )}
+        <ResourceLinkList projectId={projectId} isOwner={isOwner} />
+      </div>
     </section>
   );
 }

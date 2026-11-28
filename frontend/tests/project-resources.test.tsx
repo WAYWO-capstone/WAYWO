@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
+import { act, cleanup, fireEvent, render, screen, waitFor, within } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, test, vi } from "vitest";
 import { ApiError } from "@/api/client";
 import type { ProjectResource, ProjectResourceLink } from "@/api/models";
@@ -66,11 +66,12 @@ function resourceLink(changes: Partial<ProjectResourceLink> = {}): ProjectResour
 
 function renderPanel(props: { projectId?: string; isOwner: boolean }) {
   const client = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  return render(
+  const view = render(
     <QueryClientProvider client={client}>
       <ProjectResources {...props} />
     </QueryClientProvider>,
   );
+  return { ...view, queryClient: client };
 }
 
 const addFile = () => screen.queryByRole("button", { name: "Add file" });
@@ -199,8 +200,9 @@ describe("ProjectResources", () => {
   test("separates external links from files and places them after the owner's upload control", async () => {
     renderPanel({ projectId: "p1", isOwner: true });
 
-    const addFileButton = await screen.findByRole("button", { name: "Add file" });
-    const linksHeading = await screen.findByRole("heading", { name: "External links" });
+    const resourceBody = within(screen.getByRole("region", { name: "Project resources" }));
+    const addFileButton = await resourceBody.findByRole("button", { name: "Add file" });
+    const linksHeading = await resourceBody.findByRole("heading", { name: "External links" });
     const linksSection = linksHeading.parentElement?.parentElement;
 
     expect(linksSection?.className).toContain("border-t");
@@ -218,11 +220,16 @@ describe("ProjectResources", () => {
     ).toBeTruthy();
   });
 
-  test("lets the owner add an external link and clears the form", async () => {
+  test("shows the saved link and closes the form before the refresh finishes", async () => {
+    let rejectRefresh!: (error: Error) => void;
+    const refresh = new Promise<ProjectResourceLink[]>((_resolve, reject) => {
+      rejectRefresh = reject;
+    });
     vi.mocked(createProjectResourceLink).mockResolvedValue(resourceLink());
-    vi.mocked(getProjectResourceLinks).mockResolvedValueOnce([]).mockResolvedValue([resourceLink()]);
+    vi.mocked(getProjectResourceLinks).mockResolvedValueOnce([]).mockReturnValueOnce(refresh);
     const view = renderPanel({ projectId: "p1", isOwner: true });
 
+    await screen.findByText("No external links yet.");
     expect(screen.queryByLabelText("Link title")).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Add link" }));
     fireEvent.change(screen.getByLabelText("Link title"), {
@@ -240,7 +247,19 @@ describe("ProjectResources", () => {
       "https://example.com/tutorial",
     );
     expect(view.container.querySelector("#resource-link-form")).toBeNull();
+    expect(await screen.findByRole("link", { name: "Build tutorial" })).toBeTruthy();
     expect(await screen.findByLabelText("1 resource")).toBeTruthy();
+    expect(getProjectResourceLinks).toHaveBeenCalledTimes(2);
+
+    await act(async () => {
+      rejectRefresh(new Error("Refresh failed"));
+    });
+    await waitFor(() =>
+      expect(view.queryClient.getQueryState(["project-resource-links", "p1"])?.status).toBe("error"),
+    );
+    expect(screen.getByRole("link", { name: "Build tutorial" })).toBeTruthy();
+    expect(screen.getByLabelText("1 resource")).toBeTruthy();
+    expect(screen.queryByRole("alert")).toBeNull();
   });
 
   test("cancel collapses the external link form without creating a link", () => {
