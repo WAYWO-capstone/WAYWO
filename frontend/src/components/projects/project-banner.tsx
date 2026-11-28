@@ -106,17 +106,20 @@ function BannerEditor({
 
   return (
     <Dialog open={isOpen} onOpenChange={setIsOpen}>
-      <DialogTrigger>
-        <Button
-          variant="secondary"
-          className={`absolute top-3 right-4 drop-shadow-sm transition-opacity ${
-            isVisible
-              ? "opacity-100"
-              : "pointer-events-none opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100"
-          }`}
-        >
-          <Pencil /> Edit
-        </Button>
+      <DialogTrigger
+        render={
+          <Button
+            type="button"
+            variant="secondary"
+            className={`absolute top-3 right-4 drop-shadow-sm transition-opacity ${
+              isVisible
+                ? "opacity-100"
+                : "pointer-events-none opacity-0 focus-visible:pointer-events-auto focus-visible:opacity-100"
+            }`}
+          />
+        }
+      >
+        <Pencil /> Edit
       </DialogTrigger>
       <DialogContent className="w-[600px] max-w-full">
         <DialogHeader>
