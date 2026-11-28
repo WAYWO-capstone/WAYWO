@@ -5,6 +5,7 @@ import { ProjectStatusControl } from "@/components/projects/project-status-contr
 import { ProjectResources } from "@/components/projects/resources/project-resources";
 import { UpdateHistory } from "@/components/projects/update-history";
 import type { ProjectUpdate, ProjectView } from "@/api/models";
+import ProjectBanner from "./project-banner";
 
 interface ProjectDetailProps {
   project: ProjectView;
@@ -39,11 +40,7 @@ export function ProjectDetail({
 }: ProjectDetailProps) {
   return (
     <div className="flex-1 bg-white">
-      <div className="relative flex h-36 items-center justify-center bg-[#f8ede1] text-sm text-brand-mahogany/80 sm:h-44">
-        <span>[project banner image]</span>
-        {isPreview && <span className="absolute top-3 right-4 rounded-full bg-white/80 px-3 py-1 text-xs font-medium">Sample preview</span>}
-      </div>
-
+      <ProjectBanner canManage={isOwner} />
       <section className="mx-auto max-w-7xl px-5 py-5 sm:px-8">
         <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
           <div>
