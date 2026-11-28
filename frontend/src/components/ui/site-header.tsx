@@ -61,7 +61,7 @@ export function SiteHeader() {
   return (
     <header className="sticky top-0 z-40 border-b bg-background/95 backdrop-blur">
       <div className="flex h-16 items-center gap-3 px-4 sm:gap-6 sm:px-8">
-        <Link to="/home" className="shrink-0">
+        <Link to="/" className="shrink-0">
           <img src={logo} alt="WAYWO home" className="h-12 w-auto" />
         </Link>
 
