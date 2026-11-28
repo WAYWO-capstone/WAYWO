@@ -4,7 +4,7 @@ test.describe("Smoke", () => {
   test("home page loads with the site header", async ({ page }) => {
     await page.goto("/");
 
-    await expect(page.getByRole("img", { name: "WAYWO home BROKEN" })).toBeVisible();
+    await expect(page.getByRole("img", { name: "WAYWO home" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Log in" })).toBeVisible();
     await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
   });
