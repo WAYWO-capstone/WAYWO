@@ -1,27 +1,26 @@
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, Link } from "@tanstack/react-router";
-import { CircleAlert, FolderOpen, Globe2, LoaderCircle, Plus } from "lucide-react";
+import { Archive, CircleAlert, FolderOpen, LoaderCircle, Plus } from "lucide-react";
 import { useState } from "react";
-import { Button } from "@/components/ui/button";
+import { ProjectListTabs, type ProjectList } from "@/components/projects/project-list-tabs";
 import { ApiError } from "@/api/client";
-import { getMyDrafts, getMyPublishedProjects } from "@/api/projects";
+import { getMyArchivedProjects, getMyDrafts, getMyPublishedProjects } from "@/api/projects";
+import { archivedAtLabel } from "@/lib/project-status";
 
 export const Route = createFileRoute("/projects")({
   component: ProjectsPage,
 });
-
-type ProjectList = "published" | "drafts";
 
 function ProjectsPage() {
   const [list, setList] = useState<ProjectList>("published");
   const projectsQuery = useQuery({
     queryKey: ["my-projects", list],
     queryFn: async () =>
-      list === "drafts" ? getMyDrafts() : getMyPublishedProjects(),
+      list === "drafts" ? getMyDrafts() : list === "archived" ? getMyArchivedProjects() : getMyPublishedProjects(),
   });
 
   const isUnauthorized = projectsQuery.error instanceof ApiError && projectsQuery.error.status === 401;
-  const heading = list === "drafts" ? "Draft projects" : "Published projects";
+  const heading = list === "drafts" ? "Draft projects" : list === "archived" ? "Archived projects" : "Published projects";
 
   return (
     <section className="mx-auto w-full max-w-6xl flex-1 px-5 py-10 sm:px-8">
@@ -34,26 +33,7 @@ function ProjectsPage() {
           <Plus aria-hidden="true" className="size-4" /> Create project
         </Link>
       </div>
-      <div role="group" aria-label="Choose projects to view" className="mt-8 flex flex-wrap gap-4">
-        <Button
-          type="button"
-          variant={list === "published" ? "default" : "outline"}
-          aria-pressed={list === "published"}
-          className="h-12 px-5"
-          onClick={() => setList("published")}
-        >
-          <Globe2 aria-hidden="true" /> Published projects
-        </Button>
-        <Button
-          type="button"
-          variant={list === "drafts" ? "default" : "outline"}
-          aria-pressed={list === "drafts"}
-          className="h-12 px-5"
-          onClick={() => setList("drafts")}
-        >
-          <FolderOpen aria-hidden="true" /> Draft projects
-        </Button>
-      </div>
+      <ProjectListTabs list={list} onSelect={setList} />
 
       <section aria-labelledby="project-list-heading" className="mt-10">
         <h2 id="project-list-heading" className="text-xl font-semibold">{heading}</h2>
@@ -75,10 +55,10 @@ function ProjectsPage() {
           </div>
         ) : projectsQuery.data.length === 0 ? (
           <div className="mt-5 rounded-xl border border-dashed px-6 py-14 text-center">
-            <FolderOpen aria-hidden="true" className="mx-auto size-9 text-muted-foreground/70" />
-            <p className="mt-4 font-semibold">No {list === "drafts" ? "draft" : "published"} projects yet</p>
+            {list === "archived" ? <Archive aria-hidden="true" className="mx-auto size-9 text-muted-foreground/70" /> : <FolderOpen aria-hidden="true" className="mx-auto size-9 text-muted-foreground/70" />}
+            <p className="mt-4 font-semibold">No {list === "drafts" ? "draft" : list === "archived" ? "archived" : "published"} projects yet</p>
             <p className="mt-2 text-sm text-muted-foreground">
-              {list === "drafts" ? "Projects you save as drafts will appear here." : "Projects you publish will appear here."}
+              {list === "drafts" ? "Projects you save as drafts will appear here. Only you can see them." : list === "archived" ? "Projects you archive will appear here. Only you can see them." : "Projects you publish will appear here."}
             </p>
           </div>
         ) : (
@@ -95,7 +75,7 @@ function ProjectsPage() {
                   <h3 className="mt-2 text-lg font-bold">{project.title}</h3>
                   <p className="mt-2 line-clamp-3 text-sm text-muted-foreground">{project.summary}</p>
                   <p className="mt-4 text-xs font-medium text-brand-rust">
-                    {list === "drafts" ? "Draft" : project.status === "COMPLETED" ? "Completed" : "Published"}
+                    {list === "drafts" ? "Draft" : list === "archived" ? archivedAtLabel(project.archived_at) ?? "Archived" : project.status === "COMPLETED" ? "Completed" : "Published"}
                   </p>
                   <span className="mt-4 inline-block text-sm font-semibold text-primary underline underline-offset-4">
                     View full project
