@@ -176,6 +176,12 @@ describe("creating a project", () => {
 
   test("creates a project as a private draft without publishing it", async () => {
     renderForm();
+    const visibilityNote = screen.getByText(/Only you can see this project while it is a draft\. Publishing makes it public\./i);
+    expect(visibilityNote.closest("aside")).toBeNull();
+    expect(
+      visibilityNote.compareDocumentPosition(screen.getByRole("button", { name: "Publish" }))
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     await fillProject();
     fireEvent.click(screen.getByRole("button", { name: "Save as draft" }));
 

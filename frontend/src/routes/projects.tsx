@@ -57,6 +57,9 @@ function ProjectsPage() {
 
       <section aria-labelledby="project-list-heading" className="mt-10">
         <h2 id="project-list-heading" className="text-xl font-semibold">{heading}</h2>
+        {list === "drafts" && (
+          <p className="mt-2 text-sm text-muted-foreground">Only you can see your drafts.</p>
+        )}
         {projectsQuery.isPending ? (
           <div role="status" className="flex items-center gap-2 py-12 text-muted-foreground">
             <LoaderCircle aria-hidden="true" className="size-5 animate-spin" /> Loading projects...
