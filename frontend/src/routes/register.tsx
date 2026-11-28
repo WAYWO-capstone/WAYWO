@@ -1,23 +1,26 @@
+import { ApiError } from "@/api/client";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
+import { PasswordInput } from "@/components/ui/password-input";
+import { safeRedirect, useRegister } from "@/lib/auth";
+import { isAuthenticated } from "@/lib/token-store";
+import { isValidEmail } from "@/lib/utils/string-utils";
 import {
   createFileRoute,
   Link,
   redirect,
   useNavigate,
 } from "@tanstack/react-router";
+import { cn } from "cn";
 import {
   ArrowRight,
   CheckCircle,
+  Circle,
   CircleAlert,
   LoaderCircle,
+  XCircle,
 } from "lucide-react";
 import { useEffect, useState, type SubmitEvent } from "react";
-import { PasswordInput } from "@/components/ui/password-input";
-import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { ApiError } from "@/api/client";
-import { safeRedirect, useRegister } from "@/lib/auth";
-import { isAuthenticated } from "@/lib/token-store";
-import { isValidEmail } from "@/lib/utils/string-utils";
 
 export const Route = createFileRoute("/register")({
   validateSearch: (search: Record<string, unknown>): { redirect?: string } => ({
@@ -50,9 +53,19 @@ function validate(
   if (!password) errors.password = "Enter your password.";
   if (!passwordConfirmation && password)
     errors.passwordConfirmation = "Please re-type your password.";
+
   if (password !== passwordConfirmation)
     errors.passwordConfirmation = "Passwords do not match.";
+  if (password && validatePasswordFormat(password))
+    errors.password = "Invalid password format.";
   return errors;
+}
+
+function validatePasswordFormat(password: string) {
+  if (password.length < 8) {
+    return "Password must be at least 8 characters long.";
+  }
+  return null;
 }
 
 function errorMessage(error: Error): string {
@@ -97,6 +110,10 @@ function RegisterPage() {
   if (isSuccess) {
     return <RegistrationCompletedMessage />;
   }
+
+  // has attempted submission and password is invalid, highlight the helper text in red
+  const shouldHighlightPasswordHelperErrors =
+    !!fieldErrors.password && !!validatePasswordFormat(password);
 
   return (
     <div className="flex flex-1 flex-col items-center px-4 py-16 sm:py-28">
@@ -191,6 +208,12 @@ function RegisterPage() {
                 {fieldErrors.password}
               </p>
             )}
+            {
+              <PasswordHelper
+                password={password}
+                isError={shouldHighlightPasswordHelperErrors}
+              />
+            }
           </div>
           <div>
             <label
@@ -292,6 +315,42 @@ function RegistrationCompletedMessage() {
           Go to login now
         </Link>
       </div>
+    </div>
+  );
+}
+
+function PasswordHelper({
+  password,
+  isError,
+}: {
+  password: string;
+  isError: boolean;
+}) {
+  const isLongEnough = password.length >= 8;
+
+  const displayIcon = (isConditionSatisfied: boolean) => {
+    if (isConditionSatisfied) {
+      return <CheckCircle className="h-4" />;
+    } else if (isError) {
+      return <XCircle className="h-4" />;
+    }
+
+    return <Circle className="h-4" />;
+  };
+
+  return (
+    <div className="mt-2 text-sm text-muted-foreground">
+      <p
+        className={cn(
+          "flex items-center gap-2",
+          !isLongEnough && isError
+            ? "text-destructive"
+            : "text-muted-foreground",
+        )}
+      >
+        {displayIcon(isLongEnough)}
+        Must be at least 8 characters long
+      </p>
     </div>
   );
 }
