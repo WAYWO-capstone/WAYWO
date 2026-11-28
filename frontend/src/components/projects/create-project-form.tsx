@@ -141,17 +141,22 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
 
         {showRestored && <RestoredChangesNotice onDiscard={discardRestored} />}
         {(error || autosaveFailure) && <p role="alert" className="mt-6 flex items-center gap-2 rounded-lg border border-destructive/25 bg-destructive/5 px-4 py-3 text-sm text-destructive"><CircleAlert className="size-4 shrink-0" />{error || autosaveFailure}</p>}
-        <div className="mt-8 flex flex-col-reverse items-stretch justify-end gap-3 border-t pt-5 sm:flex-row sm:items-center sm:gap-4">
-          <Button type="button" variant="ghost" disabled={saving !== null} onClick={() => setDiscardDialogOpen(true)} className="h-11 px-5">Cancel</Button>
-          <ProjectDiscardDialog
-            open={discardDialogOpen || blocker.status === "blocked"}
-            onOpenChange={changeDiscardDialog}
-            onConfirm={confirmCancel}
-            deletesDraft
-            destination="projects"
-          />
-          <Button type="submit" name="intent" value="draft" variant="outline" disabled={saving !== null || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "draft" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save as draft"}</Button>
-          <Button type="submit" name="intent" value="publish" disabled={saving !== null || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "publish" ? <><LoaderCircle className="size-4 animate-spin" />Publishing...</> : "Publish"}</Button>
+        <div className="mt-8 border-t pt-5">
+          <p className="mb-4 text-sm text-muted-foreground">
+            Only you can see this project while it is a draft. Publishing makes it public.
+          </p>
+          <div className="flex flex-col-reverse items-stretch justify-end gap-3 sm:flex-row sm:items-center sm:gap-4">
+            <Button type="button" variant="ghost" disabled={saving !== null} onClick={() => setDiscardDialogOpen(true)} className="h-11 px-5">Cancel</Button>
+            <ProjectDiscardDialog
+              open={discardDialogOpen || blocker.status === "blocked"}
+              onOpenChange={changeDiscardDialog}
+              onConfirm={confirmCancel}
+              deletesDraft
+              destination="projects"
+            />
+            <Button type="submit" name="intent" value="draft" variant="outline" disabled={saving !== null || categories.isLoading || categories.isError} className="h-11 px-5">{saving === "draft" ? <><LoaderCircle className="size-4 animate-spin" />Saving...</> : "Save as draft"}</Button>
+            <Button type="submit" name="intent" value="publish" disabled={saving !== null || categories.isLoading || categories.isError} className="h-11 px-7 font-semibold">{saving === "publish" ? <><LoaderCircle className="size-4 animate-spin" />Publishing...</> : "Publish"}</Button>
+          </div>
         </div>
       </form>
     </div>
