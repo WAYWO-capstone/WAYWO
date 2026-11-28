@@ -45,3 +45,4 @@ export type UpdateHistoryPage = Schemas["UpdateHistoryPage"];
 
 // Project resources
 export type ProjectResource = Schemas["ResourceRead"];
+export type ProjectResourceLink = Schemas["ResourceLinkRead"];

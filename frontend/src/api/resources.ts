@@ -1,5 +1,5 @@
 import { api, unwrap } from "@/api/client";
-import type { ProjectResource } from "@/api/models";
+import type { ProjectResource, ProjectResourceLink } from "@/api/models";
 
 const projectPath = (projectId: string) => ({ path: { project_id: projectId } });
 
@@ -16,6 +16,29 @@ export function attachResource(
     api.POST("/projects/{project_id}/resources", {
       params: projectPath(projectId),
       body: { upload_id: uploadId, title },
+    }),
+  );
+}
+
+export function getProjectResourceLinks(
+  projectId: string,
+): Promise<ProjectResourceLink[]> {
+  return unwrap(
+    api.GET("/projects/{project_id}/resources/links", {
+      params: projectPath(projectId),
+    }),
+  );
+}
+
+export function createProjectResourceLink(
+  projectId: string,
+  title: string,
+  url: string,
+): Promise<ProjectResourceLink> {
+  return unwrap(
+    api.POST("/projects/{project_id}/resources/links", {
+      params: projectPath(projectId),
+      body: { title, url },
     }),
   );
 }

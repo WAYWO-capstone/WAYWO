@@ -30,3 +30,19 @@ class ProjectResource(Base):
     )
 
     file_asset: Mapped[FileAsset] = relationship(lazy="joined")
+
+
+class ProjectResourceLink(Base):
+    """An external link attached to a project."""
+
+    __tablename__ = "project_resource_links"
+
+    id: Mapped[uuid.UUID] = mapped_column(primary_key=True, default=uuid.uuid4)
+    project_id: Mapped[uuid.UUID] = mapped_column(
+        ForeignKey("projects.id", ondelete="CASCADE"), index=True
+    )
+    title: Mapped[str] = mapped_column(String(200))
+    url: Mapped[str] = mapped_column(String(2048))
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True), default=utcnow
+    )
