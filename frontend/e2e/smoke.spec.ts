@@ -1,4 +1,4 @@
-import { expect, test } from "@playwright/test";
+import { expect, signIn, test } from "./fixtures.ts";
 
 test.describe("Smoke", () => {
   test("guest lands on Explore with the site header", async ({ page }) => {
@@ -11,23 +11,8 @@ test.describe("Smoke", () => {
     await expect(page.getByRole("link", { name: "Sign up" })).toBeVisible();
   });
 
-  test("signed-in user lands on Home", async ({ page }) => {
-    await page.addInitScript(() => {
-      const payload = btoa(
-        JSON.stringify({
-          exp: Math.floor(Date.now() / 1000) + 3600,
-          sub: "test-user",
-        }),
-      )
-        .replace(/=/g, "")
-        .replace(/\+/g, "-")
-        .replace(/\//g, "_");
-      const token = `test.${payload}.signature`;
-
-      localStorage.setItem("waywo.access_token", token);
-      localStorage.setItem("waywo.refresh_token", token);
-    });
-
+  test("signed-in user lands on Home", async ({ page, makerUser }) => {
+    await signIn(page, makerUser);
     await page.goto("/");
 
     await expect(page).toHaveURL(/\/home$/);
