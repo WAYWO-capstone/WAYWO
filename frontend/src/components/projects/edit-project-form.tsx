@@ -174,7 +174,7 @@ export function EditProjectForm({ project }: { project: ProjectView }) {
           categories={categories}
           disabled={saving !== null}
           hint={isDraft
-            ? "This draft saves automatically as you edit it."
+            ? "This draft saves automatically as you edit it. Publish it when you’re ready."
             : "This project is published. Changes you save here are visible to everyone right away."}
         />
 

@@ -136,7 +136,7 @@ export function CreateProjectForm({ project }: { project?: ProjectView }) {
           onChange={change}
           categories={categories}
           disabled={saving !== null}
-          hint="Your changes save automatically as you write. You can mark this project completed later from the project page."
+          hint="Your project is saved as a private draft as you write. Publish it when you’re ready. You can mark it completed later from the project page."
         />
 
         {showRestored && <RestoredChangesNotice onDiscard={discardRestored} />}
