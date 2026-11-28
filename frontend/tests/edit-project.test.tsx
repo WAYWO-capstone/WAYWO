@@ -190,6 +190,12 @@ describe("editing a project", () => {
 
   test("publishes a draft after saving its latest edits", async () => {
     await renderForm(draftProject);
+    const visibilityNote = screen.getByText(/Only you can see this project while it is a draft\. Publishing makes it public\./i);
+    expect(visibilityNote.closest("aside")).toBeNull();
+    expect(
+      visibilityNote.compareDocumentPosition(screen.getByRole("button", { name: "Publish" }))
+      & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
     fireEvent.change(screen.getByLabelText(/Project title/), { target: { value: "Published stool" } });
     fireEvent.click(screen.getByRole("button", { name: "Publish" }));
 
